@@ -1,29 +1,71 @@
 package Services;
 
 import Data.Artifact;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import org.json.HTTP;
+import Data.Versioning;
+import org.apache.maven.api.model.Model;
+import org.apache.maven.model.v4.MavenStaxReader;
 
-public class CentralSonatypeOrgService {
-    private final String baseUrl = "https://search.maven.org/";
-    OkHttpClient client = new OkHttpClient();
+import javax.xml.stream.XMLEventReader;
+import javax.xml.stream.XMLInputFactory;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
 
-    public String getArtifact(Artifact artifact) {
-        System.out.println("searching for " + artifact);
+public class MavenCentralService {
+    private final String baseUrl = "https://repo1.maven.org/maven2/";
 
-        String url = baseUrl + "#artifactdetails|" + artifact.getGroupId() + "|" + artifact.getArtifactId() + "|" + artifact.getVersion() + "|";
+    public Model getModel(Artifact artifact) {
 
-        var request = new Request.Builder().url(url).build();
-
-        try (Response response = client.newCall(request).execute()) {
-            return response.body().string();
+        URL pomUrl = null;
+        try {
+            var groupId = artifact.getGroupId().replace(".", "/");
+            var artifactId = artifact.getArtifactId();
+            var version = artifact.getVersion();
+            pomUrl = URI.create(baseUrl + groupId + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version + ".pom").toURL();
         } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-
+            throw new RuntimeException(e);
         }
+
+        MavenStaxReader reader = new MavenStaxReader();
+        Model model;
+        try (InputStream inputStream = pomUrl.openStream()) {
+            model = reader.read(inputStream);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return model;
     }
 
+    public Versioning getVersions(String groupId, String artifactId) throws MalformedURLException {
+        var url = URI.create(baseUrl + groupId.replace(".", "/") + "/" + artifactId + "/maven-metadata.xml").toURL();
+        Versioning versioning = null;
+        var factory = XMLInputFactory.newInstance();
+        try {
+            XMLEventReader reader = factory.createXMLEventReader(url.openStream());
+            while (reader.hasNext()) {
+                var event = reader.nextEvent();
+                if (event.isStartElement()) {
+                    var startElement = event.asStartElement();
+                    switch (startElement.getName().toString()) {
+                        case "versioning":
+                            versioning = new Versioning();
+                            break;
+                        case "version":
+                            if (versioning == null) break;
+                            event = reader.nextEvent();
+                            if (event.isCharacters()) {
+                                versioning.addVersion(event.asCharacters().getData());
+                            }
+                            break;
+
+
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return versioning;
+    }
 }
