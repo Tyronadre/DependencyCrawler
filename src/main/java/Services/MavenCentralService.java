@@ -2,6 +2,7 @@ package Services;
 
 import Data.Artifact;
 import Data.Versioning;
+import Exceptions.ArtifactBuilderException;
 import org.apache.maven.api.model.Model;
 import org.apache.maven.model.v4.MavenStaxReader;
 
@@ -15,7 +16,7 @@ import java.net.URL;
 public class MavenCentralService {
     private final String baseUrl = "https://repo1.maven.org/maven2/";
 
-    public Model getModel(Artifact artifact) {
+    public Model getModel(Artifact artifact) throws ArtifactBuilderException {
 
         URL pomUrl = null;
         try {
@@ -24,7 +25,7 @@ public class MavenCentralService {
             var version = artifact.getVersion();
             pomUrl = URI.create(baseUrl + groupId + "/" + artifactId + "/" + version + "/" + artifactId + "-" + version + ".pom").toURL();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ArtifactBuilderException(e.getMessage());
         }
 
         MavenStaxReader reader = new MavenStaxReader();
@@ -32,7 +33,7 @@ public class MavenCentralService {
         try (InputStream inputStream = pomUrl.openStream()) {
             model = reader.read(inputStream);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ArtifactBuilderException(e.getMessage());
         }
         return model;
     }
