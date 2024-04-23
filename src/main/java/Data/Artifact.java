@@ -183,6 +183,14 @@ public class Artifact {
         return version;
     }
 
+    public List<Artifact> getDependencies() {
+        return dependencies;
+    }
+
+    public Model getModel() {
+        return model;
+    }
+
     @Override
     public String toString() {
         return "Artifact{" + "groupId='" + groupId + '\'' + ", artifactId='" + artifactId + '\'' + ", version='" + version + '\'' + '}';
@@ -239,5 +247,6 @@ public class Artifact {
             visited.remove(dependency);
         }
     }
+
 
 }

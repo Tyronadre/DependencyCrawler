@@ -15,6 +15,7 @@ dependencies {
     implementation("org.json:json:20240303")
     implementation("com.google.protobuf:protobuf-java:4.26.1")
     implementation("org.apache.maven:maven-model:4.0.0-alpha-13")
+    compileOnly(project(":ProtoParser"))
 }
 
 tasks.test {
