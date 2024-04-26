@@ -3,6 +3,9 @@ package Services;
 import Data.Artifact;
 import cyclonedx.v1_6.Bom16;
 
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,53 +22,65 @@ public class SBOMParser {
         sbomBuilder.setVersion(1);
         sbomBuilder.setSerialNumber(UUID.randomUUID().toString());
 
+
         //add dependencies
         addDependencies(sbomBuilder, artifact);
 
-        try (PrintWriter writer = new PrintWriter(path)) {
-            writer.println("SBOM");
-            writer.flush();
+        Bom16.Bom sbom = sbomBuilder.build();
+
+        try (FileWriter writer = new FileWriter("sbom1.json")) {
+            writer.write(sbom.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try (OutputStream outputStream = new FileOutputStream(path)) {
+            sbom.writeTo(outputStream);
+            outputStream.flush();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     private void addDependencies(Bom16.Bom.Builder sbomBuilder, Artifact artifact) {
-        for (var dependency : artifact.getDependencies()) {
-            var componentBuilder = Bom16.Component.newBuilder();
-            componentBuilder.setType(Bom16.Classification.CLASSIFICATION_LIBRARY);
-            componentBuilder.setBomRef(UUID.randomUUID().toString());
-            componentBuilder.setSupplier(getSupplier(dependency));
-            componentBuilder.setPublisher(getPublisher(dependency));
-            componentBuilder.setGroup(artifact.getGroupId());
-            componentBuilder.setName(artifact.getArtifactId());
-            componentBuilder.setVersion(artifact.getVersion());
-            componentBuilder.setDescription(getDescription(dependency));
-            componentBuilder.setScope(getScope(dependency));
+        if (artifact.getDependencies() != null)
+            for (var dependency : artifact.getDependencies()) {
+                var componentBuilder = Bom16.Component.newBuilder();
+                componentBuilder.setType(Bom16.Classification.CLASSIFICATION_LIBRARY);
+                componentBuilder.setBomRef(UUID.randomUUID().toString());
+                if (getSupplier(dependency) != null) componentBuilder.setSupplier(getSupplier(dependency));
+                if (getPublisher(dependency) != null) componentBuilder.setPublisher(getPublisher(dependency));
+                if (dependency.getGroupId() != null) componentBuilder.setGroup(dependency.getGroupId());
+                if (dependency.getArtifactId() != null) componentBuilder.setName(dependency.getArtifactId());
+                if (dependency.getVersion() != null) componentBuilder.setVersion(dependency.getVersion());
+                if (getDescription(dependency) != null) componentBuilder.setDescription(getDescription(dependency));
+                if (getScope(dependency) != null) componentBuilder.setScope(getScope(dependency));
 //            componentBuilder.addHashes();
 //            componentBuilder.setAllLicences()
-            componentBuilder.setPurl(getPurl(dependency));
+                if (getSupplier(dependency) != null) componentBuilder.setPurl(getPurl(dependency));
 //            componentBuilder.setSwid();
 //            componentBuilder.setPedigree();
 //            componentBuilder.addExternalReferences();
 //            componentBuilder.addAllComponents();
-            componentBuilder.addAllProperties(getProperties(dependency));
+                if (getSupplier(dependency) != null) componentBuilder.addAllProperties(getProperties(dependency));
 //            componentBuilder.addAllEvidence()
-            componentBuilder.setReleaseNotes(getReleaseNotes(dependency));
+                if (getReleaseNotes(dependency) != null) componentBuilder.setReleaseNotes(getReleaseNotes(dependency));
 //            componentBuilder.setModelCard();
 //            componentBuilder.setData();
 //            componentBuilder.setCryptoProperties();
-            componentBuilder.setManufacturer(getManufacturer(dependency));
-            componentBuilder.addAllAuthors(getAuthors(artifact));
+                if (getManufacturer(dependency) != null) componentBuilder.setManufacturer(getManufacturer(dependency));
+                if (getAuthors(dependency) != null) componentBuilder.addAllAuthors(getAuthors(artifact));
 //            componentBuilder.addAllTags();
-            componentBuilder.addAllOmniborId(getOmniborId());
-            componentBuilder.addAllSwhid(getSwhIds(dependency));
+                if (getOmniborId(artifact) != null) componentBuilder.addAllOmniborId(getOmniborId(artifact));
+                if (getSwhIds(dependency) != null) componentBuilder.addAllSwhid(getSwhIds(dependency));
 
-            var dependencyBuilder = Bom16.Dependency.newBuilder();
-            dependencyBuilder.setRef(componentBuilder.getBomRef());
+                sbomBuilder.addComponents(componentBuilder);
 
-            sbomBuilder.addDependencies(dependencyBuilder);
-        }
+                var dependencyBuilder = Bom16.Dependency.newBuilder();
+                dependencyBuilder.setRef(componentBuilder.getBomRef());
+
+                sbomBuilder.addDependencies(dependencyBuilder);
+            }
 
     }
 
@@ -119,7 +134,7 @@ public class SBOMParser {
         return authors.stream().map(a -> Bom16.OrganizationalContact.newBuilder().setName(a.getName()).setEmail(a.getEmail()).setPhone(a.getOrganization()).build()).toList();
     }
 
-    private List<String> getOmniborId() {
+    private List<String> getOmniborId(Artifact artifact) {
         return null;
     }
 

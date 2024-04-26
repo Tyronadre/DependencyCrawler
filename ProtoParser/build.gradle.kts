@@ -18,4 +18,5 @@ repositories {
 }
 
 dependencies {
+    implementation("com.google.protobuf:protobuf-java:4.26.1")
 }

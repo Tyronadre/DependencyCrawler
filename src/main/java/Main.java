@@ -1,5 +1,20 @@
 import Data.Artifact;
 import Services.ArtifactParser;
+import Services.SBOMParser;
+import org.apache.maven.repository.internal.DefaultArtifactDescriptorReader;
+import org.apache.maven.repository.internal.DefaultVersionResolver;
+import org.apache.maven.repository.internal.MavenSessionBuilderSupplier;
+import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.impl.ArtifactDescriptorReader;
+import org.eclipse.aether.impl.DependencyCollector;
+import org.eclipse.aether.internal.impl.DefaultChecksumPolicyProvider;
+import org.eclipse.aether.internal.impl.DefaultMetadataResolver;
+import org.eclipse.aether.internal.impl.DefaultRemoteRepositoryManager;
+import org.eclipse.aether.internal.impl.DefaultRepositoryEventDispatcher;
+import org.eclipse.aether.internal.impl.DefaultUpdatePolicyAnalyzer;
+import org.eclipse.aether.internal.impl.collect.DefaultDependencyCollector;
+import org.eclipse.aether.internal.impl.collect.bf.BfDependencyCollector;
+import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
 
 import java.util.Objects;
 
@@ -25,6 +40,24 @@ public class Main {
 
         artifact.printTree(null);
 
+        SBOMParser sbomParser = new SBOMParser();
+        sbomParser.createSBOM("sbom.json", artifact);
 
+
+    }
+
+    public void testMavenImpl(Artifact artifact) {
+//        var updatePolicyAnalyzer = new DefaultUpdatePolicyAnalyzer();
+//        var checksumPolicyProvider = new DefaultChecksumPolicyProvider();
+//        var remoteRepositoryManager = new DefaultRemoteRepositoryManager(updatePolicyAnalyzer,checksumPolicyProvider);
+//
+//        var repositoryEventDispatcher = new DefaultRepositoryEventDispatcher();
+//        var metadataResolver = new DefaultMetadataResolver();
+//        var versionResolver = new DefaultVersionResolver();
+//
+//        var artifactDescriptorReader = new DefaultArtifactDescriptorReader(remoteRepositoryManager, );
+
+//        DependencyCollector bfDependencyCollector = new BfDependencyCollector();
+        RepositorySystemSession.SessionBuilder sessionBuilder = new MavenSessionBuilderSupplier().get();
     }
 }
