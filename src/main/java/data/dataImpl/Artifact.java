@@ -1,8 +1,8 @@
-package Data;
+package data.dataImpl;
 
 
-import Exceptions.ArtifactBuilderException;
-import Services.MavenCentralService;
+import exceptions.ArtifactBuilderException;
+import service.serviceImpl.MavenCentralService;
 import org.apache.maven.api.model.Dependency;
 import org.apache.maven.api.model.Model;
 

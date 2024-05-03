@@ -1,4 +1,4 @@
-package Data;
+package data.dataImpl;
 
 public class BrokenArtifact extends Artifact {
     public BrokenArtifact(String groupId, String artifactId, String version, Artifact parent) {

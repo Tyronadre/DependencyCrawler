@@ -1,8 +1,8 @@
-package Services;
+package service.serviceImpl;
 
-import Data.Artifact;
-import Data.Versioning;
-import Exceptions.ArtifactBuilderException;
+import data.dataImpl.Artifact;
+import data.dataImpl.Versioning;
+import exceptions.ArtifactBuilderException;
 import org.apache.maven.api.model.Model;
 import org.apache.maven.model.v4.MavenStaxReader;
 

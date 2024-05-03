@@ -1,13 +1,11 @@
-package Services;
+package service.serviceImpl;
 
-import Data.Artifact;
+import data.dataImpl.Artifact;
 import cyclonedx.v1_6.Bom16;
 
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 

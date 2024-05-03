@@ -1,6 +1,6 @@
-package Services;
+package service.serviceImpl;
 
-import Data.Artifact;
+import data.dataImpl.Artifact;
 import org.json.JSONObject;
 
 import java.io.FileReader;
