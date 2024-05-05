@@ -20,7 +20,7 @@ dependencies {
     implementation("org.apache.maven:maven-resolver-provider:4.0.0-alpha-13")
 //    implementation("org.apache.maven:maven-resolver-impl:4.0.0-alpha-13")
 //    implementation("org.apache.maven:maven-embedder:4.0.0-alpha-13")
-    implementation(project(":ProtoParser"))
+//    implementation(project(":ProtoParser"))
 }
 
 tasks.test {

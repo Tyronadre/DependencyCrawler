@@ -1,6 +1,5 @@
 package service.serviceImpl;
 
-import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Timestamp;
 import com.google.protobuf.util.JsonFormat;
 import cyclonedx.v1_6.Bom16;
@@ -110,12 +109,16 @@ public class SBOMBuilder {
     }
 
     private Iterable<Bom16.Hash> buildAllHashes(Component component) {
+
+        return new ArrayList<>();
     }
 
     private List<Bom16.ExternalReference> buildAllExternalReferences(Component component) {
+        return new ArrayList<>();
     }
 
     private List<? extends Bom16.LicenseChoice> buildAllLicences(Component component) {
+        return new ArrayList<>();
     }
 
     private Bom16.Bom buildBom(Component root) {
