@@ -4,6 +4,7 @@ import data.dataImpl.maven.MavenComponent;
 import repository.Repository;
 import repository.repositoryImpl.MavenRepository;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -134,4 +135,6 @@ public interface Component {
     void setRoot();
 
     void printTree(String s);
+
+    List<ExternalReference> getAllExternalReferences();
 }

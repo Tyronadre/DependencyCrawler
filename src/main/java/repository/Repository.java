@@ -3,9 +3,7 @@ package repository;
 import data.Component;
 import data.Dependency;
 import data.Version;
-import data.dataImpl.maven.MavenComponent;
 import enums.RepositoryType;
-import org.apache.maven.api.Session;
 import service.VersionRangeResolver;
 import service.VersionResolver;
 

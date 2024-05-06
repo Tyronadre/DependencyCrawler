@@ -2,10 +2,12 @@ package data.dataImpl.maven;
 
 import data.Component;
 import data.Dependency;
+import data.ExternalReference;
 import data.License;
 import data.Organization;
 import data.Person;
 import data.Version;
+import data.dataImpl.ExternalReferenceImpl;
 import org.apache.maven.api.model.DependencyManagement;
 import org.apache.maven.api.model.Model;
 import repository.repositoryImpl.MavenRepository;
@@ -90,7 +92,7 @@ public class MavenComponent implements Component {
 
     @Override
     public String getPurl() {
-        return "";
+        return "pkg:maven/" + groupId + "/" + artifactId + "@" + version.getVersion();
     }
 
     @Override
@@ -214,6 +216,35 @@ public class MavenComponent implements Component {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public List<ExternalReference> getAllExternalReferences() {
+        List<ExternalReference> externalReferences = new ArrayList<>();
+        if (this.model == null) return externalReferences;
+        if (this.model.getUrl() != null) {
+            var externalRef = new ExternalReferenceImpl("homepage", this.model.getUrl());
+            externalReferences.add(externalRef);
+        }
+        if (this.model.getScm() != null) {
+            var externalRef = new ExternalReferenceImpl("scm", this.model.getScm().getUrl());
+            externalRef.set("connection", this.model.getScm().getConnection());
+            externalRef.set("developerConnection", this.model.getScm().getDeveloperConnection());
+            externalRef.set("tag", this.model.getScm().getTag());
+            externalReferences.add(externalRef);
+        }
+        if (this.model.getIssueManagement() != null) {
+            var externalRef = new ExternalReferenceImpl("issueManagement", this.model.getIssueManagement().getUrl());
+            externalRef.set("system", this.model.getIssueManagement().getSystem());
+            externalReferences.add(externalRef);
+        }
+        if (this.model.getCiManagement() != null) {
+            var externalRef = new ExternalReferenceImpl("ciManagement", this.model.getCiManagement().getUrl());
+            externalRef.set("system", this.model.getCiManagement().getSystem());
+            externalReferences.add(externalRef);
+        }
+
+        return externalReferences;
     }
 
 

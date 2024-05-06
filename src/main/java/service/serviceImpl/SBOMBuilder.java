@@ -1,10 +1,12 @@
 package service.serviceImpl;
 
+import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Timestamp;
 import com.google.protobuf.util.JsonFormat;
 import cyclonedx.v1_6.Bom16;
 import data.Component;
 import data.Dependency;
+import data.ExternalReference;
 import data.Organization;
 
 import java.io.File;
@@ -18,7 +20,6 @@ import java.util.UUID;
 
 public class SBOMBuilder {
     private final HashMap<Component, Bom16.Component.Builder> componentToComponentBuilder = new HashMap<>();
-
 
     public void createSBOM(Component root, String outputFileName) {
         componentToComponentBuilder.clear();
@@ -40,9 +41,8 @@ public class SBOMBuilder {
         // serialize to file
         try {
             var file = new File("out/" + outputFileName + ".dat");
-            var outputStream = new FileOutputStream(file);
+            var outputStream = CodedOutputStream.newInstance(new FileOutputStream(file));
             bom.writeTo(outputStream);
-            outputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -114,7 +114,7 @@ public class SBOMBuilder {
     }
 
     private List<Bom16.ExternalReference> buildAllExternalReferences(Component component) {
-        return new ArrayList<>();
+        return component.getAllExternalReferences().stream().map(ExternalReference::toBom16).toList();
     }
 
     private List<? extends Bom16.LicenseChoice> buildAllLicences(Component component) {

@@ -1,7 +1,5 @@
 package service.serviceImpl.maven;
 
-import data.Version;
-import data.dataImpl.Versioning;
 import exceptions.ArtifactBuilderException;
 import org.apache.maven.api.model.Model;
 import org.apache.maven.model.v4.MavenStaxReader;
@@ -9,7 +7,6 @@ import org.apache.maven.model.v4.MavenStaxReader;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
-import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
