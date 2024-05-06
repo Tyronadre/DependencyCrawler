@@ -137,4 +137,8 @@ public interface Component {
     void printTree(String s);
 
     List<ExternalReference> getAllExternalReferences();
+
+    List<Hash> getAllHashes();
+
+    List<License> getAllLicences();
 }

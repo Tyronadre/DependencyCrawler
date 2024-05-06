@@ -89,6 +89,7 @@ public class MavenRepository implements Repository {
         var mavenComponent = (MavenComponent) component;
         try {
             mavenComponent.setModel(mavenService.loadModel(URI.create(baseUrl + mavenComponent.getGroup().replace(".", "/") + "/" + mavenComponent.getName() + "/" + mavenComponent.getVersion().getVersion() + "/" + mavenComponent.getName() + "-" + mavenComponent.getVersion().getVersion() + ".pom").toURL()));
+            mavenComponent.setHashes(mavenService.loadHashes(baseUrl + mavenComponent.getGroup().replace(".", "/") + "/" + mavenComponent.getName() + "/" + mavenComponent.getVersion().getVersion() + "/" + mavenComponent.getName() + "-" + mavenComponent.getVersion().getVersion() + ".jar"));
             return true;
         } catch (MalformedURLException | ArtifactBuilderException e) {
             return false;

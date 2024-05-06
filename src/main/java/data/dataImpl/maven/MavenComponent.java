@@ -3,11 +3,14 @@ package data.dataImpl.maven;
 import data.Component;
 import data.Dependency;
 import data.ExternalReference;
+import data.Hash;
 import data.License;
 import data.Organization;
 import data.Person;
 import data.Version;
 import data.dataImpl.ExternalReferenceImpl;
+import data.dataImpl.HashImpl;
+import data.dataImpl.OrganizationImpl;
 import org.apache.maven.api.model.DependencyManagement;
 import org.apache.maven.api.model.Model;
 import repository.repositoryImpl.MavenRepository;
@@ -29,6 +32,7 @@ public class MavenComponent implements Component {
     MavenRepository repository;
     Model model;
     Component parent;
+    List<Hash> hashes = new ArrayList<>();
     boolean loaded = false;
     boolean isRoot = false;
 
@@ -62,7 +66,10 @@ public class MavenComponent implements Component {
 
     @Override
     public Organization getManufacturer() {
-        return null;
+        if (this.model == null) return null;
+        var org = this.model.getOrganization();
+        if (org == null) return null;
+        return new OrganizationImpl(org.getName(), org.getUrl());
     }
 
     @Override
@@ -72,7 +79,8 @@ public class MavenComponent implements Component {
 
     @Override
     public String getDescription() {
-        return "";
+        if (this.model == null || this.model.getDescription() == null) return null;
+        return this.model.getDescription();
     }
 
     @Override
@@ -292,5 +300,44 @@ public class MavenComponent implements Component {
                 writer.flush();
             }
         }
+    }
+
+    @Override
+    public List<Hash> getAllHashes() {
+        return hashes;
+    }
+
+    @Override
+    public List<License> getAllLicences() {
+        if (this.model == null || this.model.getLicenses() == null) return null;
+        List<License> licenses = new ArrayList<>();
+        for (var license : this.model.getLicenses()) {
+            licenses.add(new License() {
+                @Override
+                public String getName() {
+                    return license.getName();
+                }
+
+                @Override
+                public String getUrl() {
+                    return license.getUrl();
+                }
+
+                @Override
+                public String getDistribution() {
+                    return license.getDistribution();
+                }
+
+                @Override
+                public String getComments() {
+                    return license.getComments();
+                }
+            });
+        }
+        return licenses;
+    }
+
+    public void setHashes(List<Hash> hashes) {
+        this.hashes = hashes;
     }
 }

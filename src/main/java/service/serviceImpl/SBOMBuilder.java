@@ -7,6 +7,8 @@ import cyclonedx.v1_6.Bom16;
 import data.Component;
 import data.Dependency;
 import data.ExternalReference;
+import data.Hash;
+import data.License;
 import data.Organization;
 
 import java.io.File;
@@ -16,6 +18,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public class SBOMBuilder {
@@ -92,7 +95,8 @@ public class SBOMBuilder {
         componentBuilder.setGroup(component.getGroup());
         componentBuilder.setName(component.getName());
         componentBuilder.setVersion(component.getVersion().getVersion());
-        componentBuilder.setDescription(component.getDescription());
+        Optional.ofNullable(component.getDescription()).ifPresent(componentBuilder::setDescription);
+        Optional.ofNullable(component.getManufacturer()).ifPresent(v -> componentBuilder.setPublisher(v.getName()));
         componentBuilder.addAllHashes(buildAllHashes(component));
         componentBuilder.addAllLicenses(buildAllLicences(component));
         componentBuilder.setPurl(component.getPurl());
@@ -109,8 +113,7 @@ public class SBOMBuilder {
     }
 
     private Iterable<Bom16.Hash> buildAllHashes(Component component) {
-
-        return new ArrayList<>();
+        return component.getAllHashes().stream().map(Hash::toBom16).toList();
     }
 
     private List<Bom16.ExternalReference> buildAllExternalReferences(Component component) {
@@ -118,7 +121,7 @@ public class SBOMBuilder {
     }
 
     private List<? extends Bom16.LicenseChoice> buildAllLicences(Component component) {
-        return new ArrayList<>();
+        return component.getAllLicences().stream().map(License::toBom16).toList();
     }
 
     private Bom16.Bom buildBom(Component root) {

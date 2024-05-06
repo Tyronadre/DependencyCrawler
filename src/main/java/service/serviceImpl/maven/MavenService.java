@@ -1,5 +1,7 @@
 package service.serviceImpl.maven;
 
+import data.Hash;
+import data.dataImpl.HashImpl;
 import exceptions.ArtifactBuilderException;
 import org.apache.maven.api.model.Model;
 import org.apache.maven.model.v4.MavenStaxReader;
@@ -9,6 +11,7 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,5 +62,26 @@ public class MavenService {
             throw new ArtifactBuilderException("Could not load model from " + url);
         }
         return model;
+    }
+
+    public List<Hash> loadHashes(String baseUrl) {
+        var hashes = new ArrayList<Hash>();
+        for (var algorithm : new String[]{"md5", "sha1", "sha256", "sha512"}) {
+            try {
+                hashes.add(loadHash(baseUrl, algorithm));
+            } catch (IOException ignored) {
+
+            }
+        }
+        return hashes;
+    }
+
+    private Hash loadHash(String baseUrl, String algorithm) throws IOException {
+        try (InputStream inputStream = URI.create(baseUrl + "." + algorithm).toURL().openStream()) {
+            var hash = new HashImpl();
+            hash.setAlgorithm(algorithm);
+            hash.setValue(new String(inputStream.readAllBytes()));
+            return hash;
+        }
     }
 }
