@@ -3,51 +3,41 @@ package service.serviceImpl.maven;
 import data.dataImpl.maven.MavenComponent;
 import data.dataImpl.maven.MavenDependency;
 import data.dataImpl.maven.MavenVersion;
+import dependency_crawler.input.DependencyCrawlerInput;
 import repository.repositoryImpl.MavenRepositoryType;
-import service.InputReader;
-import service.serviceImpl.BFDependencyCrawlerImpl;
+import service.serviceImpl.InputReaderImpl;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.util.Optional;
 
-public class MavenInputReader implements InputReader {
+public class MavenInputReader extends InputReaderImpl {
+    public MavenInputReader(DependencyCrawlerInput.Input input) {
+        super(input);
+    }
+
     @Override
-    public MavenComponent createRootComponentAndLoadDependencies(File file) {
-        MavenComponent parentArtifact;
-        try (BufferedReader fileReader = new BufferedReader(new FileReader(file))) {
-            //skip first line
-            fileReader.readLine();
+    public MavenComponent loadRootComponent() {
+        //check if the input application is a java application
+        var application = dependencyCrawlerInput.getApplication();
+        if (application.getType() != DependencyCrawlerInput.Type.JAVA) {
+            throw new IllegalArgumentException("The input application is not a java application.");
+        }
 
-            //read parent artifact
-            String parentArtifactString = fileReader.readLine();
-            String[] parentArtifactData = parentArtifactString.split(":");
-            if (parentArtifactData.length != 3) {
-                throw new IllegalArgumentException("Parent artifact data is not in the correct format.");
-            }
+        //get the parent artifact
+        MavenComponent parentArtifact = (MavenComponent) MavenRepositoryType.of(MavenRepositoryType.ROOT).getComponent(application.getGroupId(), application.getName(), new MavenVersion(application.getVersion()));
+        parentArtifact.setRoot();
 
-            parentArtifact = (MavenComponent) MavenRepositoryType.of(MavenRepositoryType.ROOT).getComponent(parentArtifactData[0], parentArtifactData[1], new MavenVersion(parentArtifactData[2]));
-            parentArtifact.setRoot();
-
-            //read dependencies
-            String line;
-            while ((line = fileReader.readLine()) != null) {
-                String[] dependencyData = line.split(":");
-                if (dependencyData.length != 3) {
-                    throw new IllegalArgumentException("Dependency data is not in the correct format: " + line);
-                }
-                var dependency = new MavenDependency(dependencyData[0], dependencyData[1], new MavenVersion(dependencyData[2]), parentArtifact);
-                parentArtifact.addDependency(dependency);
-            }
-
-            //create the tree
-            BFDependencyCrawlerImpl bfDependencyCrawler = new BFDependencyCrawlerImpl();
-            bfDependencyCrawler.loadDependencies(parentArtifact);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        //read the dependencies
+        for (var dependency : application.getDependenciesList()) {
+            var mavenDependency = new MavenDependency(dependency.getGroupId(), dependency.getName(), new MavenVersion(dependency.getVersion()), parentArtifact);
+            parentArtifact.addDependency(mavenDependency);
         }
 
         return parentArtifact;
+    }
+
+    @Override
+    public String getOutputFileName() {
+        return Optional.of(dependencyCrawlerInput.getOutput()).orElse("output");
     }
 }

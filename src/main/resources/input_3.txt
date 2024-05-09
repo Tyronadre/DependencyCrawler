@@ -1,0 +1,6 @@
+MAVEN
+de.henrik.app:app:1.0.0
+com.google.protobuf:protobuf-java:4.27.0-RC1
+com.google.protobuf:protobuf-java-util:4.27.0-RC1
+org.apache.maven:maven-model:4.0.0-alpha-13
+org.apache.maven:maven-resolver-provider:4.0.0-alpha-13

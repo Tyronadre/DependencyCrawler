@@ -17,6 +17,8 @@ public interface Component {
      * Loads all data of this component from the repository.
      * If no repository is set, all available repositories should be tried, and one that has the component should be set.
      * All other methods may not work correctly before this method was called.
+     * <p>
+     * This method has to be thread safe for the default implementation of the crawler
      */
     void loadComponent();
 
@@ -65,12 +67,6 @@ public interface Component {
      * @return the description of the artifact
      */
     String getDescription();
-
-    /**
-     *
-     * @return the licenses of the artifact
-     */
-    List<License> getLicenses();
 
     /**
      *
@@ -141,4 +137,6 @@ public interface Component {
     List<Hash> getAllHashes();
 
     List<License> getAllLicences();
+
+    List<Vulnerability> getAllVulnerabilites();
 }

@@ -1,0 +1,241 @@
+{
+  "application": {
+    "name": "app",
+    "version": "1.0.0",
+    "groupId": "de.henrik",
+    "type": "JAVA",
+    "dependencies": [
+      {
+        "groupId": "com.test",
+        "name": "test-app",
+        "version": "1.0.0"
+      },
+      {
+        "groupId": "androidx.activity",
+        "name": "activity",
+        "version": "1.6.0"
+      },
+      {
+        "groupId": "androidx.annotation",
+        "name": "annotation-experimental",
+        "version": "1.3.0"
+      },
+      {
+        "groupId": "androidx.appcompat",
+        "name": "appcompat-resources",
+        "version": "1.6.1"
+      },
+      {
+        "groupId": "androidx.appcompat",
+        "name": "appcompat",
+        "version": "1.6.1"
+      },
+      {
+        "groupId": "androidx.arch.core",
+        "name": "core-runtime",
+        "version": "2.1.0"
+      },
+      {
+        "groupId": "androidx.cardview",
+        "name": "cardview",
+        "version": "1.0.0"
+      },
+      {
+        "groupId": "androidx.coordinatorlayout",
+        "name": "coordinatorlayout",
+        "version": "1.1.0"
+      },
+      {
+        "groupId": "androidx.core",
+        "name": "core-ktx",
+        "version": "1.9.0"
+      },
+      {
+        "groupId": "androidx.core",
+        "name": "core",
+        "version": "1.9.0"
+      },
+      {
+        "groupId": "androidx.cursoradapter",
+        "name": "cursoradapter",
+        "version": "1.0.0"
+      },
+      {
+        "groupId": "androidx.customview",
+        "name": "customview",
+        "version": "1.1.0"
+      },
+      {
+        "groupId": "androidx.documentfile",
+        "name": "documentfile",
+        "version": "1.0.0"
+      },
+      {
+        "groupId": "androidx.drawerlayout",
+        "name": "drawerlayout",
+        "version": "1.1.1"
+      },
+      {
+        "groupId": "androidx.dynamicanimation",
+        "name": "dynamicanimation",
+        "version": "1.0.0"
+      },
+      {
+        "groupId": "androidx.emoji2",
+        "name": "emoji2-views-helper",
+        "version": "1.2.0"
+      },
+      {
+        "groupId": "androidx.emoji2",
+        "name": "emoji2",
+        "version": "1.2.0"
+      },
+      {
+        "groupId": "androidx.fragment",
+        "name": "fragment",
+        "version": "1.3.6"
+      },
+      {
+        "groupId": "androidx.interpolator",
+        "name": "interpolator",
+        "version": "1.0.0"
+      },
+      {
+        "groupId": "androidx.legacy",
+        "name": "legacy-support-core-utils",
+        "version": "1.0.0"
+      },
+      {
+        "groupId": "androidx.lifecycle",
+        "name": "lifecycle-livedata-core",
+        "version": "2.5.1"
+      },
+      {
+        "groupId": "androidx.lifecycle",
+        "name": "lifecycle-livedata",
+        "version": "2.0.0"
+      },
+      {
+        "groupId": "androidx.lifecycle",
+        "name": "lifecycle-process",
+        "version": "2.4.1"
+      },
+      {
+        "groupId": "androidx.lifecycle",
+        "name": "lifecycle-runtime",
+        "version": "2.5.1"
+      },
+      {
+        "groupId": "androidx.lifecycle",
+        "name": "lifecycle-viewmodel-savedstate",
+        "version": "2.5.1"
+      },
+      {
+        "groupId": "androidx.lifecycle",
+        "name": "lifecycle-viewmodel",
+        "version": "2.5.1"
+      },
+      {
+        "groupId": "androidx.loader",
+        "name": "loader",
+        "version": "1.0.0"
+      },
+      {
+        "groupId": "androidx.localbroadcastmanager",
+        "name": "localbroadcastmanager",
+        "version": "1.0.0"
+      },
+      {
+        "groupId": "androidx.print",
+        "name": "print",
+        "version": "1.0.0"
+      },
+      {
+        "groupId": "androidx.recyclerview",
+        "name": "recyclerview",
+        "version": "1.1.0"
+      },
+      {
+        "groupId": "androidx.savedstate",
+        "name": "savedstate",
+        "version": "1.2.0"
+      },
+      {
+        "groupId": "androidx.startup",
+        "name": "startup-runtime",
+        "version": "1.1.1"
+      },
+      {
+        "groupId": "androidx.tracing",
+        "name": "tracing",
+        "version": "1.0.0"
+      },
+      {
+        "groupId": "androidx.transition",
+        "name": "transition",
+        "version": "1.2.0"
+      },
+      {
+        "groupId": "androidx.vectordrawable",
+        "name": "vectordrawable-animated",
+        "version": "1.1.0"
+      },
+      {
+        "groupId": "androidx.vectordrawable",
+        "name": "vectordrawable",
+        "version": "1.1.0"
+      },
+      {
+        "groupId": "androidx.versionedparcelable",
+        "name": "versionedparcelable",
+        "version": "1.1.1"
+      },
+      {
+        "groupId": "androidx.viewpager2",
+        "name": "viewpager2",
+        "version": "1.0.0"
+      },
+      {
+        "groupId": "androidx.viewpager",
+        "name": "viewpager",
+        "version": "1.0.0"
+      },
+      {
+        "groupId": "com.google.android.material",
+        "name": "material",
+        "version": "1.9.0"
+      },
+      {
+        "groupId": "org.jetbrains.kotlinx",
+        "name": "kotlinx-coroutines-android",
+        "version": "1.6.1"
+      },
+      {
+        "groupId": "org.jetbrains.kotlinx",
+        "name": "kotlinx-coroutines-core",
+        "version": "1.6.1"
+      },
+      {
+        "groupId": "com.android.support",
+        "name": "support-v4",
+        "version": "28.0.0"
+      },
+      {
+        "groupId": "org.apache.logging.log4j",
+        "name": "log4j-slf4j18-impl",
+        "version": "2.13.1"
+      },
+      {
+        "groupId": "org.apache.logging.log4j",
+        "name": "log4j-api",
+        "version": "2.13.1"
+      },
+      {
+        "groupId": "org.apache.logging.log4j",
+        "name": "log4j-core",
+        "version": "2.13.1"
+      }
+    ]
+  },
+  "output": "out/this_output"
+}

@@ -8,8 +8,10 @@ import data.License;
 import data.Organization;
 import data.Person;
 import data.Version;
+import data.Vulnerability;
 import data.dataImpl.ExternalReferenceImpl;
 import data.dataImpl.HashImpl;
+import data.dataImpl.LicenseImpl;
 import data.dataImpl.OrganizationImpl;
 import org.apache.maven.api.model.DependencyManagement;
 import org.apache.maven.api.model.Model;
@@ -19,6 +21,9 @@ import repository.repositoryImpl.MavenRepositoryType;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * An artifact in a Maven repository.
@@ -35,6 +40,7 @@ public class MavenComponent implements Component {
     List<Hash> hashes = new ArrayList<>();
     boolean loaded = false;
     boolean isRoot = false;
+    private List<Vulnerability> vulnerabilities;
 
     public MavenComponent(String groupId, String artifactId, Version version, MavenRepository repository) {
         this.groupId = groupId;
@@ -81,11 +87,6 @@ public class MavenComponent implements Component {
     public String getDescription() {
         if (this.model == null || this.model.getDescription() == null) return null;
         return this.model.getDescription();
-    }
-
-    @Override
-    public List<License> getLicenses() {
-        return List.of();
     }
 
     @Override
@@ -138,42 +139,53 @@ public class MavenComponent implements Component {
         this.isRoot = true;
     }
 
+    private final Lock lock = new ReentrantLock();
+
     @Override
     public void loadComponent() {
         if (!loaded) {
-            if (this.isRoot) {
-                this.loaded = true;
-                return;
-            }
+            try {
+                lock.lock();
+                if (!loaded) {
+                    if (this.isRoot) {
+                        this.loaded = true;
+                        return;
+                    }
 
-            if (this.repository != null) this.repository.loadComponent(this);
-            //if we dont have a model we try other repositories
-            if (model == null) MavenRepositoryType.tryLoadComponent(this);
-            //if we still dont have the model, we cant load the component
-            if (model == null) {
-                System.err.println("Could not load component: " + this.getQualifiedName() + " from any repository");
-                return;
-            }
+                    System.out.print("Loading component: " + this.getQualifiedName() + "\t\t" + repository.getType().getName() + "... ");
+                    if (this.repository != null) this.repository.loadComponent(this);
+                    //if we dont have a model we try other repositories
+                    if (model == null) MavenRepositoryType.tryLoadComponent(this);
+                    //if we still dont have the model, we cant load the component
+                    if (model == null) {
+                        System.out.println("... failed");
+                        return;
+                    }
+                    System.out.println("... success");
 
-            // DEPENDENCIES
-            for (var modelDependency : model.getDependencies()) {
-                // if dependency has scope "provided" or "test" or is optional, skip it
+                    // DEPENDENCIES
+                    for (var modelDependency : model.getDependencies()) {
+                        // if dependency has scope "provided" or "test" or is optional, skip it
 //                if (modelDependency.getScope() != null && (modelDependency.getScope().equals("provided") || modelDependency.getScope().equals("test")) || (modelDependency.getOptional() != null && Objects.equals(modelDependency.getOptional(), "true")))
 //                    continue;
 
-                // special case
-                if (modelDependency.getGroupId().equals("${project.groupId}"))
-                    this.dependencies.add(new MavenDependency(this.getGroup(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
-                else
-                    this.dependencies.add(new MavenDependency(modelDependency.getGroupId(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
+                        // special case
+                        if (modelDependency.getGroupId().equals("${project.groupId}"))
+                            this.dependencies.add(new MavenDependency(this.getGroup(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
+                        else
+                            this.dependencies.add(new MavenDependency(modelDependency.getGroupId(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
+                    }
+
+                    // PARENT
+                    if (this.model.getParent() != null)
+                        this.parent = this.repository.getComponent(this.model.getParent().getGroupId(), this.model.getParent().getArtifactId(), new MavenVersion(this.model.getParent().getVersion()));
+                    else this.parent = null;
+
+                    loaded = true;
+                }
+            } finally {
+                lock.unlock();
             }
-
-            // PARENT
-            if (this.model.getParent() != null)
-                this.parent = this.repository.getComponent(this.model.getParent().getGroupId(), this.model.getParent().getArtifactId(), new MavenVersion(this.model.getParent().getVersion()));
-            else this.parent = null;
-
-            loaded = true;
         }
     }
 
@@ -255,7 +267,6 @@ public class MavenComponent implements Component {
         return externalReferences;
     }
 
-
     private void printTree(int depth, String prependRow, PrintWriter writer) {
         if (this.isLoaded()) writer.println(this.getQualifiedName());
         else writer.println("[ERROR]: " + this.getQualifiedName() + "?");
@@ -309,35 +320,25 @@ public class MavenComponent implements Component {
 
     @Override
     public List<License> getAllLicences() {
-        if (this.model == null || this.model.getLicenses() == null) return null;
+        if (this.model == null || this.model.getLicenses() == null) return List.of();
         List<License> licenses = new ArrayList<>();
         for (var license : this.model.getLicenses()) {
-            licenses.add(new License() {
-                @Override
-                public String getName() {
-                    return license.getName();
-                }
-
-                @Override
-                public String getUrl() {
-                    return license.getUrl();
-                }
-
-                @Override
-                public String getDistribution() {
-                    return license.getDistribution();
-                }
-
-                @Override
-                public String getComments() {
-                    return license.getComments();
-                }
-            });
+            licenses.add(License.of(license.getName(), license.getUrl(), license.getDistribution(), license.getComments()));
         }
+
         return licenses;
+    }
+
+    @Override
+    public List<Vulnerability> getAllVulnerabilites() {
+        return Objects.requireNonNullElseGet(this.vulnerabilities, ArrayList::new);
     }
 
     public void setHashes(List<Hash> hashes) {
         this.hashes = hashes;
+    }
+
+    public void setVulnerabilities(List<Vulnerability> vulnerabilities) {
+        this.vulnerabilities = vulnerabilities;
     }
 }

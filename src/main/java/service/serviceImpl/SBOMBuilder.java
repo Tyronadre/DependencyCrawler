@@ -31,44 +31,36 @@ public class SBOMBuilder {
 
         var bom = buildBom(root);
 
-
-        //create out dir if not exists
-        File outDir = new File("out");
-        if (!outDir.exists()) {
-            outDir.mkdir();
+        var outputFileDir = outputFileName.split("/",2);
+        if (outputFileDir.length > 1) {
+            //create out dir if not exists
+            File outDir = new File(outputFileDir[0]);
+            if (!outDir.exists()) {
+                outDir.mkdir();
+            }
         }
 
         // tree
-        root.printTree("out/" + outputFileName + ".tree");
+        root.printTree( outputFileName + ".tree");
 
         // serialize to file
-        try {
-            var file = new File("out/" + outputFileName + ".dat");
-            var outputStream = CodedOutputStream.newInstance(new FileOutputStream(file));
-            bom.writeTo(outputStream);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            var file = new File("out/" + outputFileName + ".dat");
+//            var outputStream = CodedOutputStream.newInstance(new FileOutputStream(file));
+//            bom.writeTo(outputStream);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         // json file
         try {
-            var file = new File("out/" + outputFileName + ".json");
+            var file = new File(outputFileName + ".json");
             var outputStream = new FileWriter(file);
             outputStream.write(JsonFormat.printer().print(bom));
             outputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        try {
-            var file = new File("out/" + outputFileName + ".txt");
-            var outputStream = new FileWriter(file);
-            outputStream.write(bom.toString());
-            outputStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
     }
 
     private void createComponentBuilders(Component root) {

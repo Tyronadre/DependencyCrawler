@@ -53,32 +53,35 @@ public enum MavenRepositoryType implements RepositoryType {
         if (unloadableComponents.contains(mavenComponent.getQualifiedName())) {
             return;
         }
-        System.out.println("Trying to load " + mavenComponent.getQualifiedName() + " from any repository:");
         for (var repository : MavenRepositoryType.values()) {
-            System.out.print("    " + repository + "...");
+            System.out.print(repository.getName() + "... ");
             if (new MavenRepository(repository).loadComponent(mavenComponent)) {
-                System.out.println(" success.");
                 mavenComponent.setRepository(repository.getRepository());
                 return;
             }
         }
-        System.out.println(" Couldn't load component.");
         unloadableComponents.add(mavenComponent.getQualifiedName());
     }
 
+    @Override
     public String getUrl() {
         return url;
     }
 
+    @Override
+    public String getName() {
+        return this.name();
+    }
+
     // ------------ REPOSITORY LOADING ------------ //
 
-    private final HashMap<MavenRepositoryType, MavenRepository> loadedRepositories = new HashMap<>();
+    private static final HashMap<MavenRepositoryType, MavenRepository> loadedRepositories = new HashMap<>();
 
     public static MavenRepository of(MavenRepositoryType repository) {
-        if (!repository.loadedRepositories.containsKey(repository)) {
-            repository.loadedRepositories.put(repository, new MavenRepository(repository));
+        if (!loadedRepositories.containsKey(repository)) {
+            loadedRepositories.put(repository, new MavenRepository(repository));
         }
-        return repository.loadedRepositories.get(repository);
+        return loadedRepositories.get(repository);
     }
 
     public MavenRepository getRepository() {

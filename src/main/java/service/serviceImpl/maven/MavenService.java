@@ -1,10 +1,13 @@
 package service.serviceImpl.maven;
 
 import data.Hash;
+import data.Vulnerability;
 import data.dataImpl.HashImpl;
+import data.dataImpl.maven.MavenComponent;
 import exceptions.ArtifactBuilderException;
 import org.apache.maven.api.model.Model;
 import org.apache.maven.model.v4.MavenStaxReader;
+import service.serviceImpl.NVDVulnerabilityService;
 
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
@@ -17,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MavenService {
+    NVDVulnerabilityService vulnerabilityService = NVDVulnerabilityService.getInstance();
 
     /**
      * Returns the versions of the given URL as Strings
@@ -70,7 +74,6 @@ public class MavenService {
             try {
                 hashes.add(loadHash(baseUrl, algorithm));
             } catch (IOException ignored) {
-
             }
         }
         return hashes;
@@ -83,5 +86,9 @@ public class MavenService {
             hash.setValue(new String(inputStream.readAllBytes()));
             return hash;
         }
+    }
+
+    public List<Vulnerability> loadVulnerabilities(MavenComponent mavenComponent) {
+        return vulnerabilityService.getVulnerabilities(mavenComponent);
     }
 }

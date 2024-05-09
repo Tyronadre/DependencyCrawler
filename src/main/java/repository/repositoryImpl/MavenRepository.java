@@ -89,7 +89,11 @@ public class MavenRepository implements Repository {
         var mavenComponent = (MavenComponent) component;
         try {
             mavenComponent.setModel(mavenService.loadModel(URI.create(baseUrl + mavenComponent.getGroup().replace(".", "/") + "/" + mavenComponent.getName() + "/" + mavenComponent.getVersion().getVersion() + "/" + mavenComponent.getName() + "-" + mavenComponent.getVersion().getVersion() + ".pom").toURL()));
+            System.out.print(" +model ");
             mavenComponent.setHashes(mavenService.loadHashes(baseUrl + mavenComponent.getGroup().replace(".", "/") + "/" + mavenComponent.getName() + "/" + mavenComponent.getVersion().getVersion() + "/" + mavenComponent.getName() + "-" + mavenComponent.getVersion().getVersion() + ".jar"));
+            System.out.print(" +hashes ");
+            mavenComponent.setVulnerabilities(mavenService.loadVulnerabilities(mavenComponent));
+            System.out.print(" +vulnerabilities ");
             return true;
         } catch (MalformedURLException | ArtifactBuilderException e) {
             return false;
@@ -122,4 +126,3 @@ public class MavenRepository implements Repository {
         return new StringJoiner(", ", MavenRepository.class.getSimpleName() + "[", "]").add("'" + baseUrl + "'").toString();
     }
 }
-

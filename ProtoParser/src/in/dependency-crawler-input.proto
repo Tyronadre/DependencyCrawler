@@ -1,0 +1,39 @@
+syntax = "proto3";
+package dependency_crawler.input;
+
+// A dependency of an application
+message Dependency {
+  string name = 1; // The name of the dependency
+  string version = 2; // The version of the dependency
+  optional string groupId = 3; // The group id of the dependency, if present
+  Type type = 4; // The type of the dependency
+}
+
+// The type of the dependency
+enum Type {
+  OTHER = 0; // Default value, or if the type is unknown
+  JAVA = 1; // The dependency is a Java dependency
+  C = 2; // The dependency is a C/C++/C# dependency
+}
+
+// The application to analyze
+message Application {
+  string name = 1;  // The name of the application
+  string version = 2; // The version of the application
+  optional string groupId = 3;  // The group id of the application, if present
+  repeated Dependency dependencies = 4; // The dependencies of the application
+  Type type = 5; // The type of the application
+}
+
+// The input to the dependency crawler
+message Input {
+  Application application = 1; // The application to analyze
+  optional string output = 2; // The output file to write the results to. If not specified, the results are written to output.json and output.tree respectively.
+  repeated Parameter parameters = 3; // Other parameters to pass to the analysis (not yet specified)
+}
+
+// A parameter to pass to the analysis
+message Parameter {
+  string key = 1; // The key of the parameter
+  string value = 2; // The value of the parameter
+}

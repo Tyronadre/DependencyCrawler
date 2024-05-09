@@ -3,5 +3,10 @@ package service;
 import data.Component;
 
 public interface BFDependencyCrawler {
-    void loadDependencies(Component parentComponent);
+    /**
+     * Crawls the dependencies of the parent component.
+     *
+     * @param parentComponent the parent component
+     */
+    void crawl(Component parentComponent, boolean multiThreaded);
 }
