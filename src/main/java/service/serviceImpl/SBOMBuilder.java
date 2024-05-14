@@ -27,9 +27,13 @@ public class SBOMBuilder {
     public void createSBOM(Component root, String outputFileName) {
         componentToComponentBuilder.clear();
 
+        System.out.print("Creating SBOM for " + root.getQualifiedName() + "...");
+
         createComponentBuilders(root);
 
         var bom = buildBom(root);
+
+        System.out.print(" created. Writing to file...");
 
         var outputFileDir = outputFileName.split("/",2);
         if (outputFileDir.length > 1) {
@@ -61,6 +65,8 @@ public class SBOMBuilder {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        System.out.println(" done.");
     }
 
     private void createComponentBuilders(Component root) {
@@ -229,6 +235,15 @@ public class SBOMBuilder {
 
     private List<Bom16.Vulnerability> buildVulnerabilities(Component component) {
         List<Bom16.Vulnerability> vulnerabilities = new ArrayList<>();
+
+        // we build all for the root component, so we need to iterate here
+
+        for (var componentBuilder : componentToComponentBuilder.keySet()) {
+            for (var vulnerability : componentBuilder.getAllVulnerabilites()) {
+                vulnerabilities.add(vulnerability.toBom16());
+            }
+        }
+
 
         return vulnerabilities;
     }

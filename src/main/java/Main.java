@@ -9,13 +9,13 @@ import java.net.URISyntaxException;
 public class Main {
     public static void main(String[] args) throws URISyntaxException {
         InputReader inputReader = InputReader.of(new File(Main.class.getClassLoader().getResource("input_0.json").toURI()));
-        SBOMBuilder sbomParser = new SBOMBuilder();
+        SBOMBuilder sbomBuilder = new SBOMBuilder();
         BFDependencyCrawler bfDependencyCrawler = new BFDependencyCrawlerImpl();
 
         var rootComponent = inputReader.loadRootComponent();
         bfDependencyCrawler.crawl(rootComponent, false);
 
-        sbomParser.createSBOM(rootComponent, inputReader.getOutputFileName()); //use filepath from input reader
+        sbomBuilder.createSBOM(rootComponent, inputReader.getOutputFileName()); //use filepath from input reader
     }
 
 }
