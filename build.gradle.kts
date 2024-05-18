@@ -15,6 +15,7 @@ dependencies {
     implementation("org.apache.maven:maven-model:4.0.0-alpha-13")
     implementation("org.apache.maven:maven-resolver-provider:4.0.0-alpha-13")
     implementation("org.spdx:java-spdx-library:1.1.11")
+    implementation("us.springett:cvss-calculator:1.4.2")
 
     implementation(project(":ProtoParser"))
 }

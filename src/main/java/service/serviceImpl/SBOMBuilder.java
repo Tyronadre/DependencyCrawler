@@ -1,25 +1,14 @@
 package service.serviceImpl;
 
-import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Timestamp;
 import com.google.protobuf.util.JsonFormat;
 import cyclonedx.v1_6.Bom16;
-import data.Component;
-import data.Dependency;
-import data.ExternalReference;
-import data.Hash;
-import data.License;
-import data.Organization;
+import data.*;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 public class SBOMBuilder {
     private final HashMap<Component, Bom16.Component.Builder> componentToComponentBuilder = new HashMap<>();
@@ -35,7 +24,7 @@ public class SBOMBuilder {
 
         System.out.print(" created. Writing to file...");
 
-        var outputFileDir = outputFileName.split("/",2);
+        var outputFileDir = outputFileName.split("/", 2);
         if (outputFileDir.length > 1) {
             //create out dir if not exists
             File outDir = new File(outputFileDir[0]);
@@ -45,7 +34,7 @@ public class SBOMBuilder {
         }
 
         // tree
-        root.printTree( outputFileName + ".tree");
+        root.printTree(outputFileName + ".tree");
 
         // serialize to file
 //        try {
@@ -237,7 +226,6 @@ public class SBOMBuilder {
         List<Bom16.Vulnerability> vulnerabilities = new ArrayList<>();
 
         // we build all for the root component, so we need to iterate here
-
         for (var componentBuilder : componentToComponentBuilder.keySet()) {
             for (var vulnerability : componentBuilder.getAllVulnerabilites()) {
                 vulnerabilities.add(vulnerability.toBom16());
