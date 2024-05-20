@@ -14,6 +14,6 @@ public class VersionResolveException extends Exception {
 
     @Override
     public String getMessage() {
-        return message + " for " + dependency;
+        return "Could not resolve version for " + dependency + ". " + message;
     }
 }

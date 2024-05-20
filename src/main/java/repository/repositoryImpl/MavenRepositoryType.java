@@ -2,6 +2,7 @@ package repository.repositoryImpl;
 
 import data.dataImpl.maven.MavenComponent;
 import enums.RepositoryType;
+import logger.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ public enum MavenRepositoryType implements RepositoryType {
     ROOT("ROOT"), // root of the application
     ;
 
+    private static final Logger logger = Logger.of("Maven");
     private final String url;
 
     MavenRepositoryType(String url) {
@@ -54,7 +56,7 @@ public enum MavenRepositoryType implements RepositoryType {
             return;
         }
         for (var repository : MavenRepositoryType.values()) {
-            System.out.print(repository.getName() + "... ");
+            logger.info(repository.getName() + "... ");
             if (new MavenRepository(repository).loadComponent(mavenComponent)) {
                 mavenComponent.setRepository(repository.getRepository());
                 return;

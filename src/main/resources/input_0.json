@@ -6,9 +6,9 @@
     "type": "JAVA",
     "dependencies": [
       {
-        "groupId": "org.apache.logging.log4j",
-        "name": "log4j-core",
-        "version": "2.13.1"
+        "groupId": "ch.qos.logback",
+        "name": "logback-classic",
+        "version": "1.5.6"
       }
     ]
   },

@@ -8,7 +8,7 @@ import java.net.URISyntaxException;
 
 public class Main {
     public static void main(String[] args) throws URISyntaxException {
-        InputReader inputReader = InputReader.of(new File(Main.class.getClassLoader().getResource("input_0.json").toURI()));
+        InputReader inputReader = InputReader.of(new File(Main.class.getClassLoader().getResource("input_1.json").toURI()));
         SBOMBuilder sbomBuilder = new SBOMBuilder();
         BFDependencyCrawler bfDependencyCrawler = new BFDependencyCrawlerImpl();
 

@@ -23,7 +23,7 @@ public class MavenVersionResolver implements VersionResolver {
             dependency.setVersion(version);
         } else {
             dependency.setVersion(dependency.getTreeParent().getVersion());
-            throw new VersionResolveException(dependency, "Could not resolve version for dependency. Fallback to parent version.");
+            throw new VersionResolveException(dependency, "Fallback to parent version.");
         }
     }
 

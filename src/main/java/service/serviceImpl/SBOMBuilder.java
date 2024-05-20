@@ -4,6 +4,7 @@ import com.google.protobuf.Timestamp;
 import com.google.protobuf.util.JsonFormat;
 import cyclonedx.v1_6.Bom16;
 import data.*;
+import logger.Logger;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -12,17 +13,18 @@ import java.util.*;
 
 public class SBOMBuilder {
     private final HashMap<Component, Bom16.Component.Builder> componentToComponentBuilder = new HashMap<>();
+    private static final Logger logger = Logger.of("SBOMBuilder");
 
     public void createSBOM(Component root, String outputFileName) {
         componentToComponentBuilder.clear();
 
-        System.out.print("Creating SBOM for " + root.getQualifiedName() + "...");
+        logger.info("Creating SBOM for " + root.getQualifiedName() + "...");
 
         createComponentBuilders(root);
 
         var bom = buildBom(root);
 
-        System.out.print(" created. Writing to file...");
+        logger.info(" created. Writing to file...");
 
         var outputFileDir = outputFileName.split("/", 2);
         if (outputFileDir.length > 1) {
@@ -36,15 +38,6 @@ public class SBOMBuilder {
         // tree
         root.printTree(outputFileName + ".tree");
 
-        // serialize to file
-//        try {
-//            var file = new File("out/" + outputFileName + ".dat");
-//            var outputStream = CodedOutputStream.newInstance(new FileOutputStream(file));
-//            bom.writeTo(outputStream);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-
         // json file
         try {
             var file = new File(outputFileName + ".json");
@@ -52,10 +45,10 @@ public class SBOMBuilder {
             outputStream.write(JsonFormat.printer().print(bom));
             outputStream.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.errorLine("Failed writing to JSON.");
         }
 
-        System.out.println(" done.");
+        logger.infoLine("Done.");
     }
 
     private void createComponentBuilders(Component root) {

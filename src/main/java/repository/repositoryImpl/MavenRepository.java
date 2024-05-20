@@ -8,6 +8,7 @@ import data.dataImpl.maven.MavenDependency;
 import data.dataImpl.maven.MavenVersion;
 import enums.RepositoryType;
 import exceptions.ArtifactBuilderException;
+import logger.Logger;
 import repository.Repository;
 import service.VersionRangeResolver;
 import service.VersionResolver;
@@ -35,6 +36,8 @@ public class MavenRepository implements Repository {
     private final HashMap<String, Component> components;
     private final MavenVersionRangeResolver versionRangeResolver = new MavenVersionRangeResolver(this);
     private final MavenVersionResolver versionResolver = new MavenVersionResolver(this);
+
+    private final Logger logger = Logger.of("Maven");
 
     MavenRepository(MavenRepositoryType repositoryType) {
         this.repositoryType = repositoryType;
@@ -89,11 +92,11 @@ public class MavenRepository implements Repository {
         var mavenComponent = (MavenComponent) component;
         try {
             mavenComponent.setModel(mavenService.loadModel(URI.create(baseUrl + mavenComponent.getGroup().replace(".", "/") + "/" + mavenComponent.getName() + "/" + mavenComponent.getVersion().getVersion() + "/" + mavenComponent.getName() + "-" + mavenComponent.getVersion().getVersion() + ".pom").toURL()));
-            System.out.print(" +model ");
+            logger.info(" +model ");
             mavenComponent.setHashes(mavenService.loadHashes(baseUrl + mavenComponent.getGroup().replace(".", "/") + "/" + mavenComponent.getName() + "/" + mavenComponent.getVersion().getVersion() + "/" + mavenComponent.getName() + "-" + mavenComponent.getVersion().getVersion() + ".jar"));
-            System.out.print(" +hashes ");
+            logger.info(" +hashes ");
             mavenComponent.setVulnerabilities(mavenService.loadVulnerabilities(mavenComponent));
-            System.out.print(" +vulnerabilities ");
+            logger.info(" +vulnerabilities ");
             return true;
         } catch (MalformedURLException | ArtifactBuilderException e) {
             return false;
