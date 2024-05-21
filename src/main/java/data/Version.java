@@ -1,6 +1,5 @@
 package data;
 
-import com.google.gson.JsonObject;
 import data.dataImpl.VersionImpl;
 import data.dataImpl.maven.MavenVersion;
 import enums.ComponentType;
@@ -17,5 +16,4 @@ public interface Version extends Comparable<Version> {
             case MAVEN -> new MavenVersion(string);
         };
     }
-
 }

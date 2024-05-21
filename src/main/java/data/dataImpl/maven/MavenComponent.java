@@ -1,5 +1,6 @@
 package data.dataImpl.maven;
 
+import cyclonedx.v1_6.Bom16;
 import data.Component;
 import data.Dependency;
 import data.ExternalReference;
@@ -313,7 +314,7 @@ public class MavenComponent implements Component {
             return List.of();
         }
 
-        if (this.licenses != null) {
+        if (this.licenses == null) {
             licenses = new ArrayList<>();
             for (var license : this.model.getLicenses()) {
                 licenses.add(License.of(license.getName(), license.getUrl(), license.getDistribution(), license.getComments()));
@@ -334,5 +335,15 @@ public class MavenComponent implements Component {
 
     public void setVulnerabilities(List<Vulnerability> vulnerabilities) {
         this.vulnerabilities = vulnerabilities;
+    }
+
+    @Override
+    public Bom16.Component toBom16() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public String getBomRef(){
+        return "maven-" + this.getQualifiedName();
     }
 }

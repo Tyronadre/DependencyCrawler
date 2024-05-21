@@ -53,8 +53,9 @@ public class LicenseImpl implements License {
     public Bom16.LicenseChoice toBom16() {
         var licenseBuilder = Bom16.License.newBuilder();
         licenseBuilder.setBomRef(UUID.randomUUID().toString());
-        licenseBuilder.setId(this.getName());
-        licenseBuilder.setUrl(this.getUrl());
+        //use spdx license name ?
+        Optional.ofNullable(this.getName()).ifPresent(licenseBuilder::setName);
+        Optional.ofNullable(this.getUrl()).ifPresent(licenseBuilder::setUrl);
         Optional.ofNullable(this.getComments()).ifPresent(comments ->licenseBuilder.setText(Bom16.AttachedText.newBuilder().setValue(comments).build()));
 
         return Bom16.LicenseChoice.newBuilder().setLicense(licenseBuilder.build()).build();

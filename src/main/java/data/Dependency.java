@@ -1,9 +1,11 @@
 package data;
 
+import cyclonedx.v1_6.Bom16;
+
 /**
  * Represents a dependency of an artifact.
  */
-public interface Dependency{
+public interface Dependency extends Bom16Component<Bom16.Dependency> {
     String getName();
 
     /**
@@ -56,6 +58,7 @@ public interface Dependency{
 
     /**
      * Sets the component of the dependency.
+     *
      * @param component the component of the dependency
      */
     void setComponent(Component component);

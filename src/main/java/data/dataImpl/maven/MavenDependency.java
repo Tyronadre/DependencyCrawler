@@ -1,5 +1,6 @@
 package data.dataImpl.maven;
 
+import cyclonedx.v1_6.Bom16;
 import data.Component;
 import data.Dependency;
 import data.Version;
@@ -8,12 +9,12 @@ public class MavenDependency implements Dependency {
     private final MavenComponent treeParent; //The component that has this dependency
     private MavenComponent parent; //The parent of this dependency (specified in the pom file)
     private MavenComponent component;
-    private String groupId;
-    private String artifactId;
+    private final String groupId;
+    private final String artifactId;
     private String versionConstraints;
     private MavenVersion version;
-    private String scope;
-    private Boolean optional;
+    private final String scope;
+    private final Boolean optional;
 
     public MavenDependency(String groupId, String artifactId, Version version, MavenComponent treeParent) {
         this.component = (MavenComponent) treeParent.getRepository().getComponent(groupId, artifactId, version);
@@ -110,5 +111,13 @@ public class MavenDependency implements Dependency {
     @Override
     public boolean getOptional() {
         return optional;
+    }
+
+    @Override
+    public Bom16.Dependency toBom16() {
+        var builder = Bom16.Dependency.newBuilder();
+        builder.setRef(this.component.getBomRef());
+        builder.addAllDependencies(this.component.getDependencies().stream().map(Dependency::toBom16).toList());
+        return builder.build();
     }
 }

@@ -1,5 +1,6 @@
 package data;
 
+import cyclonedx.v1_6.Bom16;
 import data.dataImpl.maven.MavenComponent;
 import repository.Repository;
 import repository.repositoryImpl.MavenRepository;
@@ -12,7 +13,7 @@ import java.util.List;
  * <p>
  * A component should be loaded with {@link #loadComponent()} before any other method is called, when any data from this component is needed.
  */
-public interface Component {
+public interface Component extends Bom16Component<Bom16.Component> {
     /**
      * Loads all data of this component from the repository.
      * If no repository is set, all available repositories should be tried, and one that has the component should be set.

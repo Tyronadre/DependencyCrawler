@@ -114,7 +114,7 @@ public class SBOMBuilder {
         bomBuilder.addAllServices(buildServices(root));
         bomBuilder.addAllExternalReferences(buildExternalReferences(root));
         bomBuilder.addAllDependencies(buildDependencies(root));
-        bomBuilder.addAllComponents(buildComponents(root));
+        bomBuilder.addAllComponents(buildComponents());
         bomBuilder.addAllCompositions(buildCompositions(root));
         bomBuilder.addAllVulnerabilities(buildVulnerabilities(root));
         bomBuilder.addAllAnnotations(buildAnnotations(root));
@@ -165,15 +165,10 @@ public class SBOMBuilder {
     /**
      * Recursively build all components of the sbom.
      *
-     * @param component the component to build
      * @return a list of all components of the sbom
      */
-    private List<Bom16.Component> buildComponents(Component component) {
-        List<Bom16.Component> components = new ArrayList<>();
-        for (var componentBuilder : componentToComponentBuilder.values()) {
-            components.add(componentBuilder.build());
-        }
-        return components;
+    private List<Bom16.Component> buildComponents() {
+        return componentToComponentBuilder.values().stream().map(Bom16.Component.Builder::build).toList();
     }
 
     private List<Bom16.Service> buildServices(Component component) {
@@ -195,7 +190,7 @@ public class SBOMBuilder {
             var componentBuilder = componentToComponentBuilder.get(dependency.getComponent());
             if (componentBuilder == null) continue;
             componentBuilder.setScope(buildScope(dependency));
-            dependencies.add(buildDependency(componentBuilder.getBomRef(), dependency));
+            dependencies.add(dependency.toBom16());
         }
 
         return dependencies;
@@ -216,17 +211,7 @@ public class SBOMBuilder {
     }
 
     private List<Bom16.Vulnerability> buildVulnerabilities(Component component) {
-        List<Bom16.Vulnerability> vulnerabilities = new ArrayList<>();
-
-        // we build all for the root component, so we need to iterate here
-        for (var componentBuilder : componentToComponentBuilder.keySet()) {
-            for (var vulnerability : componentBuilder.getAllVulnerabilites()) {
-                vulnerabilities.add(vulnerability.toBom16());
-            }
-        }
-
-
-        return vulnerabilities;
+        return componentToComponentBuilder.keySet().stream().map(componentBuilder -> componentBuilder.getAllVulnerabilites().stream().map(Vulnerability::toBom16).toList()).flatMap(Collection::stream).toList();
     }
 
     private List<Bom16.Annotation> buildAnnotations(Component component) {
