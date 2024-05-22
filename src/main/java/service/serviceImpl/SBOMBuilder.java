@@ -107,6 +107,7 @@ public class SBOMBuilder {
     private Bom16.Bom buildBom(Component root) {
         var bomBuilder = Bom16.Bom.newBuilder();
 
+        bomBuilder.setBomFormat("CycloneDX");
         bomBuilder.setSpecVersion("1.6");
         bomBuilder.setVersion(1);
         bomBuilder.setSerialNumber(UUID.randomUUID().toString());

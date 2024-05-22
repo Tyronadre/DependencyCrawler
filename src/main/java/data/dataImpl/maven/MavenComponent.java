@@ -68,7 +68,10 @@ public class MavenComponent implements Component {
 
     @Override
     public Organization getSupplier() {
-        return null;
+        if (this.model == null) return null;
+        var org = this.model.getOrganization();
+        if (org == null) return null;
+        return new OrganizationImpl(org.getName(), org.getUrl());
     }
 
     @Override
@@ -81,18 +84,17 @@ public class MavenComponent implements Component {
 
     @Override
     public List<Person> getContributors() {
-        return List.of();
+        var l = new ArrayList<Person>();
+        for (var developer : model.getDevelopers()) {
+            l.add(Person.of(developer.getName(), developer.getEmail(), developer.getUrl(), developer.getOrganization(), developer.getOrganizationUrl(), developer.getRoles()));
+        }
+        return l;
     }
 
     @Override
     public String getDescription() {
         if (this.model == null || this.model.getDescription() == null) return null;
         return this.model.getDescription();
-    }
-
-    @Override
-    public String getHomepage() {
-        return "";
     }
 
     @Override
@@ -103,16 +105,6 @@ public class MavenComponent implements Component {
     @Override
     public String getPurl() {
         return "pkg:maven/" + groupId + "/" + artifactId + "@" + version.getVersion();
-    }
-
-    @Override
-    public List<String> getOniborIds() {
-        return List.of();
-    }
-
-    @Override
-    public List<String> getAllSwhIds() {
-        return List.of();
     }
 
     @Override
@@ -344,6 +336,6 @@ public class MavenComponent implements Component {
 
     @Override
     public String getBomRef(){
-        return "maven-" + this.getQualifiedName();
+        return this.getQualifiedName();
     }
 }

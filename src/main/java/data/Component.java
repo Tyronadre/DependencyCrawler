@@ -71,12 +71,6 @@ public interface Component extends Bom16Component<Bom16.Component> {
 
     /**
      *
-     * @return the homepage of the artifact
-     */
-    String getHomepage();
-
-    /**
-     *
      * @return the repository of the artifact
      */
     Repository getRepository();
@@ -86,18 +80,6 @@ public interface Component extends Bom16Component<Bom16.Component> {
      * @return the purl of the artifact
      */
     String getPurl();
-
-    /**
-     *
-     * @return the properties of the artifact
-     */
-    List<String> getOniborIds();
-
-    /**
-     *
-     * @return the properties of the artifact
-     */
-    List<String> getAllSwhIds();
 
     /**
      * Returns the value of the property with the given key.
