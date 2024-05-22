@@ -232,5 +232,5 @@
       }
     ]
   },
-  "output": "out/output_1"
+  "output": "generated/output_1"
 }

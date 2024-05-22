@@ -957,5 +957,5 @@
       }
     ]
   },
-  "output": "out/output_2"
+  "output": "generated/output_2"
 }

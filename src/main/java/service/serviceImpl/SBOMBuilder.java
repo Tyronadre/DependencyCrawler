@@ -4,18 +4,18 @@ import com.google.protobuf.Timestamp;
 import com.google.protobuf.util.JsonFormat;
 import cyclonedx.v1_6.Bom16;
 import data.*;
-import logger.Logger;
+import service.DocumentBuilder;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
-public class SBOMBuilder {
+public class SBOMBuilder implements DocumentBuilder {
     private final HashMap<Component, Bom16.Component.Builder> componentToComponentBuilder = new HashMap<>();
-    private static final Logger logger = Logger.of("SBOMBuilder");
 
-    public void createSBOM(Component root, String outputFileName) {
+    @Override
+    public void buildDocument(Component root, String outputFileName) {
         componentToComponentBuilder.clear();
 
         logger.info("Creating SBOM for " + root.getQualifiedName() + "...");
@@ -35,12 +35,9 @@ public class SBOMBuilder {
             }
         }
 
-        // tree
-        root.printTree(outputFileName + ".tree");
-
         // json file
         try {
-            var file = new File(outputFileName + ".json");
+            var file = new File(outputFileName + ".sbom.json");
             var outputStream = new FileWriter(file);
             outputStream.write(JsonFormat.printer().print(bom));
             outputStream.close();
@@ -48,7 +45,7 @@ public class SBOMBuilder {
             logger.errorLine("Failed writing to JSON.");
         }
 
-        logger.infoLine("Done.");
+        logger.successLine("Done.");
     }
 
     private void createComponentBuilders(Component root) {
@@ -77,6 +74,7 @@ public class SBOMBuilder {
         componentBuilder.setVersion(component.getVersion().getVersion());
         Optional.ofNullable(component.getDescription()).ifPresent(componentBuilder::setDescription);
         Optional.ofNullable(component.getManufacturer()).ifPresent(v -> componentBuilder.setPublisher(v.getName()));
+        Optional.ofNullable(component.getContributors()).ifPresent(v -> componentBuilder.addAllAuthors(v.stream().map(Person::toBom16).toList()));
         componentBuilder.addAllHashes(buildAllHashes(component));
         componentBuilder.addAllLicenses(buildAllLicences(component));
         componentBuilder.setPurl(component.getPurl());
@@ -212,7 +210,7 @@ public class SBOMBuilder {
     }
 
     private List<Bom16.Vulnerability> buildVulnerabilities(Component component) {
-        return componentToComponentBuilder.keySet().stream().map(componentBuilder -> componentBuilder.getAllVulnerabilites().stream().map(Vulnerability::toBom16).toList()).flatMap(Collection::stream).toList();
+        return componentToComponentBuilder.keySet().stream().map(componentBuilder -> componentBuilder.getAllVulnerabilities().stream().map(Vulnerability::toBom16).toList()).flatMap(Collection::stream).toList();
     }
 
     private List<Bom16.Annotation> buildAnnotations(Component component) {

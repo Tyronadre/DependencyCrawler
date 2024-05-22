@@ -91,9 +91,9 @@ public class MavenRepository implements Repository {
         }
         var mavenComponent = (MavenComponent) component;
         try {
-            mavenComponent.setModel(mavenService.loadModel(URI.create(baseUrl + mavenComponent.getGroup().replace(".", "/") + "/" + mavenComponent.getName() + "/" + mavenComponent.getVersion().getVersion() + "/" + mavenComponent.getName() + "-" + mavenComponent.getVersion().getVersion() + ".pom").toURL()));
+            mavenComponent.setModel(mavenService.loadModel(URI.create(getDownloadLocation(component) + ".pom").toURL()));
             logger.info(" +model ");
-            mavenComponent.setHashes(mavenService.loadHashes(baseUrl + mavenComponent.getGroup().replace(".", "/") + "/" + mavenComponent.getName() + "/" + mavenComponent.getVersion().getVersion() + "/" + mavenComponent.getName() + "-" + mavenComponent.getVersion().getVersion() + ".jar"));
+            mavenComponent.setHashes(mavenService.loadHashes(getDownloadLocation(component) + ".jar"));
             logger.info(" +hashes ");
             mavenComponent.setVulnerabilities(mavenService.loadVulnerabilities(mavenComponent));
             logger.info(" +vulnerabilities ");
@@ -127,5 +127,9 @@ public class MavenRepository implements Repository {
     @Override
     public String toString() {
         return new StringJoiner(", ", MavenRepository.class.getSimpleName() + "[", "]").add("'" + baseUrl + "'").toString();
+    }
+
+    public String getDownloadLocation(Component mavenComponent) {
+        return baseUrl + mavenComponent.getGroup().replace(".", "/") + "/" + mavenComponent.getName() + "/" + mavenComponent.getVersion().getVersion() + "/" + mavenComponent.getName() + "-" + mavenComponent.getVersion().getVersion();
     }
 }

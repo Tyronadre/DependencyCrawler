@@ -15,6 +15,10 @@ dependencies {
     implementation("org.apache.maven:maven-model:4.0.0-alpha-13")
     implementation("org.apache.maven:maven-resolver-provider:4.0.0-alpha-13")
     implementation("us.springett:cvss-calculator:1.4.2")
+    implementation("org.spdx:java-spdx-library:1.1.11")
+    implementation("org.spdx:spdx-jackson-store:1.1.9.1")
+
+    implementation("ch.qos.logback:logback-classic:1.5.6")
 
     implementation(project(":ProtoParser"))
 }

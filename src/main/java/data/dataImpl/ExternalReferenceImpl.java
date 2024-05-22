@@ -43,4 +43,14 @@ public class ExternalReferenceImpl implements ExternalReference {
         }
         this.data.put(key, data);
     }
+
+    @Override
+    public String getType() {
+        return this.type;
+    }
+
+    @Override
+    public String getUrl() {
+        return this.url;
+    }
 }

@@ -18,6 +18,7 @@ import org.apache.maven.api.model.Model;
 import repository.repositoryImpl.MavenRepository;
 import repository.repositoryImpl.MavenRepositoryType;
 
+import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -85,6 +86,7 @@ public class MavenComponent implements Component {
     @Override
     public List<Person> getContributors() {
         var l = new ArrayList<Person>();
+        if (this.model == null || this.model.getDevelopers() == null) return null;
         for (var developer : model.getDevelopers()) {
             l.add(Person.of(developer.getName(), developer.getEmail(), developer.getUrl(), developer.getOrganization(), developer.getOrganizationUrl(), developer.getRoles()));
         }
@@ -202,22 +204,19 @@ public class MavenComponent implements Component {
         return this.model.getDependencyManagement();
     }
 
-    public void printTree(String filePath) {
-        try {
-            PrintWriter writer;
-            if (filePath == null) {
-                writer = new PrintWriter(System.out);
-            } else {
-                writer = new PrintWriter(filePath);
-            }
+    public void printTree(String filePath) throws FileNotFoundException {
 
-            this.printTree(0, "", writer);
-            writer.flush();
-
-            if (filePath != null) writer.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+        PrintWriter writer;
+        if (filePath == null) {
+            writer = new PrintWriter(System.out);
+        } else {
+            writer = new PrintWriter(filePath);
         }
+
+        this.printTree(0, "", writer);
+        writer.flush();
+
+        if (filePath != null) writer.close();
     }
 
     @Override
@@ -317,8 +316,24 @@ public class MavenComponent implements Component {
     }
 
     @Override
-    public List<Vulnerability> getAllVulnerabilites() {
+    public List<Vulnerability> getAllVulnerabilities() {
         return Objects.requireNonNullElseGet(this.vulnerabilities, ArrayList::new);
+    }
+
+    @Override
+    public String getDownloadLocation() {
+        return this.repository.getDownloadLocation(this);
+    }
+
+    @Override
+    public List<Dependency> getDependenciesFlat() {
+        List<Dependency> dependencies = new ArrayList<>();
+        for (var dependency : this.dependencies) {
+            dependencies.add(dependency);
+            if (dependency.getComponent() != null && dependency.getComponent().isLoaded())
+                dependencies.addAll(dependency.getComponent().getDependenciesFlat());
+        }
+        return dependencies;
     }
 
     public void setHashes(List<Hash> hashes) {
@@ -335,7 +350,7 @@ public class MavenComponent implements Component {
     }
 
     @Override
-    public String getBomRef(){
+    public String getBomRef() {
         return this.getQualifiedName();
     }
 }

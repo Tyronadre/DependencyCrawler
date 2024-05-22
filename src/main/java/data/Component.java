@@ -1,11 +1,10 @@
 package data;
 
 import cyclonedx.v1_6.Bom16;
-import data.dataImpl.maven.MavenComponent;
 import repository.Repository;
 import repository.repositoryImpl.MavenRepository;
 
-import java.util.Arrays;
+import java.io.FileNotFoundException;
 import java.util.List;
 
 /**
@@ -113,7 +112,7 @@ public interface Component extends Bom16Component<Bom16.Component> {
      */
     void setRoot();
 
-    void printTree(String s);
+    void printTree(String s) throws FileNotFoundException;
 
     List<ExternalReference> getAllExternalReferences();
 
@@ -121,5 +120,9 @@ public interface Component extends Bom16Component<Bom16.Component> {
 
     List<License> getAllLicences();
 
-    List<Vulnerability> getAllVulnerabilites();
+    List<Vulnerability> getAllVulnerabilities();
+
+    String getDownloadLocation();
+
+    List<Dependency> getDependenciesFlat();
 }
