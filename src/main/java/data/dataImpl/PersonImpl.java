@@ -54,6 +54,13 @@ public class PersonImpl implements Person {
 
     @Override
     public Bom16.OrganizationalContact toBom16() {
-        return Bom16.OrganizationalContact.newBuilder().setName(getName()).setEmail(getEmail()).build();
+        var builder = Bom16.OrganizationalContact.newBuilder();
+        if (getName() != null) {
+            builder.setName(getName());
+        }
+        if (getEmail() != null) {
+            builder.setEmail(getEmail());
+        }
+        return builder.build();
     }
 }

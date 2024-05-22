@@ -66,7 +66,7 @@ public class SBOMBuilder implements DocumentBuilder {
 
         componentBuilder.setBomRef(component.getQualifiedName());
         if (component.getSupplier() != null) {
-            componentBuilder.setSupplier(buildSupplier(component.getSupplier()));
+            componentBuilder.setSupplier(component.getSupplier().toBom16());
             componentBuilder.setPublisher(component.getSupplier().toString());
         }
         componentBuilder.setGroup(component.getGroup());
