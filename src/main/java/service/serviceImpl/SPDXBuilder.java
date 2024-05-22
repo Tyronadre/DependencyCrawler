@@ -1,9 +1,6 @@
 package service.serviceImpl;
 
-import data.Component;
-import data.Dependency;
-import data.ExternalReference;
-import data.Hash;
+import data.*;
 import exceptions.SPDXBuilderException;
 import org.spdx.jacksonstore.MultiFormatStore;
 import org.spdx.library.InvalidSPDXAnalysisException;
@@ -147,10 +144,23 @@ public class SPDXBuilder implements DocumentBuilder {
             spdxPackage.setPackageFileName(component.getPurl());
             spdxPackage.setDownloadLocation(component.getDownloadLocation() + ".jar");
 //            spdxPackage.setFilesAnalyzed();
-            if (!component.getAllLicences().isEmpty())
+            if (!component.getAllLicences().isEmpty()) {
+                StringBuilder licenseSetString = new StringBuilder("(");
+                List<License> allLicences = component.getAllLicences();
+                for (int i = 0; i < allLicences.size(); i++) {
+                    var license = allLicences.get(i);
+                    licenseSetString.append("\"").append(license.getName()).append("\"");
+                    if (i < allLicences.size() - 1) {
+                        licenseSetString.append(" AND ");
+                    }
+
+                }
+                licenseSetString.append(")");
+                System.out.println(licenseSetString);
                 spdxPackage.setLicenseDeclared(
-                        LicenseInfoFactory.parseSPDXLicenseString(component.getAllLicences().get(0).getName(), store, uri, copyManager)
+                        LicenseInfoFactory.parseSPDXLicenseString(licenseSetString.toString(), store, uri, copyManager)
                 );
+            }
 //            spdxPackage.setPackageVerificationCode();
             spdxPackage.setPrimaryPurpose(Purpose.LIBRARY);
 //            spdxPackage.setReleaseDate();

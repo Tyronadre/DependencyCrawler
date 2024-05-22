@@ -11,8 +11,8 @@ import java.net.URISyntaxException;
 public class Main {
     public static void main(String[] args) throws URISyntaxException {
         fromFile("input_0.json");
-        fromFile("input_1.json");
-        fromFile("input_2.json");
+//        fromFile("input_1.json");
+//        fromFile("input_2.json");
     }
 
     private static void fromFile(String fileName) throws URISyntaxException {
