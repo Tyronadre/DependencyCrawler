@@ -15,11 +15,10 @@ import data.dataImpl.OrganizationImpl;
 import logger.Logger;
 import org.apache.maven.api.model.DependencyManagement;
 import org.apache.maven.api.model.Model;
+import repository.LicenseRepository;
 import repository.repositoryImpl.MavenRepository;
 import repository.repositoryImpl.MavenRepositoryType;
 
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -54,7 +53,7 @@ public class MavenComponent implements Component {
     @Override
     public List<MavenDependency> getDependencies() {
         //return only dependencies that are not provided or test or optional
-        return this.dependencies.stream().filter(d -> !(d.getScope().equals("provided") || d.getScope().equals("test") || d.getOptional())).toList();
+        return this.dependencies.stream().toList();
     }
 
     @Override
@@ -143,17 +142,17 @@ public class MavenComponent implements Component {
                 return;
             }
 
-            logger.info("Loading component: " + this.getQualifiedName());
-            logger.info("\t\t" + repository.getType().getName() + "... ");
+            var start = System.currentTimeMillis();
+            logger.infoLine("Loading component: " + this.getQualifiedName());
+
             if (this.repository != null) this.repository.loadComponent(this);
             //if we dont have a model we try other repositories
             if (model == null) MavenRepositoryType.tryLoadComponent(this);
             //if we still dont have the model, we cant load the component
             if (model == null) {
-                logger.errorOverwriteLine("failed", 1);
+                logger.errorLine("failed");
                 return;
             }
-            logger.successLine("success");
 
             // DEPENDENCIES
             for (var modelDependency : model.getDependencies()) {
@@ -169,7 +168,23 @@ public class MavenComponent implements Component {
                 this.parent = this.repository.getComponent(this.model.getParent().getGroupId(), this.model.getParent().getArtifactId(), new MavenVersion(this.model.getParent().getVersion()));
             else this.parent = null;
 
+            // LICENSES
+            var licenseRepository = LicenseRepository.getInstance();
+            if (this.model.getLicenses() != null){
+                this.licenses = new ArrayList<>();
+                for (var license : this.model.getLicenses()) {
+                    var newLicense = licenseRepository.getLicense(license.getName());
+                    if (newLicense == null) {
+                        logger.errorLine("Could not resolve license for " + this.getQualifiedName());
+                        continue;
+                    }
+                    this.licenses.add(newLicense);
+                }
+
+            }
+
             loaded = true;
+            logger.successLine("Loaded component: " + this.getQualifiedName() + " (" + (System.currentTimeMillis() - start) + "ms)");
         }
     }
 
@@ -204,20 +219,7 @@ public class MavenComponent implements Component {
         return this.model.getDependencyManagement();
     }
 
-    public void printTree(String filePath) throws FileNotFoundException {
 
-        PrintWriter writer;
-        if (filePath == null) {
-            writer = new PrintWriter(System.out);
-        } else {
-            writer = new PrintWriter(filePath);
-        }
-
-        this.printTree(0, "", writer);
-        writer.flush();
-
-        if (filePath != null) writer.close();
-    }
 
     @Override
     public List<ExternalReference> getAllExternalReferences() {
@@ -248,51 +250,7 @@ public class MavenComponent implements Component {
         return externalReferences;
     }
 
-    private void printTree(int depth, String prependRow, PrintWriter writer) {
-        if (this.isLoaded()) writer.println(this.getQualifiedName());
-        else writer.println("[ERROR]: " + this.getQualifiedName() + "?");
-        writer.flush();
-        if (dependencies == null) return;
 
-        for (int i = 0; i < dependencies.size(); i++) {
-            MavenDependency dependency = dependencies.get(i);
-            if (dependency == null) continue;
-            writer.print(prependRow);
-            writer.flush();
-
-            if (i == dependencies.size() - 1) {
-                writer.print("└──");
-                writer.flush();
-                if (dependency.getComponent() != null)
-                    dependency.getComponent().printTree(depth + 1, prependRow + "   ", writer);
-                else {
-                    if (dependency.getOptional()) writer.print("-> [OPTIONAL]: " + dependency.getName() + "\n");
-                    else if (dependency.getScope().equals("test"))
-                        writer.print("-> [TEST]: " + dependency.getName() + "\n");
-                    else if (dependency.getScope().equals("provided"))
-                        writer.print("-> [PROVIDED]: " + dependency.getName() + "\n");
-                    else writer.print("-> [ERROR]: " + dependency.getName() + "\n");
-                }
-                writer.flush();
-
-
-            } else {
-                writer.print("├──");
-                writer.flush();
-                if (dependency.getComponent() != null)
-                    dependency.getComponent().printTree(depth + 1, prependRow + "│  ", writer);
-                else {
-                    if (dependency.getOptional()) writer.print("-> [OPTIONAL]: " + dependency.getName() + "\n");
-                    else if (dependency.getScope().equals("test"))
-                        writer.print("-> [TEST]: " + dependency.getName() + "\n");
-                    else if (dependency.getScope().equals("provided"))
-                        writer.print("-> [PROVIDED]: " + dependency.getName() + "\n");
-                    else writer.print("-> [ERROR]: " + dependency.getName() + "\n");
-                }
-                writer.flush();
-            }
-        }
-    }
 
     @Override
     public List<Hash> getAllHashes() {
@@ -300,19 +258,20 @@ public class MavenComponent implements Component {
     }
 
     @Override
-    public List<License> getAllLicences() {
-        if (this.model == null || this.model.getLicenses() == null) {
-            return List.of();
-        }
-
-        if (this.licenses == null) {
-            licenses = new ArrayList<>();
-            for (var license : this.model.getLicenses()) {
-                licenses.add(License.of(license.getName(), license.getUrl(), license.getDistribution(), license.getComments()));
+    public String getLicenseExpression() {
+        if (this.licenses == null || this.licenses.isEmpty())
+            return null;
+        if (this.licenses.size() == 1) return this.licenses.get(0).getId();
+        StringBuilder licenseSetString = new StringBuilder("(");
+        for (int i = 0; i < this.licenses.size(); i++) {
+            var license = this.licenses.get(i);
+            licenseSetString.append("\"").append(license.getId()).append("\"");
+            if (i < this.licenses.size() - 1) {
+                licenseSetString.append(" AND ");
             }
         }
-
-        return licenses;
+        licenseSetString.append(")");
+        return licenseSetString.toString();
     }
 
     @Override
@@ -328,7 +287,7 @@ public class MavenComponent implements Component {
     @Override
     public List<Dependency> getDependenciesFlat() {
         List<Dependency> dependencies = new ArrayList<>();
-        for (var dependency : this.dependencies) {
+        for (var dependency : this.dependencies.stream().filter(MavenDependency::shouldResolveByScope).filter(MavenDependency::isNotOptional).toList()) {
             dependencies.add(dependency);
             if (dependency.getComponent() != null && dependency.getComponent().isLoaded())
                 dependencies.addAll(dependency.getComponent().getDependenciesFlat());

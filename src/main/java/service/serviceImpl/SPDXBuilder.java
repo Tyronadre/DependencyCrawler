@@ -2,6 +2,7 @@ package service.serviceImpl;
 
 import data.*;
 import exceptions.SPDXBuilderException;
+import logger.Logger;
 import org.spdx.jacksonstore.MultiFormatStore;
 import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
@@ -29,6 +30,8 @@ import java.util.UUID;
 
 
 public class SPDXBuilder implements DocumentBuilder {
+    static Logger logger = Logger.of("SPDXBuilder");
+
     MultiFormatStore store;
     ModelCopyManager copyManager;
     String uri;
@@ -51,7 +54,6 @@ public class SPDXBuilder implements DocumentBuilder {
         }
 
         // spdx json
-
         try (var out = new FileOutputStream(outputFileName + ".spdx.json")) {
 
             store = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON_PRETTY, MultiFormatStore.Verbose.COMPACT);
@@ -124,6 +126,7 @@ public class SPDXBuilder implements DocumentBuilder {
                 var checksum = spdxPackage.createChecksum(switch (hash.getAlgorithm()) {
                     case "sha1" -> ChecksumAlgorithm.SHA1;
                     case "sha256" -> ChecksumAlgorithm.SHA256;
+                    case "sha512" -> ChecksumAlgorithm.SHA512;
                     case "md5" -> ChecksumAlgorithm.MD5;
                     default -> throw new SPDXBuilderException("Unexpected value: " + hash.getAlgorithm());
                 }, hash.getValue());
@@ -144,21 +147,9 @@ public class SPDXBuilder implements DocumentBuilder {
             spdxPackage.setPackageFileName(component.getPurl());
             spdxPackage.setDownloadLocation(component.getDownloadLocation() + ".jar");
 //            spdxPackage.setFilesAnalyzed();
-            if (!component.getAllLicences().isEmpty()) {
-                StringBuilder licenseSetString = new StringBuilder("(");
-                List<License> allLicences = component.getAllLicences();
-                for (int i = 0; i < allLicences.size(); i++) {
-                    var license = allLicences.get(i);
-                    licenseSetString.append("\"").append(license.getName()).append("\"");
-                    if (i < allLicences.size() - 1) {
-                        licenseSetString.append(" AND ");
-                    }
-
-                }
-                licenseSetString.append(")");
-                System.out.println(licenseSetString);
+            if (component.getLicenseExpression() != null) {
                 spdxPackage.setLicenseDeclared(
-                        LicenseInfoFactory.parseSPDXLicenseString(licenseSetString.toString(), store, uri, copyManager)
+                        LicenseInfoFactory.parseSPDXLicenseString(component.getLicenseExpression(), store, uri, copyManager)
                 );
             }
 //            spdxPackage.setPackageVerificationCode();

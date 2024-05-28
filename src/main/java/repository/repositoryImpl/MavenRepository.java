@@ -9,7 +9,7 @@ import data.dataImpl.maven.MavenVersion;
 import enums.RepositoryType;
 import exceptions.ArtifactBuilderException;
 import logger.Logger;
-import repository.Repository;
+import repository.ComponentRepository;
 import service.VersionRangeResolver;
 import service.VersionResolver;
 import service.serviceImpl.maven.MavenService;
@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  * <p>
  * Example BaseURL: <a href="https://repo1.maven.org/maven2/">Maven Central</a>
  */
-public class MavenRepository implements Repository {
+public class MavenRepository implements ComponentRepository {
     private final RepositoryType repositoryType;
     private final String baseUrl;
     private final MavenService mavenService;
@@ -46,31 +46,14 @@ public class MavenRepository implements Repository {
         components = new HashMap<>();
     }
 
-
-    @Override
-    public String request(String request) {
-        return "";
-    }
-
-
     @Override
     public List<MavenVersion> getVersions(Dependency dependency) {
         var mavenDependency = (MavenDependency) dependency;
         try {
-            return this.getVersions(URI.create(baseUrl + mavenDependency.getGroupId().replace(".", "/") + "/" + mavenDependency.getArtifactId() + "/maven-metadata.xml").toURL());
+            var urlString = baseUrl + mavenDependency.getGroupId().replace(".", "/") + "/" + mavenDependency.getArtifactId() + "/maven-metadata.xml";
+            return this.getVersions(URI.create(urlString).toURL());
         } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-        return List.of();
-    }
-
-    @Override
-    public List<MavenVersion> getVersions(Component component) {
-        var mavenComponent = (MavenComponent) component;
-        try {
-            return this.getVersions(URI.create(baseUrl + mavenComponent.getGroup().replace(".", "/") + "/" + mavenComponent.getName() + "/maven-metadata.xml").toURL());
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
+            logger.errorLine("Failed to get versions. " + e.getMessage());
         }
         return List.of();
     }
@@ -92,11 +75,8 @@ public class MavenRepository implements Repository {
         var mavenComponent = (MavenComponent) component;
         try {
             mavenComponent.setModel(mavenService.loadModel(URI.create(getDownloadLocation(component) + ".pom").toURL()));
-            logger.info(" +model ");
             mavenComponent.setHashes(mavenService.loadHashes(getDownloadLocation(component) + ".jar"));
-            logger.info(" +hashes ");
             mavenComponent.setVulnerabilities(mavenService.loadVulnerabilities(mavenComponent));
-            logger.info(" +vulnerabilities ");
             return true;
         } catch (MalformedURLException | ArtifactBuilderException e) {
             return false;

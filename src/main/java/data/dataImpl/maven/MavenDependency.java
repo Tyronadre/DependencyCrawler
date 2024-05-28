@@ -4,8 +4,11 @@ import cyclonedx.v1_6.Bom16;
 import data.Component;
 import data.Dependency;
 import data.Version;
+import logger.Logger;
 
 public class MavenDependency implements Dependency {
+    static Logger logger = Logger.of("MavenDependency");
+
     private final MavenComponent treeParent; //The component that has this dependency
     private MavenComponent parent; //The parent of this dependency (specified in the pom file)
     private MavenComponent component;
@@ -33,9 +36,9 @@ public class MavenDependency implements Dependency {
      *
      * @param groupId    the group id
      * @param artifactId the artifact id
-     * @param treeParent     the parent component
+     * @param treeParent the parent component
      */
-    public MavenDependency(String groupId, String artifactId, String versionConstraints, String scope, String optional,  MavenComponent treeParent) {
+    public MavenDependency(String groupId, String artifactId, String versionConstraints, String scope, String optional, MavenComponent treeParent) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.treeParent = treeParent;
@@ -72,9 +75,14 @@ public class MavenDependency implements Dependency {
         if (component == null && version != null) {
             this.component = (MavenComponent) treeParent.getRepository().getComponent(getGroupId(), getArtifactId(), getVersion());
         } else if (component == null) {
+            logger.errorLine("Can not get Component for " + this + ". Version is not resolved.");
             return null;
         }
         return component;
+    }
+
+    public Boolean shouldResolveByScope() {
+        return !(this.scope.equals("test") || this.scope.equals("provided") || this.scope.equals("system") || this.scope.equals("import") || this.scope.equals("runtime"));
     }
 
     @Override
@@ -109,15 +117,15 @@ public class MavenDependency implements Dependency {
     }
 
     @Override
-    public boolean getOptional() {
-        return optional;
+    public boolean isNotOptional() {
+        return !optional;
     }
 
     @Override
     public Bom16.Dependency toBom16() {
         var builder = Bom16.Dependency.newBuilder();
         builder.setRef(this.component.getBomRef());
-        builder.addAllDependencies(this.component.getDependencies().stream().map(Dependency::toBom16).toList());
+        builder.addAllDependencies(this.component.getDependencies().stream().filter(MavenDependency::shouldResolveByScope).filter(MavenDependency::isNotOptional).map(Dependency::toBom16).toList());
         return builder.build();
     }
 }

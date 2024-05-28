@@ -9,9 +9,7 @@ import service.VersionResolver;
 
 import java.util.List;
 
-public interface Repository {
-    String request(String request);
-
+public interface ComponentRepository {
     /**
      * Returns a list of all possible versions for this dependency.
      *
@@ -20,13 +18,16 @@ public interface Repository {
     List<? extends Version> getVersions(Dependency dependency);
 
     /**
-     * Returns a list of all possible versions for this artifact.
      *
-     * @param component the artifact
+     * @return the version resolver for this repository
      */
-    List<? extends Version> getVersions(Component component);
-
     VersionResolver getVersionResolver();
+
+    /**
+     *
+     * @return the version range resolver for this repository
+     */
+    VersionRangeResolver getVersionRangeResolver();
 
     /**
      * Loads all data for a component.
@@ -46,7 +47,8 @@ public interface Repository {
      */
     Component getComponent(String groupId, String artifactId, Version version);
 
-    VersionRangeResolver getVersionRangeResolver();
-
+    /**
+     * @return the type of the repository
+     */
     RepositoryType getType();
 }

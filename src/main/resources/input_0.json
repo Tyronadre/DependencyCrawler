@@ -6,9 +6,9 @@
     "type": "JAVA",
     "dependencies": [
       {
-        "groupId": "org.keycloak",
-        "name": "keycloak-core",
-        "version": "10.0.2"
+        "groupId": "org.apache.logging.log4j",
+        "name": "log4j-core",
+        "version": "2.23.1"
       }
     ]
   },

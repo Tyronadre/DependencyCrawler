@@ -1,3 +1,4 @@
+import logger.Logger;
 import service.BFDependencyCrawler;
 import service.InputReader;
 import service.serviceImpl.BFDependencyCrawlerImpl;
@@ -10,8 +11,9 @@ import java.net.URISyntaxException;
 
 public class Main {
     public static void main(String[] args) throws URISyntaxException {
+
         fromFile("input_0.json");
-//        fromFile("input_1.json");
+        fromFile("input_1.json");
 //        fromFile("input_2.json");
     }
 
@@ -23,7 +25,7 @@ public class Main {
         BFDependencyCrawler bfDependencyCrawler = new BFDependencyCrawlerImpl();
 
         var rootComponent = inputReader.loadRootComponent();
-        bfDependencyCrawler.crawl(rootComponent, false);
+        bfDependencyCrawler.crawl(rootComponent, true);
 
         sbomBuilder.buildDocument(rootComponent, inputReader.getOutputFileName());
         spdxBuilder.buildDocument(rootComponent, inputReader.getOutputFileName());

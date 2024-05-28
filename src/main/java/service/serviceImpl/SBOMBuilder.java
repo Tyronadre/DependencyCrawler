@@ -76,14 +76,13 @@ public class SBOMBuilder implements DocumentBuilder {
         Optional.ofNullable(component.getManufacturer()).ifPresent(v -> componentBuilder.setPublisher(v.getName()));
         Optional.ofNullable(component.getContributors()).ifPresent(v -> componentBuilder.addAllAuthors(v.stream().map(Person::toBom16).toList()));
         componentBuilder.addAllHashes(buildAllHashes(component));
-        componentBuilder.addAllLicenses(buildAllLicences(component));
+        Optional.ofNullable(buildLicenses(component)).ifPresent(componentBuilder::addLicenses);
         componentBuilder.setPurl(component.getPurl());
         componentBuilder.addAllExternalReferences(buildAllExternalReferences(component));
-//        componentBuilder.setSwid(component.getSwid());
 
         componentToComponentBuilder.put(component, componentBuilder);
 
-        for (var dependency : component.getDependencies()) {
+        for (var dependency : component.getDependencies().stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList()) {
             if (dependency.getComponent() != null && dependency.getComponent().isLoaded()) {
                 createComponentBuilder(dependency.getComponent(), false);
             }
@@ -98,8 +97,10 @@ public class SBOMBuilder implements DocumentBuilder {
         return component.getAllExternalReferences().stream().map(ExternalReference::toBom16).toList();
     }
 
-    private List<? extends Bom16.LicenseChoice> buildAllLicences(Component component) {
-        return component.getAllLicences().stream().map(License::toBom16).toList();
+    private Bom16.LicenseChoice buildLicenses(Component component) {
+        var licenseExpression = component.getLicenseExpression();
+        if (licenseExpression == null) return null;
+        return Bom16.LicenseChoice.newBuilder().setExpression(licenseExpression).setAcknowledgement(Bom16.LicenseAcknowledgementEnumeration.LICENSE_ACKNOWLEDGEMENT_ENUMERATION_DECLARED).build();
     }
 
     private Bom16.Bom buildBom(Component root) {

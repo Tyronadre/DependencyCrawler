@@ -31,6 +31,15 @@ public interface Dependency extends Bom16Component<Bom16.Dependency> {
     Component getComponent();
 
     /**
+     * If this dependency has a scope that implies it needs to be resolved.
+     * <p>
+     * Scopes that are not being resolved are: provided, test, system, import, runtime
+     *
+     * @return returns true if this dependency has a scope that implies it needs to be resolved
+     */
+    Boolean shouldResolveByScope();
+
+    /**
      * The parent component of the dependency in the dependency tree.
      *
      * @return the treeParent component of the dependency
@@ -66,5 +75,5 @@ public interface Dependency extends Bom16Component<Bom16.Dependency> {
     /**
      * @return true if the dependency is optional, false otherwise
      */
-    boolean getOptional();
+    boolean isNotOptional();
 }

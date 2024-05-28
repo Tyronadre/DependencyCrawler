@@ -1,7 +1,7 @@
 package data;
 
 import cyclonedx.v1_6.Bom16;
-import repository.Repository;
+import repository.ComponentRepository;
 import repository.repositoryImpl.MavenRepository;
 
 import java.io.FileNotFoundException;
@@ -72,7 +72,7 @@ public interface Component extends Bom16Component<Bom16.Component> {
      *
      * @return the repository of the artifact
      */
-    Repository getRepository();
+    ComponentRepository getRepository();
 
     /**
      *
@@ -112,17 +112,22 @@ public interface Component extends Bom16Component<Bom16.Component> {
      */
     void setRoot();
 
-    void printTree(String s) throws FileNotFoundException;
-
     List<ExternalReference> getAllExternalReferences();
 
     List<Hash> getAllHashes();
 
-    List<License> getAllLicences();
+    /**
+     * @return the license expression of the component in SPDX format
+     */
+    String getLicenseExpression();
 
     List<Vulnerability> getAllVulnerabilities();
 
     String getDownloadLocation();
 
+    /**
+     *
+     * @return the dependencies of the artifact in a flat list
+     */
     List<Dependency> getDependenciesFlat();
 }

@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Logger {
     Map<Level, String> colorMap = Map.of(
@@ -15,8 +17,9 @@ public class Logger {
             Level.SUCCESS, "\u001B[32m"
     );
     String colorReset = "\u001B[0m";
-
     String name;
+
+    ReadWriteLock lock = new ReentrantReadWriteLock();
 
     private Logger(String name) {
         this.name = name;
@@ -104,33 +107,41 @@ public class Logger {
         }
 
         private void addFirstMessage(Level level, String message) {
+            lock.writeLock().lock();
             this.messages.add(0, colorMap.get(level) + switch (level) {
                 case INFO -> "    ";
                 case ERROR -> "   ";
                 case SUCCESS -> " ";
             } + level + " --- " + message);
+            lock.writeLock().unlock();
         }
 
         public void append(Level level, String message) {
+            lock.writeLock().lock();
             this.time = LocalDateTime.now();
             this.messages.add(colorMap.get(level) + message);
+            lock.writeLock().unlock();
         }
 
         public String getLog() {
+            lock.readLock().lock();
             var log = DateTimeFormatter.ofPattern("yyyy-MM-dd_hh:mm:ss:SSS").format(time) + "\t" + String.join(" ", messages);
             if (startTime != time) {
                 log += " (" + (time.toInstant(ZoneOffset.UTC).toEpochMilli() - startTime.toInstant(ZoneOffset.UTC).toEpochMilli()) + "ms)";
             }
+            lock.readLock().unlock();
             return log;
         }
 
         public void overwrite(Level level, String msg, int index) {
+            lock.writeLock().lock();
             messages.subList(index, messages.size()).clear();
             if (index == 0) {
                 this.addFirstMessage(level, msg);
             } else {
                 this.append(level, msg);
             }
+            lock.writeLock().unlock();
         }
     }
 

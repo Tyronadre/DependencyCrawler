@@ -4,10 +4,15 @@ import data.Component;
 import data.Dependency;
 import exceptions.VersionResolveException;
 import logger.Logger;
+import repository.ComponentRepository;
 import service.BFDependencyCrawler;
 
 import java.text.DecimalFormat;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -21,14 +26,14 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
         logger.infoLine("Crawling dependencies of " + parentComponent.getQualifiedName() + "...");
         int numberOfComponents = 0;
         if (multiThreaded) {
-            crawlMulti(parentComponent);
+            numberOfComponents = crawlMulti(parentComponent);
         } else {
             numberOfComponents = crawlSingle(parentComponent);
         }
 
-        double timeTaken = (System.currentTimeMillis() - time) / 1000.0 ;
+        double timeTaken = (System.currentTimeMillis() - time) / 1000.0;
         var format = new DecimalFormat("0.##");
-        logger.successLine("Crawling finished in " + timeTaken  + "s. (" + format.format(timeTaken / numberOfComponents) + "s per component)");
+        logger.successLine("Crawling finished in " + timeTaken + "s. (" + format.format(timeTaken / numberOfComponents) + "s per component)");
     }
 
     public int crawlSingle(Component parentComponent) {
@@ -51,91 +56,141 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
             if (component != null) {
                 component.loadComponent();
                 if (component.isLoaded()) {
-                    var unloadedDependencies = component.getDependencies().stream().filter(d -> d.getComponent() == null).toList();
-                    queue.addAll(unloadedDependencies);
+                    for (var unloadedDependency : component.getDependencies()) {
+                        if (unloadedDependency.shouldResolveByScope() && unloadedDependency.isNotOptional()) {
+                            queue.add(unloadedDependency);
+                        } else {
+                            if (!unloadedDependency.isNotOptional())
+                                logger.infoLine("Dependency " + unloadedDependency + " is not resolved because it is optional.");
+                            else if (!unloadedDependency.shouldResolveByScope())
+                                logger.infoLine("Dependency " + unloadedDependency + " is not resolved because it is of scope \"" + unloadedDependency.getScope() + "\".");
+                        }
+                    }
                     loadCount++;
                 } else {
                     failCount++;
                 }
             }
         }
-        logger.infoLine("Loaded " + loadCount + " components.");
-        if (failCount > 0) logger.errorLine("Failed to load " + failCount + " components.");
-        else logger.infoLine("All components loaded successfully.");
+        logger.successLine("Resolved " + loadCount + " components.");
+        if (failCount > 0) logger.errorLine("Failed to resolve " + failCount + " components.");
+        else logger.successLine("All components loaded successfully.");
         return loadCount + failCount;
     }
 
-    public void crawlMulti(Component parentComponent) {
+    public int crawlMulti(Component parentComponent) {
+        parentComponent.loadComponent();
+        var repository = parentComponent.getRepository();
+
         AtomicInteger loadCount = new AtomicInteger();
         AtomicInteger failCount = new AtomicInteger();
         int numThreads = Runtime.getRuntime().availableProcessors();
-        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-        parentComponent.loadComponent();
+        ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
+        var queue = new ConcurrentLinkedDeque<Dependency>(parentComponent.getDependencies());
+        var processing = Collections.synchronizedList(new ArrayList<Dependency>());
+        var processed = Collections.synchronizedList(new ArrayList<Dependency>());
 
-        var repository = parentComponent.getRepository();
-        var queue = new ArrayDeque<Dependency>(parentComponent.getDependencies());
+        while (true) {
+            //get next dependency in queue
+            Dependency dependency;
+            synchronized (queue) {
+                dependency = queue.poll();
+            }
 
-        AtomicInteger processedCount = new AtomicInteger();
-        while (!queue.isEmpty() || processedCount.get() > 0) {
-            var dependency = queue.poll();
-            executor.execute(() -> {
-                processedCount.getAndIncrement();
-                //resolve the version of the dependency if we dont have done that yet
-                if (!dependency.hasVersion()) {
-                    try {
-                        repository.getVersionResolver().resolveVersion(dependency);
-                    } catch (VersionResolveException e) {
-                        logger.error(e.getMessage());
+            //check if we are processing something, if yes wait and try again
+            if (dependency == null) {
+                synchronized (processing) {
+                    if (processing.isEmpty()) {
+                        break;
                     }
                 }
-
-                Component component = dependency.getComponent();
-                if (component != null && !component.isLoaded()) {
-                    component.loadComponent();
-                    if (component.isLoaded()) {
-                        var unloadedDependencies = component.getDependencies().stream().filter(d -> d.getComponent() == null).toList();
-                        synchronized (queue) {
-                            queue.addAll(unloadedDependencies);
-                        }
-                        loadCount.getAndIncrement();
-                    } else {
-                        failCount.getAndIncrement();
-                    }
+                //wait a moment before checking again
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-                processedCount.getAndDecrement();
-            });
+                continue;
+            }
+
+            // check if we are processing this in another thread at the moment
+            synchronized (processing) {
+                if (processing.contains(dependency)) {
+                    continue;
+                }
+            }
+
+            //check if we have already processed this dependency
+            synchronized (processed) {
+                if (processed.contains(dependency)) {
+                    continue;
+                }
+            }
+
+            // we need to process this dependency
+            // add the dependency to the processing list
+            synchronized (processing) {
+                processing.add(dependency);
+            }
+
+            executorService.execute(() -> multiCrawlHelper(dependency, queue, processing, processed, repository, loadCount, failCount));
         }
-        executor.shutdown();
 
-//        parentComponent.loadComponent();
-//        var repository = parentComponent.getRepository();
-//        var queue = new ArrayDeque<Dependency>(parentComponent.getDependencies());
-//        while (!queue.isEmpty()) {
-//            var dependency = queue.poll();
-//
-//            //resolve the version of the dependency if we dont have done that yet
-//            if (!dependency.hasVersion()) {
-//                try {
-//                    repository.getVersionResolver().resolveVersion(dependency);
-//                } catch (VersionResolveException e) {
-//                    System.err.println(e.getMessage());
-//                }
-//            }
-//
-//            var component = dependency.getComponent();
-//            if (component != null) {
-//                component.loadComponent();
-//                if (component.isLoaded()) {
-//                    var unloadedDependencies = component.getDependencies().stream().filter(d -> d.getComponent() == null).toList();
-//                    queue.addAll(unloadedDependencies);
-//                    loadCount.getAndIncrement();
-//                } else {
-//                    failCount.getAndIncrement();
-//                }
-//
-//            }
-//        }
+        executorService.shutdown();
+        logger.successLine("Resolved " + loadCount + " components.");
+        if (failCount.get() > 0) logger.errorLine("Failed to resolve " + failCount + " components.");
+        else logger.successLine("All components resolved successfully.");
+        return loadCount.get() + failCount.get();
+    }
+
+    private void multiCrawlHelper(Dependency dependency, ConcurrentLinkedDeque<Dependency> queue, List<Dependency> processing, List<Dependency> processed, ComponentRepository repository, AtomicInteger loadCount, AtomicInteger failCount) {
+        //get the version of the dependency
+        if (!dependency.hasVersion()) {
+            try {
+                repository.getVersionResolver().resolveVersion(dependency);
+            } catch (VersionResolveException e) {
+                logger.errorLine(e.getMessage());
+            }
+        }
+
+        //get the component of the dependency
+        var component = dependency.getComponent();
+        if (component == null) {
+            return;
+        }
+
+        // process the component
+        synchronized (component) {
+            if (!component.isLoaded()) {
+                component.loadComponent();
+                if (component.isLoaded()) {
+                    synchronized (queue) {
+                        queue.addAll(component.getDependencies().stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList());
+                    }
+                    component.getDependencies().forEach(c -> {
+                        if (!c.isNotOptional()) {
+                            logger.infoLine("Dependency " + c + " is not resolved because it is optional.");
+                        } else if (!c.shouldResolveByScope()) {
+                            logger.infoLine("Dependency " + c + " is not resolved because it is of scope \"" + c.getScope() + "\".");
+                        }
+                    });
 
 
+                    loadCount.getAndIncrement();
+                } else {
+                    failCount.getAndIncrement();
+                }
+            }
+        }
+
+        // add the component to the processed list
+        synchronized (processed) {
+            processed.add(dependency);
+        }
+
+        // remove the component from the processing list
+        synchronized (processing) {
+            processing.remove(dependency);
+        }
     }
 }
