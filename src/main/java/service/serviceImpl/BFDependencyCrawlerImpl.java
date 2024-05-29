@@ -101,14 +101,13 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
 
             //check if we are processing something, if yes wait and try again
             if (dependency == null) {
-                synchronized (processing) {
-                    if (processing.isEmpty()) {
-                        break;
-                    }
+                if (processing.isEmpty()) {
+                    break;
                 }
+
                 //wait a moment before checking again
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -116,24 +115,20 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
             }
 
             // check if we are processing this in another thread at the moment
-            synchronized (processing) {
-                if (processing.contains(dependency)) {
-                    continue;
-                }
+            if (processing.contains(dependency)) {
+                continue;
             }
+
 
             //check if we have already processed this dependency
-            synchronized (processed) {
-                if (processed.contains(dependency)) {
-                    continue;
-                }
+            if (processed.contains(dependency)) {
+                continue;
             }
 
-            // we need to process this dependency
+
             // add the dependency to the processing list
-            synchronized (processing) {
-                processing.add(dependency);
-            }
+            processing.add(dependency);
+
 
             executorService.execute(() -> multiCrawlHelper(dependency, queue, processing, processed, repository, loadCount, failCount));
         }
@@ -147,29 +142,26 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
 
     private void multiCrawlHelper(Dependency dependency, ConcurrentLinkedDeque<Dependency> queue, List<Dependency> processing, List<Dependency> processed, ComponentRepository repository, AtomicInteger loadCount, AtomicInteger failCount) {
         try {
-        //get the version of the dependency
-        if (!dependency.hasVersion()) {
-            try {
-                repository.getVersionResolver().resolveVersion(dependency);
-            } catch (VersionResolveException e) {
-                logger.error(e.getMessage());
+            //get the version of the dependency
+            if (!dependency.hasVersion()) {
+                try {
+                    repository.getVersionResolver().resolveVersion(dependency);
+                } catch (VersionResolveException e) {
+                    logger.error(e.getMessage());
+                }
             }
-        }
 
-        //get the component of the dependency
-        var component = dependency.getComponent();
+            //get the component of the dependency
+            var component = dependency.getComponent();
 
-
-        // process the component
-        if (component != null)
-            synchronized (component) {
+            // process the component
+            if (component != null)
                 if (!component.isLoaded()) {
                     component.loadComponent();
                     if (component.isLoaded()) {
-                        synchronized (queue) {
-                            //queue.addAll(component.getDependencies().stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList());
-                            queue.addAll(component.getDependencies());
-                        }
+                        queue.addAll(component.getDependencies().stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList());
+                        //queue.addAll(component.getDependencies());
+
                         component.getDependencies().forEach(c -> {
                             if (!c.isNotOptional()) {
                                 logger.info("Dependency " + c + " is not resolved because it is optional.");
@@ -184,17 +176,15 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
                         failCount.getAndIncrement();
                     }
                 }
-            }
+
         } finally {
             // add the component to the processed list
-            synchronized (processed) {
-                processed.add(dependency);
-            }
+            processed.add(dependency);
+
 
             // remove the component from the processing list
-            synchronized (processing) {
-                processing.remove(dependency);
-            }
+            processing.remove(dependency);
+
         }
 
 
