@@ -4,10 +4,13 @@ import cyclonedx.v1_6.Bom16;
 import data.Component;
 import data.Dependency;
 import data.Version;
+import logger.AppendingLogger;
 import logger.Logger;
 
+import java.util.Objects;
+
 public class MavenDependency implements Dependency {
-    static Logger logger = Logger.of("MavenDependency");
+    private static final Logger logger = Logger.of("MavenDependency");
 
     private final MavenComponent treeParent; //The component that has this dependency
     private MavenComponent parent; //The parent of this dependency (specified in the pom file)
@@ -19,6 +22,14 @@ public class MavenDependency implements Dependency {
     private final String scope;
     private final Boolean optional;
 
+    /**
+     * Constructor for a Maven Dependency with a resolved version.
+     *
+     * @param groupId    the group id
+     * @param artifactId the artifact id
+     * @param version    the version
+     * @param treeParent the parent component
+     */
     public MavenDependency(String groupId, String artifactId, Version version, MavenComponent treeParent) {
         this.component = (MavenComponent) treeParent.getRepository().getComponent(groupId, artifactId, version);
         this.component = new MavenComponent(groupId, artifactId, version, treeParent.getRepository());
@@ -32,7 +43,7 @@ public class MavenDependency implements Dependency {
 
     /**
      * Constructor for a MavenDependency without a resolved version.
-     * The version should be resolved later from the calling function, but will be resolved if {@link #getVersion()} is called.
+     * The version has to be set, if the component should be available.
      *
      * @param groupId    the group id
      * @param artifactId the artifact id
@@ -75,7 +86,7 @@ public class MavenDependency implements Dependency {
         if (component == null && version != null) {
             this.component = (MavenComponent) treeParent.getRepository().getComponent(getGroupId(), getArtifactId(), getVersion());
         } else if (component == null) {
-            logger.errorLine("Can not get Component for " + this + ". Version is not resolved.");
+            logger.error("Can not get Component of Dependency " + this + ". Parent is: " + this.treeParent + ". [Version is not resolved]");
             return null;
         }
         return component;
@@ -97,6 +108,8 @@ public class MavenDependency implements Dependency {
 
     @Override
     public String toString() {
+        if (versionConstraints == null)
+            return groupId + ":" + artifactId + ":" + version;
         return groupId + ":" + artifactId + ":" + versionConstraints;
     }
 
@@ -123,9 +136,14 @@ public class MavenDependency implements Dependency {
 
     @Override
     public Bom16.Dependency toBom16() {
+        if (this.component == null) return null;
         var builder = Bom16.Dependency.newBuilder();
-        builder.setRef(this.component.getBomRef());
-        builder.addAllDependencies(this.component.getDependencies().stream().filter(MavenDependency::shouldResolveByScope).filter(MavenDependency::isNotOptional).map(Dependency::toBom16).toList());
+        builder.setRef(this.component.getQualifiedName() + "_" + this.getScope());
+        this.component.getDependencies().stream().filter(MavenDependency::shouldResolveByScope).filter(MavenDependency::isNotOptional).forEach(
+                d -> {
+                    if (d.getComponent() != null) builder.addDependencies(d.toBom16());
+                }
+        );
         return builder.build();
     }
 }

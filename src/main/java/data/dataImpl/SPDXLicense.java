@@ -3,10 +3,10 @@ package data.dataImpl;
 import com.google.gson.JsonObject;
 import data.License;
 
-public class LicenseImpl implements License {
+public class SPDXLicense implements License {
     JsonObject data;
 
-    public LicenseImpl(JsonObject data) {
+    public SPDXLicense(JsonObject data) {
         this.data = data;
     }
 

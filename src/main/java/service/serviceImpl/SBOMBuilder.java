@@ -16,6 +16,7 @@ public class SBOMBuilder implements DocumentBuilder {
 
     @Override
     public void buildDocument(Component root, String outputFileName) {
+        var start = System.currentTimeMillis();
         componentToComponentBuilder.clear();
 
         logger.info("Creating SBOM for " + root.getQualifiedName() + "...");
@@ -24,7 +25,7 @@ public class SBOMBuilder implements DocumentBuilder {
 
         var bom = buildBom(root);
 
-        logger.info(" created. Writing to file...");
+        logger.info("SBOM created. Writing to file...");
 
         var outputFileDir = outputFileName.split("/", 2);
         if (outputFileDir.length > 1) {
@@ -42,10 +43,10 @@ public class SBOMBuilder implements DocumentBuilder {
             outputStream.write(JsonFormat.printer().print(bom));
             outputStream.close();
         } catch (IOException e) {
-            logger.errorLine("Failed writing to JSON.");
+            logger.error("Failed writing to JSON.");
         }
 
-        logger.successLine("Done.");
+        logger.success(new File(outputFileName).getAbsolutePath() + ".sbom.json saved (" + (System.currentTimeMillis() - start) + "ms)");
     }
 
     private void createComponentBuilders(Component root) {
@@ -186,7 +187,7 @@ public class SBOMBuilder implements DocumentBuilder {
     private List<Bom16.Dependency> buildDependencies(Component component) {
         List<Bom16.Dependency> dependencies = new ArrayList<>();
 
-        for (var dependency : component.getDependencies()) {
+        for (var dependency : component.getDependencies().stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList()) {
             var componentBuilder = componentToComponentBuilder.get(dependency.getComponent());
             if (componentBuilder == null) continue;
             componentBuilder.setScope(buildScope(dependency));

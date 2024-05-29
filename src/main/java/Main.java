@@ -1,6 +1,6 @@
-import logger.Logger;
 import service.BFDependencyCrawler;
 import service.InputReader;
+import service.LicenseCollisionService;
 import service.serviceImpl.BFDependencyCrawlerImpl;
 import service.serviceImpl.SBOMBuilder;
 import service.serviceImpl.SPDXBuilder;
@@ -14,7 +14,7 @@ public class Main {
 
         fromFile("input_0.json");
         fromFile("input_1.json");
-//        fromFile("input_2.json");
+        fromFile("input_2.json");
     }
 
     private static void fromFile(String fileName) throws URISyntaxException {
@@ -22,10 +22,12 @@ public class Main {
         SBOMBuilder sbomBuilder = new SBOMBuilder();
         SPDXBuilder spdxBuilder = new SPDXBuilder();
         TreeBuilder treeBuilder = new TreeBuilder();
+        LicenseCollisionService licenseCollisionService = LicenseCollisionService.getInstance();
         BFDependencyCrawler bfDependencyCrawler = new BFDependencyCrawlerImpl();
 
         var rootComponent = inputReader.loadRootComponent();
         bfDependencyCrawler.crawl(rootComponent, true);
+        licenseCollisionService.checkLicenseCollisions(rootComponent);
 
         sbomBuilder.buildDocument(rootComponent, inputReader.getOutputFileName());
         spdxBuilder.buildDocument(rootComponent, inputReader.getOutputFileName());

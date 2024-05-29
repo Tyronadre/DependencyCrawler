@@ -1,8 +1,7 @@
 package data;
 
 import com.google.gson.JsonObject;
-import cyclonedx.v1_6.Bom16;
-import data.dataImpl.LicenseImpl;
+import data.dataImpl.SPDXLicense;
 
 import java.util.HashMap;
 
@@ -18,7 +17,7 @@ public interface License {
         if (licenses.containsKey(id)) {
             return licenses.get(id);
         }
-        License license = new LicenseImpl(data);
+        License license = new SPDXLicense(data);
         licenses.put(id, license);
         return license;
     }

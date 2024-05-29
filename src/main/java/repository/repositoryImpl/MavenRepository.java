@@ -8,6 +8,7 @@ import data.dataImpl.maven.MavenDependency;
 import data.dataImpl.maven.MavenVersion;
 import enums.RepositoryType;
 import exceptions.ArtifactBuilderException;
+import logger.AppendingLogger;
 import logger.Logger;
 import repository.ComponentRepository;
 import service.VersionRangeResolver;
@@ -37,7 +38,7 @@ public class MavenRepository implements ComponentRepository {
     private final MavenVersionRangeResolver versionRangeResolver = new MavenVersionRangeResolver(this);
     private final MavenVersionResolver versionResolver = new MavenVersionResolver(this);
 
-    private final Logger logger = Logger.of("Maven");
+    private static final Logger logger = Logger.of("MavenRepository");
 
     MavenRepository(MavenRepositoryType repositoryType) {
         this.repositoryType = repositoryType;
@@ -53,7 +54,7 @@ public class MavenRepository implements ComponentRepository {
             var urlString = baseUrl + mavenDependency.getGroupId().replace(".", "/") + "/" + mavenDependency.getArtifactId() + "/maven-metadata.xml";
             return this.getVersions(URI.create(urlString).toURL());
         } catch (MalformedURLException e) {
-            logger.errorLine("Failed to get versions. " + e.getMessage());
+            logger.error("Failed to get versions. " + e.getMessage());
         }
         return List.of();
     }

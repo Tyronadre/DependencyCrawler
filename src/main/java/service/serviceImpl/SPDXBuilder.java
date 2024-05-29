@@ -2,6 +2,7 @@ package service.serviceImpl;
 
 import data.*;
 import exceptions.SPDXBuilderException;
+import logger.AppendingLogger;
 import logger.Logger;
 import org.spdx.jacksonstore.MultiFormatStore;
 import org.spdx.library.InvalidSPDXAnalysisException;
@@ -24,13 +25,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 
 public class SPDXBuilder implements DocumentBuilder {
-    static Logger logger = Logger.of("SPDXBuilder");
+    private static final Logger logger = Logger.of("SPDXBuilder");
 
     MultiFormatStore store;
     ModelCopyManager copyManager;
@@ -40,7 +42,8 @@ public class SPDXBuilder implements DocumentBuilder {
 
     @Override
     public void buildDocument(Component root, String outputFileName) {
-        logger.info("Building SPDX document");
+        var start = System.currentTimeMillis();
+        logger.appendInfo("Creating SPDX for " + root.getQualifiedName() + "...");
         this.root = root;
 
 
@@ -65,9 +68,9 @@ public class SPDXBuilder implements DocumentBuilder {
             // Save the SPDX document
             store.serialize(uri, out);
 
-            logger.successLine("Done.");
+            logger.success(new File(outputFileName).getAbsolutePath() + ".spdx.json saved (" + (System.currentTimeMillis() - start) + "ms)");
         } catch (Exception e) {
-            logger.errorLine("Error building SPDX document" + e.getMessage());
+            logger.error("Error building SPDX document" + e.getMessage());
             e.printStackTrace();
         }
 
@@ -85,7 +88,7 @@ public class SPDXBuilder implements DocumentBuilder {
             spdxDocument.getAnnotations();
             spdxDocument.getDocumentDescribes().addAll(buildDocumentDescribes());
         } catch (InvalidSPDXAnalysisException e) {
-            logger.errorLine("Error building SPDX document" + e.getMessage());
+            logger.error("Error building SPDX document" + e.getMessage());
         }
     }
 
@@ -97,7 +100,8 @@ public class SPDXBuilder implements DocumentBuilder {
                 try {
                     list.add(getSpdxElement(dependency.getComponent()));
                 } catch (SPDXBuilderException e) {
-                    logger.errorLine("Error building SPDX document" + e.getMessage());
+                    logger.error("Error building SPDX document" + e.getMessage());
+                    e.printStackTrace();
                 }
         }
         return list;
@@ -114,7 +118,7 @@ public class SPDXBuilder implements DocumentBuilder {
 //        creationInfo.setLicenseListVersion("3.0");
             return creationInfo;
         } catch (InvalidSPDXAnalysisException e) {
-            logger.error("Error building CreationInfo" + e.getMessage());
+            logger.appendError("Error building CreationInfo" + e.getMessage());
         }
         return null;
     }
@@ -165,7 +169,7 @@ public class SPDXBuilder implements DocumentBuilder {
 
             return spdxPackage;
         } catch (InvalidSPDXAnalysisException | SPDXBuilderException e) {
-            throw new SPDXBuilderException(e.getMessage());
+            throw new SPDXBuilderException(e.getMessage() + Arrays.toString(e.getStackTrace()));
         }
     }
 }

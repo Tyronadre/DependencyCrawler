@@ -2,6 +2,7 @@ package service.serviceImpl;
 
 import data.Component;
 import data.Dependency;
+import logger.AppendingLogger;
 import logger.Logger;
 import service.DocumentBuilder;
 
@@ -10,11 +11,12 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 
 public class TreeBuilder implements DocumentBuilder {
-    static Logger logger = Logger.of("TreeBuilder");
+    private static final Logger logger = Logger.of("TreeBuilder");
 
     @Override
     public void buildDocument(Component root, String outputFileName) {
-        logger.info("Writing tree for " + root.getQualifiedName() + "...");
+        var start = System.currentTimeMillis();
+        logger.appendInfo("Creating TREE for " + root.getQualifiedName() + "...");
 
         var outputFileDir = outputFileName.split("/", 2);
         if (outputFileDir.length > 1) {
@@ -28,14 +30,15 @@ public class TreeBuilder implements DocumentBuilder {
         try (PrintWriter writer = new PrintWriter(outputFileName + ".tree.txt")) {
             printTree(root, 0, "", writer);
         } catch (FileNotFoundException e) {
-            logger.errorLine("Failed writing to tree.");
+            logger.error("Failed writing to tree.");
         }
 
-        logger.successLine("Done.");
+        logger.success(new File(outputFileName).getAbsolutePath() + ".tree.txt saved (" + (System.currentTimeMillis() - start) + "ms)");
     }
 
 
     private void printTree(Component component, int depth, String prependRow, PrintWriter writer) {
+        if (component == null) return;
         if (component.isLoaded()) writer.println(component.getQualifiedName());
         else writer.println("[ERROR]: " + component.getQualifiedName() + "?");
         writer.flush();
@@ -57,7 +60,7 @@ public class TreeBuilder implements DocumentBuilder {
                 else {
                     if (!dependency.isNotOptional()) writer.print("► [OPTIONAL]: " + dependency.getName() + "\n");
                     else if (!dependency.shouldResolveByScope())
-                        writer.print("► [" + dependency.getScope() + "]: " + dependency.getName() + "\n");
+                        writer.print("► [" + dependency.getScope().toUpperCase() + "]: " + dependency.getName() + "\n");
                     else writer.print("► [ERROR]: " + dependency.getName() + "\n");
                 }
                 writer.flush();
@@ -71,7 +74,7 @@ public class TreeBuilder implements DocumentBuilder {
                 else {
                     if (!dependency.isNotOptional()) writer.print("► [OPTIONAL]: " + dependency.getName() + "\n");
                     else if (!dependency.shouldResolveByScope())
-                        writer.print("► [" + dependency.getScope() + "]: " + dependency.getName() + "\n");
+                        writer.print("► [" + dependency.getScope().toUpperCase() + "]: " + dependency.getName() + "\n");
                     else writer.print("► [ERROR]: " + dependency.getName() + "\n");
                 }
                 writer.flush();

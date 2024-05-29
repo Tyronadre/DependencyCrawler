@@ -22,8 +22,7 @@ public class MavenVersionResolver implements VersionResolver {
         if (version != null) {
             dependency.setVersion(version);
         } else {
-            dependency.setVersion(dependency.getTreeParent().getVersion());
-            throw new VersionResolveException(dependency, "Fallback to parent version.");
+            throw new VersionResolveException(dependency, "Could not resolve version.");
         }
     }
 
@@ -35,7 +34,10 @@ public class MavenVersionResolver implements VersionResolver {
             var dependencyManagement = parent.getDependencyManagement();
             if (dependencyManagement != null) {
                 //get the managed dependency
-                var managedDependency = dependencyManagement.getDependencies().stream().filter(d -> d.getGroupId().equals(mavenDependency.getGroupId()) && d.getArtifactId().equals(mavenDependency.getArtifactId())).findFirst().orElse(null);
+                var managedDependency = dependencyManagement.getDependencies().stream().filter(d ->
+                        (d.getGroupId().equals(mavenDependency.getGroupId()) || d.getGroupId().equals("${project.groupId}") || d.getGroupId().equals("${pom.groupId}"))
+                                && d.getArtifactId().equals(mavenDependency.getArtifactId()))
+                        .findFirst().orElse(null);
                 if (managedDependency != null) {
                     return resolveVersion(managedDependency.getVersion(), dependency, parent);
                 }
@@ -65,7 +67,7 @@ public class MavenVersionResolver implements VersionResolver {
 
     private MavenVersion getVersionFromProperty(String substring, Dependency dependency, MavenComponent parent) {
         //project.version
-        if (substring.equals("project.version")) {
+        if (substring.equals("project.version") || substring.equals("pom.version") || substring.equals("parent.version")) {
             return new MavenVersion(parent.getVersion().getVersion());
         }
 

@@ -2,7 +2,6 @@ package repository.repositoryImpl;
 
 import data.dataImpl.maven.MavenComponent;
 import enums.RepositoryType;
-import logger.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;

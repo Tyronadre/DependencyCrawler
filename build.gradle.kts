@@ -17,7 +17,10 @@ dependencies {
     implementation("us.springett:cvss-calculator:1.4.2")
     implementation("org.spdx:java-spdx-library:1.1.11")
     implementation("org.spdx:spdx-jackson-store:1.1.9.1")
-    
+
+    implementation("com.google.firebase:firebase-admin:8.1.0")
+
+
     implementation(project(":ProtoParser"))
 }
 

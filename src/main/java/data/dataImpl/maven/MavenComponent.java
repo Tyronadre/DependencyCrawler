@@ -12,6 +12,8 @@ import data.Version;
 import data.Vulnerability;
 import data.dataImpl.ExternalReferenceImpl;
 import data.dataImpl.OrganizationImpl;
+import data.dataImpl.SPDXLicense;
+import logger.AppendingLogger;
 import logger.Logger;
 import org.apache.maven.api.model.DependencyManagement;
 import org.apache.maven.api.model.Model;
@@ -20,14 +22,16 @@ import repository.repositoryImpl.MavenRepository;
 import repository.repositoryImpl.MavenRepositoryType;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * An artifact in a Maven repository.
  */
 public class MavenComponent implements Component {
-    Logger logger = Logger.of("Maven");
+    private static final Logger logger = Logger.of("MavenComponent");
 
     String groupId;
     String artifactId;
@@ -143,21 +147,21 @@ public class MavenComponent implements Component {
             }
 
             var start = System.currentTimeMillis();
-            logger.infoLine("Loading component: " + this.getQualifiedName());
+            logger.info("Loading component: " + this.getQualifiedName());
 
             if (this.repository != null) this.repository.loadComponent(this);
             //if we dont have a model we try other repositories
             if (model == null) MavenRepositoryType.tryLoadComponent(this);
             //if we still dont have the model, we cant load the component
             if (model == null) {
-                logger.errorLine("failed");
+                logger.error("Could not load component: " + this.getQualifiedName() + " [no model] (" + (System.currentTimeMillis() - start) + "ms)");
                 return;
             }
 
             // DEPENDENCIES
             for (var modelDependency : model.getDependencies()) {
                 // special case
-                if (modelDependency.getGroupId().equals("${project.groupId}"))
+                if (modelDependency.getGroupId().equals("${project.groupId}") || modelDependency.getGroupId().equals("${pom.groupId}"))
                     this.dependencies.add(new MavenDependency(this.getGroup(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
                 else
                     this.dependencies.add(new MavenDependency(modelDependency.getGroupId(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
@@ -173,9 +177,9 @@ public class MavenComponent implements Component {
             if (this.model.getLicenses() != null){
                 this.licenses = new ArrayList<>();
                 for (var license : this.model.getLicenses()) {
-                    var newLicense = licenseRepository.getLicense(license.getName());
+                    var newLicense = licenseRepository.getLicense(license.getName(), license.getUrl());
                     if (newLicense == null) {
-                        logger.errorLine("Could not resolve license for " + this.getQualifiedName());
+                        logger.error("Could not resolve license for " + this.getQualifiedName() + ": " + license.getName());
                         continue;
                     }
                     this.licenses.add(newLicense);
@@ -184,7 +188,7 @@ public class MavenComponent implements Component {
             }
 
             loaded = true;
-            logger.successLine("Loaded component: " + this.getQualifiedName() + " (" + (System.currentTimeMillis() - start) + "ms)");
+            logger.success("Loaded component: " + this.getQualifiedName() + " (" + (System.currentTimeMillis() - start) + "ms)");
         }
     }
 
@@ -259,14 +263,19 @@ public class MavenComponent implements Component {
 
     @Override
     public String getLicenseExpression() {
-        if (this.licenses == null || this.licenses.isEmpty())
+        if (this.licenses == null)
             return null;
-        if (this.licenses.size() == 1) return this.licenses.get(0).getId();
+        var licenses = this.licenses.stream().filter(l -> l instanceof SPDXLicense).toList();
+        if (licenses.isEmpty()) {
+            return null;
+        }
+
+        if (licenses.size() == 1) return licenses.get(0).getId();
         StringBuilder licenseSetString = new StringBuilder("(");
-        for (int i = 0; i < this.licenses.size(); i++) {
-            var license = this.licenses.get(i);
+        for (int i = 0; i < licenses.size(); i++) {
+            var license = licenses.get(i);
             licenseSetString.append("\"").append(license.getId()).append("\"");
-            if (i < this.licenses.size() - 1) {
+            if (i < licenses.size() - 1) {
                 licenseSetString.append(" AND ");
             }
         }
@@ -285,8 +294,8 @@ public class MavenComponent implements Component {
     }
 
     @Override
-    public List<Dependency> getDependenciesFlat() {
-        List<Dependency> dependencies = new ArrayList<>();
+    public Set<Dependency> getDependenciesFlat() {
+        Set<Dependency> dependencies = new HashSet<>();
         for (var dependency : this.dependencies.stream().filter(MavenDependency::shouldResolveByScope).filter(MavenDependency::isNotOptional).toList()) {
             dependencies.add(dependency);
             if (dependency.getComponent() != null && dependency.getComponent().isLoaded())

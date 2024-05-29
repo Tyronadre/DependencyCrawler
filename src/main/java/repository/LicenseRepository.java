@@ -9,5 +9,5 @@ public interface LicenseRepository {
         return LicenseRepositoryImpl.getInstance();
     }
 
-    License getLicense(String name);
+    License getLicense(String name, String url);
 }

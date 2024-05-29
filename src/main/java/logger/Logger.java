@@ -1,148 +1,37 @@
 package logger;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class Logger {
-    Map<Level, String> colorMap = Map.of(
-            Level.ERROR, "\u001B[31m",
-            Level.INFO, "\u001B[90m",
-            Level.SUCCESS, "\u001B[32m"
-    );
-    String colorReset = "\u001B[0m";
-    String name;
+public interface Logger {
 
-    ReadWriteLock lock = new ReentrantReadWriteLock();
+    Map<String, Logger> loggers = new HashMap<>();
 
-    private Logger(String name) {
-        this.name = name;
-    }
-
-    private static final Map<String, Logger> loggers = new HashMap<>();
-
-    public static Logger of(String name) {
+    static Logger of(String name) {
+        if (name.isEmpty() || name.length() > 20) {
+            throw new IllegalArgumentException("Name must be between 1 and 20 characters");
+        }
         if (!loggers.containsKey(name)) {
-            loggers.put(name, new Logger(name));
+            loggers.put(name, new DefaultLogger(name));
         }
         return loggers.get(name);
     }
 
-    LogMessage currentLog = null;
+    void appendInfo(String msg);
 
-    private void log() {
-        System.out.print(colorReset + "\r" + currentLog.getLog());
-    }
+    void appendError(String msg);
 
-    private void logLine() {
-        if (currentLog != null) {
-            System.out.println(colorReset + "\r" + currentLog.getLog() + colorReset);
-            currentLog = null;
-        } else {
-            System.out.println(colorReset);
-        }
-    }
+    void appendSuccess(String msg);
 
-    private void appendLog(Level level, String msg) {
-        if (currentLog == null) {
-            currentLog = new LogMessage(level, msg);
-        } else {
-            currentLog.append(level, msg);
-        }
-    }
+    void info(String msg);
 
-    public void info(String msg) {
-        appendLog(Level.INFO, msg);
-        log();
-    }
+    void error(String msg);
 
-    public void error(String msg) {
-        appendLog(Level.ERROR, msg);
-        log();
-    }
+    void success(String msg);
 
-    public void success(String msg) {
-        appendLog(Level.SUCCESS, msg);
-        log();
-    }
+    void errorOverwriteLine(String msg, int index);
 
-    public void infoLine(String msg) {
-        appendLog(Level.INFO, msg);
-        logLine();
-    }
+    void setVerbose(boolean verbose);
 
-    public void errorLine(String msg) {
-        appendLog(Level.ERROR, msg);
-        logLine();
-    }
-
-    public void successLine(String msg) {
-        appendLog(Level.SUCCESS, msg);
-        logLine();
-    }
-
-    public void errorOverwriteLine(String msg, int index) {
-        currentLog.overwrite(Level.ERROR, msg, index);
-        logLine();
-    }
-
-    public enum Level {
-        INFO, ERROR, SUCCESS
-    }
-
-    private class LogMessage {
-        LocalDateTime startTime;
-        LocalDateTime time;
-        List<String> messages = new ArrayList<>();
-
-        public LogMessage(Level level, String message) {
-            this.startTime = this.time = LocalDateTime.now();
-            this.addFirstMessage(level, message);
-        }
-
-        private void addFirstMessage(Level level, String message) {
-            lock.writeLock().lock();
-            this.messages.add(0, colorMap.get(level) + switch (level) {
-                case INFO -> "    ";
-                case ERROR -> "   ";
-                case SUCCESS -> " ";
-            } + level + " --- " + message);
-            lock.writeLock().unlock();
-        }
-
-        public void append(Level level, String message) {
-            lock.writeLock().lock();
-            this.time = LocalDateTime.now();
-            this.messages.add(colorMap.get(level) + message);
-            lock.writeLock().unlock();
-        }
-
-        public String getLog() {
-            lock.readLock().lock();
-            var log = DateTimeFormatter.ofPattern("yyyy-MM-dd_hh:mm:ss:SSS").format(time) + "\t" + String.join(" ", messages);
-            if (startTime != time) {
-                log += " (" + (time.toInstant(ZoneOffset.UTC).toEpochMilli() - startTime.toInstant(ZoneOffset.UTC).toEpochMilli()) + "ms)";
-            }
-            lock.readLock().unlock();
-            return log;
-        }
-
-        public void overwrite(Level level, String msg, int index) {
-            lock.writeLock().lock();
-            messages.subList(index, messages.size()).clear();
-            if (index == 0) {
-                this.addFirstMessage(level, msg);
-            } else {
-                this.append(level, msg);
-            }
-            lock.writeLock().unlock();
-        }
-    }
-
+    void setDisabled(boolean disabled);
 }

@@ -6,6 +6,7 @@ import repository.repositoryImpl.MavenRepository;
 
 import java.io.FileNotFoundException;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A component in a repository.
@@ -129,5 +130,5 @@ public interface Component extends Bom16Component<Bom16.Component> {
      *
      * @return the dependencies of the artifact in a flat list
      */
-    List<Dependency> getDependenciesFlat();
+    Set<Dependency> getDependenciesFlat();
 }

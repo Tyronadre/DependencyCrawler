@@ -1,6 +1,7 @@
 package service;
 
 import data.Component;
+import logger.AppendingLogger;
 import logger.Logger;
 
 public interface DocumentBuilder {
