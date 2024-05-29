@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package cyclonedx.vex;
+
+// Integer representation of a Common Weaknesses Enumerations (CWE).
+message Cwe {
+  int32 cwe = 1;
+}
+
+// Textual representation of the severity of the vulnerability adopted by the risk analysis method.
+enum Severity {
+  NONE = 0;
+  LOW = 1;
+  MEDIUM = 2;
+  HIGH = 3;
+  CRITICAL = 4;
+  UNKNOWN = 5;
+}
+
+// Specifies the risk scoring methodology/standard used.
+enum ScoreSource {
+  CVSSv2 = 0;
+  CVSSv3 = 1;
+  OWASP_RISK = 2;
+  OPEN_FAIR = 3;
+  OTHER = 4;
+}
+
+// Defines the numerical risk score of a vulnerability.
+message Score {
+  double base = 1;         // The base score of the security vulnerability (Refer CVSS standard for example).
+  double impact = 2;       // The impact subscore of the security vulnerability (Refer CVSS standard for example).
+  double exploitability = 3; // The exploitability subscore of the security vulnerability (Refer CVSS standard for example).
+}
+
+// Defines the risk rating of a vulnerability.
+message Rating {
+  Score score = 1;
+  Severity severity = 2;   // Textual representation of the severity of the vulnerability.
+  ScoreSource method = 3;  // Specifies the risk scoring methodology/standard used.
+  string vector = 4;       // Textual representation of the metric values used to score the vulnerability.
+}
+
+// The source of the vulnerability where it is documented.
+message Source {
+  string url = 1;          // The url of the vulnerability documentation as provided by the source.
+  string name = 2;         // The name of the source.
+}
+
+// Defines the structure of a vulnerability.
+message Vulnerability {
+  string ref = 1;          // References a component by the components bom-ref attribute.
+  string id = 2;           // The id of the vulnerability as defined by the risk scoring methodology.
+  Source source = 3;       // The source of the vulnerability where it is documented.
+  repeated Rating ratings = 4; // List of the vulnerability ratings as defined by various risk rating methodologies.
+  repeated Cwe cwes = 5;   // List of Common Weaknesses Enumerations (CWEs) codes that describes this vulnerability.
+  string description = 6;  // Description of the vulnerability as provided by the source organization.
+  repeated string recommendations = 7; // List of recommendations of how the particular vulnerability can be avoided/mitigated.
+  repeated string advisories = 8;      // Published advisories of the vulnerability if provided.
+}
+
+// Defines a list of vulnerabilities.
+message Vex {
+  repeated Vulnerability vulnerabilities = 1;
+}

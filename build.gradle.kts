@@ -9,6 +9,10 @@ repositories {
     mavenCentral()
 }
 
+tasks.assemble {
+    dependsOn("ProtoParser:parseProto")
+}
+
 dependencies {
     implementation("com.google.protobuf:protobuf-java:4.27.0-RC1")
     implementation("com.google.protobuf:protobuf-java-util:4.27.0-RC1")
@@ -19,8 +23,4 @@ dependencies {
     implementation("org.spdx:spdx-jackson-store:1.1.9.1")
 
     implementation(project(":ProtoParser"))
-}
-
-tasks.test {
-    useJUnitPlatform()
 }

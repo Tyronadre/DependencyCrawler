@@ -19,10 +19,11 @@ dependencies {
     implementation("com.google.protobuf:protobuf-java:4.27.0-RC1")
 }
 
-tasks.register<Exec>("genBomLib") {
+tasks.register<Exec>("parseProto") {
     workingDir = file("src")
-    if (!File("src/protoc/bin/protoc.exe").exists())
-        throw GradleException("protoc not found. Please download the protoc parser first from https://github.com/protocolbuffers/protobuf/releases/tag/v27.0-rc1")
+    println(workingDir.absolutePath)
+    if (!file("src/protoc/bin/protoc.exe").exists())
+        throw GradleException("protoc not found. Please download the protoc parser first from https://github.com/protocolbuffers/protobuf/releases/tag/v27.0-rc1 ")
 
 
     commandLine("bash", "-c", "./run.sh")

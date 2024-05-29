@@ -1,5 +1,5 @@
 syntax = "proto3";
-package dependency_crawler.input;
+package dependencyCrawler.input;
 
 // A dependency of an application
 message Dependency {
