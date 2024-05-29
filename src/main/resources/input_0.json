@@ -6,9 +6,9 @@
     "type": "JAVA",
     "dependencies": [
       {
-        "groupId": "org.apache.logging.log4j",
-        "name": "log4j-core",
-        "version": "2.23.1"
+        "groupId": "junit",
+        "name": "junit",
+        "version": "4.13"
       }
     ]
   },

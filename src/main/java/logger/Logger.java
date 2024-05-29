@@ -1,11 +1,5 @@
 package logger;
 
-import org.apache.maven.api.plugin.Log;
-
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 

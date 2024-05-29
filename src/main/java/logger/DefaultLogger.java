@@ -1,5 +1,6 @@
 package logger;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -15,7 +16,8 @@ public class DefaultLogger extends Logger {
 
     static {
         try {
-            logFile = new FileOutputStream(DateTimeFormatter.ofPattern("dd-MM-yyyy_HH-mm_").format(LocalDateTime.now()) + "_log.txt");
+            new File("logs").mkdirs();
+            logFile = new FileOutputStream("logs/" + DateTimeFormatter.ofPattern("dd-MM-yyyy_HH-mm_").format(LocalDateTime.now()) + "_log.txt");
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
