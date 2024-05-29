@@ -25,12 +25,17 @@ public class VexBuilder implements DocumentBuilder {
     public void buildDocument(Component root, String outputFileName) {
         var start = System.currentTimeMillis();
 
-        logger.info("Creating SBOM for " + root.getQualifiedName() + "...");
+        logger.info("Creating VEX for " + root.getQualifiedName() + "...");
 
 
         var vex = buildVex(root);
 
-        logger.info("SBOM created. Writing to file...");
+        if (vex.getVulnerabilitiesCount() == 0 ){
+            logger.info("No vulnerabilities found.");
+            return;
+        }
+
+        logger.info("VEX created. Writing to file...");
 
         var outputFileDir = outputFileName.split("/", 2);
         if (outputFileDir.length > 1) {
@@ -51,7 +56,7 @@ public class VexBuilder implements DocumentBuilder {
             logger.error("Failed writing to JSON.");
         }
 
-        logger.success(new File(outputFileName).getAbsolutePath() + ".sbom.json saved (" + (System.currentTimeMillis() - start) + "ms)");
+        logger.success(new File(outputFileName).getAbsolutePath() + ".vex.json saved (" + (System.currentTimeMillis() - start) + "ms)");
     }
 
     private VexOuterClass.Vex buildVex(Component root) {
