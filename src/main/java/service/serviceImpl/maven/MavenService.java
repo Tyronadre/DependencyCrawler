@@ -7,6 +7,7 @@ import data.dataImpl.maven.MavenComponent;
 import exceptions.ArtifactBuilderException;
 import org.apache.maven.api.model.Model;
 import org.apache.maven.model.v4.MavenStaxReader;
+import repository.VulnerabilityRepository;
 import service.serviceImpl.NVDVulnerabilityService;
 
 import javax.xml.stream.XMLEventReader;
@@ -95,6 +96,6 @@ public class MavenService {
     }
 
     public List<Vulnerability> loadVulnerabilities(MavenComponent mavenComponent) {
-        return vulnerabilityService.getVulnerabilities(mavenComponent);
+        return VulnerabilityRepository.getInstance().getVulnerabilities(mavenComponent);
     }
 }

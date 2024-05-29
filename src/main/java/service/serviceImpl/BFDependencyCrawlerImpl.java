@@ -89,7 +89,7 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
         AtomicInteger loadCount = new AtomicInteger();
         AtomicInteger failCount = new AtomicInteger();
         int numThreads = Runtime.getRuntime().availableProcessors();
-        ExecutorService executorService = Executors.newFixedThreadPool(Math.max(numThreads, 10));
+        ExecutorService executorService = Executors.newFixedThreadPool(Math.min(numThreads * 2, 20));
         var queue = new ConcurrentLinkedDeque<Dependency>(parentComponent.getDependencies());
         var processing = Collections.synchronizedList(new ArrayList<Dependency>());
 

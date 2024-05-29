@@ -32,6 +32,7 @@ public enum MavenRepositoryType implements RepositoryType {
     Mulesoft("https://repository.mulesoft.org/nexus/content/repositories/public/"),
     Spring_Lib_Release("https://repo.spring.io/libs-release/"),
     LinkedIn("https://linkedin.jfrog.io/artifactory/open-source/"),
+    Clojars("https://clojars.org/repo/"),
     ROOT("ROOT"), // root of the application
     ;
 
