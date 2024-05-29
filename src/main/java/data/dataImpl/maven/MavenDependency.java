@@ -82,7 +82,7 @@ public class MavenDependency implements Dependency {
     }
 
     @Override
-    public MavenComponent getComponent() {
+    public synchronized MavenComponent getComponent() {
         if (component == null && version != null) {
             this.component = (MavenComponent) treeParent.getRepository().getComponent(getGroupId(), getArtifactId(), getVersion());
         } else if (component == null) {

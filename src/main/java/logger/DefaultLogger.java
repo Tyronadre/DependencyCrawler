@@ -5,16 +5,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.util.Map;
 
-public class DefaultLogger implements Logger {
+public class DefaultLogger extends Logger {
     private final String name;
-    private boolean verbose = true;
-    private boolean disabled = false;
 
     private static final OutputStream logFile;
 
@@ -96,13 +91,4 @@ public class DefaultLogger implements Logger {
         throw new UnsupportedOperationException("Not supported by this logger");
     }
 
-    @Override
-    public void setVerbose(boolean verbose) {
-        this.verbose = verbose;
-    }
-
-    @Override
-    public void setDisabled(boolean disabled) {
-        this.disabled = disabled;
-    }
 }

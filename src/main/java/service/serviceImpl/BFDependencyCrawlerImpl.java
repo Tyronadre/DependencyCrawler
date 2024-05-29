@@ -3,7 +3,6 @@ package service.serviceImpl;
 import data.Component;
 import data.Dependency;
 import exceptions.VersionResolveException;
-import logger.AppendingLogger;
 import logger.Logger;
 import repository.ComponentRepository;
 import service.BFDependencyCrawler;
@@ -12,11 +11,14 @@ import java.text.DecimalFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
@@ -90,14 +92,11 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
         ExecutorService executorService = Executors.newFixedThreadPool(Math.max(numThreads, 10));
         var queue = new ConcurrentLinkedDeque<Dependency>(parentComponent.getDependencies());
         var processing = Collections.synchronizedList(new ArrayList<Dependency>());
-        var processed = Collections.synchronizedList(new ArrayList<Dependency>());
 
         while (true) {
             //get next dependency in queue
             Dependency dependency;
-            synchronized (queue) {
-                dependency = queue.poll();
-            }
+            dependency = queue.poll();
 
             //check if we are processing something, if yes wait and try again
             if (dependency == null) {
@@ -114,23 +113,9 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
                 continue;
             }
 
-            // check if we are processing this in another thread at the moment
-            if (processing.contains(dependency)) {
-                continue;
-            }
-
-
-            //check if we have already processed this dependency
-            if (processed.contains(dependency)) {
-                continue;
-            }
-
-
             // add the dependency to the processing list
             processing.add(dependency);
-
-
-            executorService.execute(() -> multiCrawlHelper(dependency, queue, processing, processed, repository, loadCount, failCount));
+            executorService.submit(() -> multiCrawlHelper(dependency, queue, processing, repository, loadCount, failCount));
         }
 
         executorService.shutdown();
@@ -140,7 +125,7 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
         return loadCount.get() + failCount.get();
     }
 
-    private void multiCrawlHelper(Dependency dependency, ConcurrentLinkedDeque<Dependency> queue, List<Dependency> processing, List<Dependency> processed, ComponentRepository repository, AtomicInteger loadCount, AtomicInteger failCount) {
+    private Component multiCrawlHelper(Dependency dependency, ConcurrentLinkedDeque<Dependency> queue, List<Dependency> processing, ComponentRepository repository, AtomicInteger loadCount, AtomicInteger failCount) {
         try {
             //get the version of the dependency
             if (!dependency.hasVersion()) {
@@ -157,10 +142,11 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
             // process the component
             if (component != null)
                 if (!component.isLoaded()) {
+
                     component.loadComponent();
+
                     if (component.isLoaded()) {
                         queue.addAll(component.getDependencies().stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList());
-                        //queue.addAll(component.getDependencies());
 
                         component.getDependencies().forEach(c -> {
                             if (!c.isNotOptional()) {
@@ -178,15 +164,9 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
                 }
 
         } finally {
-            // add the component to the processed list
-            processed.add(dependency);
-
-
             // remove the component from the processing list
             processing.remove(dependency);
-
         }
-
-
+        return dependency.getComponent();
     }
 }

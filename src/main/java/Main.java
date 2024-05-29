@@ -1,3 +1,7 @@
+import logger.DefaultLogger;
+import logger.Logger;
+import repository.LicenseRepository;
+import repository.repositoryImpl.LicenseRepositoryImpl;
 import service.BFDependencyCrawler;
 import service.InputReader;
 import service.LicenseCollisionService;
@@ -12,8 +16,13 @@ import java.net.URISyntaxException;
 public class Main {
     public static void main(String[] args) throws URISyntaxException {
 
+//        Logger.setDisabled(true);
+//        Logger.setVerbose(false);
+        LicenseRepository.getInstance(); //preload license repository
+
+
         fromFile("input_0.json");
-        //fromFile("input_1.json");
+        fromFile("input_1.json");
         fromFile("input_2.json");
     }
 

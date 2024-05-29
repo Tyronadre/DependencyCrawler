@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class AppendingLogger implements Logger{
+public class AppendingLogger extends Logger{
     Map<LogLevel, String> colorMap = Map.of(
             LogLevel.ERROR, "\u001B[31m",
             LogLevel.INFO, "\u001B[90m",
@@ -77,16 +77,6 @@ public class AppendingLogger implements Logger{
     public void errorOverwriteLine(String msg, int index) {
         currentLog.overwrite(LogLevel.ERROR, msg, index);
         logLine();
-    }
-
-    @Override
-    public void setVerbose(boolean verbose) {
-
-    }
-
-    @Override
-    public void setDisabled(boolean disabled) {
-
     }
 
     private class LogMessage {

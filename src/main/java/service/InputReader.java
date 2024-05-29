@@ -3,6 +3,7 @@ package service;
 import com.google.protobuf.util.JsonFormat;
 import data.Component;
 import dependency_crawler.input.DependencyCrawlerInput;
+import logger.Logger;
 import service.serviceImpl.maven.MavenInputReader;
 
 import java.io.File;
@@ -21,10 +22,13 @@ public interface InputReader {
     String getOutputFileName();
 
     static InputReader of(File file) {
+        Logger logger = Logger.of("InputReader");
+        logger.info("Reading input from " + file.getAbsolutePath() + "...");
         try {
             var builder = DependencyCrawlerInput.Input.newBuilder();
             JsonFormat.parser().ignoringUnknownFields().merge(Files.readString(file.toPath(), StandardCharsets.UTF_8), builder);
             var input = builder.build();
+            logger.success("Input read successfully from " + file.getAbsolutePath());
             return switch (input.getApplication().getType()) {
                 case JAVA -> new MavenInputReader(input);
                 case C -> throw new IllegalArgumentException("Unsupported application type: C.");

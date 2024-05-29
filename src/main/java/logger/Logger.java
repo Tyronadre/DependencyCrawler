@@ -1,5 +1,7 @@
 package logger;
 
+import org.apache.maven.api.plugin.Log;
+
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -7,11 +9,13 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
-public interface Logger {
+public abstract class Logger {
+    protected static boolean disabled = false;
+    protected static boolean verbose = true;
 
-    Map<String, Logger> loggers = new HashMap<>();
+    private static final Map<String, Logger> loggers = new HashMap<>();
 
-    static Logger of(String name) {
+    public static Logger of(String name) {
         if (name.isEmpty() || name.length() > 20) {
             throw new IllegalArgumentException("Name must be between 1 and 20 characters");
         }
@@ -21,21 +25,25 @@ public interface Logger {
         return loggers.get(name);
     }
 
-    void appendInfo(String msg);
+    public abstract void appendInfo(String msg);
 
-    void appendError(String msg);
+    public abstract void appendError(String msg);
 
-    void appendSuccess(String msg);
+    public abstract void appendSuccess(String msg);
 
-    void info(String msg);
+    public abstract void info(String msg);
 
-    void error(String msg);
+    public abstract void error(String msg);
 
-    void success(String msg);
+    public abstract void success(String msg);
 
-    void errorOverwriteLine(String msg, int index);
+    public abstract void errorOverwriteLine(String msg, int index);
 
-    void setVerbose(boolean verbose);
+    public static void setVerbose(boolean verbose) {
+        Logger.verbose = verbose;
+    }
 
-    void setDisabled(boolean disabled);
+    public static void setDisabled(boolean disabled) {
+        Logger.disabled = disabled;
+    }
 }

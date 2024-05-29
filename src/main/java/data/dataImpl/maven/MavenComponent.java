@@ -139,7 +139,7 @@ public class MavenComponent implements Component {
 
 
     @Override
-    public void loadComponent() {
+    public synchronized void loadComponent() {
         if (!loaded) {
             if (this.isRoot) {
                 this.loaded = true;
