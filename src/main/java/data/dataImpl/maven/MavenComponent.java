@@ -177,6 +177,7 @@ public class MavenComponent implements Component {
             if (this.model.getLicenses() != null){
                 this.licenses = new ArrayList<>();
                 for (var license : this.model.getLicenses()) {
+                    if (license.getName() == null) continue;
                     var newLicense = licenseRepository.getLicense(license.getName(), license.getUrl());
                     if (newLicense == null) {
                         logger.error("Could not resolve license for " + this.getQualifiedName() + ": " + license.getName());

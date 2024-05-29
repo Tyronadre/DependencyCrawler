@@ -24,6 +24,7 @@ public class MavenService {
 
     /**
      * Returns the versions of the given URL as Strings
+     *
      * @param url The URL to get the versions from
      * @return The versions as Strings
      */
@@ -83,7 +84,12 @@ public class MavenService {
         try (InputStream inputStream = URI.create(baseUrl + "." + algorithm).toURL().openStream()) {
             var hash = new HashImpl();
             hash.setAlgorithm(algorithm);
-            hash.setValue(new String(inputStream.readAllBytes()));
+            var value = new String(inputStream.readAllBytes());
+            // some files have some spaces and a - at the end. we dont want that
+            if (value.contains(" "))
+                hash.setValue(value.substring(0, value.indexOf(" ")));
+            else
+                hash.setValue(value);
             return hash;
         }
     }

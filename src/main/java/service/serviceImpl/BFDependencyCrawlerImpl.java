@@ -167,7 +167,8 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
                     component.loadComponent();
                     if (component.isLoaded()) {
                         synchronized (queue) {
-                            queue.addAll(component.getDependencies().stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList());
+                            //queue.addAll(component.getDependencies().stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList());
+                            queue.addAll(component.getDependencies());
                         }
                         component.getDependencies().forEach(c -> {
                             if (!c.isNotOptional()) {

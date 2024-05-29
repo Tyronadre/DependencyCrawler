@@ -29,6 +29,7 @@ public class TreeBuilder implements DocumentBuilder {
 
         try (PrintWriter writer = new PrintWriter(outputFileName + ".tree.txt")) {
             printTree(root, 0, "", writer);
+            printTree(root, 0, "", new PrintWriter(System.out));
         } catch (FileNotFoundException e) {
             logger.error("Failed writing to tree.");
         }

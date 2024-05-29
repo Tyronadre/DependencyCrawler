@@ -127,21 +127,28 @@ public class SPDXBuilder implements DocumentBuilder {
         try {
             var spdxPackage = new SpdxPackage(store, uri, SpdxConstants.SPDX_ELEMENT_REF_PRENUM + component.getQualifiedName(), copyManager, true);
             for (Hash hash : component.getAllHashes()) {
-                var checksum = spdxPackage.createChecksum(switch (hash.getAlgorithm()) {
-                    case "sha1" -> ChecksumAlgorithm.SHA1;
-                    case "sha256" -> ChecksumAlgorithm.SHA256;
-                    case "sha512" -> ChecksumAlgorithm.SHA512;
-                    case "md5" -> ChecksumAlgorithm.MD5;
-                    default -> throw new SPDXBuilderException("Unexpected value: " + hash.getAlgorithm());
-                }, hash.getValue());
-                spdxPackage.addChecksum(checksum);
+                try {
+
+                    var checksum = spdxPackage.createChecksum(switch (hash.getAlgorithm()) {
+                        case "sha1" -> ChecksumAlgorithm.SHA1;
+                        case "sha256" -> ChecksumAlgorithm.SHA256;
+                        case "sha512" -> ChecksumAlgorithm.SHA512;
+                        case "md5" -> ChecksumAlgorithm.MD5;
+                        default -> throw new SPDXBuilderException("Unexpected value: " + hash.getAlgorithm());
+                    }, hash.getValue());
+                    spdxPackage.addChecksum(checksum);
+
+
+                } catch (Exception e) {
+                    logger.error(hash.getValue() + " " + component + " " + e.getMessage());
+                }
             }
 //            spdxPackage.setBuiltDate();
             spdxPackage.setDescription(component.getDescription());
             var supplier = component.getSupplier();
             if (supplier != null) {
-                spdxPackage.setSupplier(supplier.getName());
-                spdxPackage.setOriginator(supplier.getName());
+                spdxPackage.setSupplier("Organization: " + supplier.getName());
+                spdxPackage.setOriginator("Organization: " + supplier.getName());
             }
             for (ExternalReference externalReference : component.getAllExternalReferences()) {
                 var ref = spdxPackage.createExternalRef(ReferenceCategory.OTHER, new ReferenceType(externalReference.getType()), externalReference.getUrl(), null);
@@ -168,7 +175,7 @@ public class SPDXBuilder implements DocumentBuilder {
 
 
             return spdxPackage;
-        } catch (InvalidSPDXAnalysisException | SPDXBuilderException e) {
+        } catch (InvalidSPDXAnalysisException e) {
             throw new SPDXBuilderException(e.getMessage() + Arrays.toString(e.getStackTrace()));
         }
     }

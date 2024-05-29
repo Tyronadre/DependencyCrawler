@@ -45,7 +45,7 @@ public class MavenVersionResolver implements VersionResolver {
             //check parent pom
             if (parent.getParent() != null) {
                 if (!parent.getParent().isLoaded()) parent.getParent().loadComponent();
-                return resolveVersion(parent.getParent().getProperty(mavenDependency.getArtifactId() + ".version"), dependency, (MavenComponent) parent.getParent());
+                if (parent.getParent().isLoaded()) return resolveVersion(parent.getParent().getProperty(mavenDependency.getArtifactId() + ".version"), dependency, (MavenComponent) parent.getParent());
             }
         } else if (versionString.startsWith("[") || versionString.startsWith("(")) {
             return getVersionFromVersionRange(dependency);
