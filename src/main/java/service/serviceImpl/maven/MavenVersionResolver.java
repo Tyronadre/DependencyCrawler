@@ -1,9 +1,9 @@
 package service.serviceImpl.maven;
 
 import data.Dependency;
-import data.dataImpl.maven.MavenComponent;
-import data.dataImpl.maven.MavenDependency;
-import data.dataImpl.maven.MavenVersion;
+import data.dataImpl.MavenComponent;
+import data.dataImpl.MavenDependency;
+import data.dataImpl.MavenVersion;
 import exceptions.VersionRangeResolutionException;
 import exceptions.VersionResolveException;
 import repository.repositoryImpl.MavenRepository;

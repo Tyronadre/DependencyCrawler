@@ -1,7 +1,7 @@
 package data;
 
 import data.dataImpl.VersionImpl;
-import data.dataImpl.maven.MavenVersion;
+import data.dataImpl.MavenVersion;
 import enums.ComponentType;
 
 /**

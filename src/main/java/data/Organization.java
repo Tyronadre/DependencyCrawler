@@ -1,9 +1,21 @@
 package data;
 
-import cyclonedx.v1_6.Bom16;
 
-public interface Organization extends Bom16Component<Bom16.OrganizationalEntity> {
+import data.dataImpl.OrganizationImpl;
+
+import java.util.List;
+
+public interface Organization {
     String getName();
-    String getUrl();
+
+    List<String> getUrls();
+
     Address getAddress();
+
+    List<Person> getContacts();
+
+    static Organization of(String name, List<String> urls, Address address, List<Person> contacts) {
+        return new OrganizationImpl(name, urls, address, contacts);
+    }
+
 }

@@ -3,7 +3,7 @@ package repository.repositoryImpl;
 import com.google.gson.JsonParser;
 import data.Component;
 import data.Vulnerability;
-import data.dataImpl.VulnerabilityImpl;
+import data.dataImpl.OSVVulnerability;
 import logger.Logger;
 import repository.VulnerabilityRepository;
 import service.serviceImpl.NVDVulnerabilityService;
@@ -61,7 +61,7 @@ public class VulnerabiltyRepositoryImpl implements VulnerabilityRepository {
                 var vulnerabilityData = JsonParser.parseReader(new InputStreamReader(inputStream)).getAsJsonObject();
                 if (vulnerabilityData.has("vulns"))
                     for (var vulnerability : vulnerabilityData.get("vulns").getAsJsonArray())
-                        vulnerabilities.add(new VulnerabilityImpl(component, vulnerability.getAsJsonObject()));
+                        vulnerabilities.add(new OSVVulnerability(component, vulnerability.getAsJsonObject()));
             }
 
 

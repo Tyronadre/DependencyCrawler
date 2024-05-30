@@ -2,24 +2,34 @@ package repository.repositoryImpl;
 
 import data.Component;
 import data.Dependency;
+import data.Hash;
 import data.Version;
-import data.dataImpl.maven.MavenComponent;
-import data.dataImpl.maven.MavenDependency;
-import data.dataImpl.maven.MavenVersion;
+import data.Vulnerability;
+import data.dataImpl.HashImpl;
+import data.dataImpl.MavenComponent;
+import data.dataImpl.MavenDependency;
+import data.dataImpl.MavenVersion;
 import enums.RepositoryType;
 import exceptions.ArtifactBuilderException;
-import logger.AppendingLogger;
 import logger.Logger;
+import org.apache.maven.api.model.Model;
+import org.apache.maven.model.v4.MavenStaxReader;
 import repository.ComponentRepository;
+import repository.VulnerabilityRepository;
 import service.VersionRangeResolver;
 import service.VersionResolver;
-import service.serviceImpl.maven.MavenService;
 import service.serviceImpl.maven.MavenVersionRangeResolver;
 import service.serviceImpl.maven.MavenVersionResolver;
 
+import javax.xml.stream.XMLEventReader;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringJoiner;
@@ -33,7 +43,6 @@ import java.util.stream.Collectors;
 public class MavenRepository implements ComponentRepository {
     private final RepositoryType repositoryType;
     private final String baseUrl;
-    private final MavenService mavenService;
     private final HashMap<String, Component> components;
     private final MavenVersionRangeResolver versionRangeResolver = new MavenVersionRangeResolver(this);
     private final MavenVersionResolver versionResolver = new MavenVersionResolver(this);
@@ -43,7 +52,6 @@ public class MavenRepository implements ComponentRepository {
     MavenRepository(MavenRepositoryType repositoryType) {
         this.repositoryType = repositoryType;
         this.baseUrl = repositoryType.getUrl();
-        mavenService = new MavenService();
         components = new HashMap<>();
     }
 
@@ -59,8 +67,43 @@ public class MavenRepository implements ComponentRepository {
         return List.of();
     }
 
-    private List<MavenVersion> getVersions(URL url) {
-        return mavenService.getVersions(url).stream().map(MavenVersion::new).collect(Collectors.toList());
+    /**
+     * Returns the versions of the given URL as Strings
+     *
+     * @param url The URL to get the versions from
+     * @return The versions as Strings
+     */
+    public List<MavenVersion> getVersions(URL url) {
+        List<String> versions = null;
+
+        var factory = XMLInputFactory.newInstance();
+        try {
+            XMLEventReader reader = factory.createXMLEventReader(url.openStream());
+            while (reader.hasNext()) {
+                var event = reader.nextEvent();
+                if (event.isStartElement()) {
+                    var startElement = event.asStartElement();
+                    switch (startElement.getName().toString()) {
+                        case "versioning":
+                            versions = new ArrayList<>();
+                            break;
+                        case "version":
+                            if (versions == null) break;
+                            event = reader.nextEvent();
+                            if (event.isCharacters()) {
+                                versions.add(event.asCharacters().getData());
+                            }
+                            break;
+                    }
+                }
+            }
+        } catch (IOException | XMLStreamException e) {
+            throw new RuntimeException(e);
+        }
+        if (versions == null) {
+            return List.of();
+        }
+        return versions.stream().map(MavenVersion::new).collect(Collectors.toList());
     }
 
     @Override
@@ -75,13 +118,53 @@ public class MavenRepository implements ComponentRepository {
         }
         var mavenComponent = (MavenComponent) component;
         try {
-            mavenComponent.setModel(mavenService.loadModel(URI.create(getDownloadLocation(component) + ".pom").toURL()));
-            mavenComponent.setHashes(mavenService.loadHashes(getDownloadLocation(component) + ".jar"));
-            mavenComponent.setVulnerabilities(mavenService.loadVulnerabilities(mavenComponent));
+            mavenComponent.setModel(loadModel(URI.create(getDownloadLocation(component) + ".pom").toURL()));
+            mavenComponent.setHashes(loadHashes(getDownloadLocation(component) + ".jar"));
+            mavenComponent.setVulnerabilities(loadVulnerabilities(mavenComponent));
             return true;
         } catch (MalformedURLException | ArtifactBuilderException e) {
             return false;
         }
+    }
+
+    private Model loadModel(URL url) throws ArtifactBuilderException {
+        MavenStaxReader reader = new MavenStaxReader();
+        Model model;
+        try (InputStream inputStream = url.openStream()) {
+            model = reader.read(inputStream);
+        } catch (IOException | XMLStreamException e) {
+            throw new ArtifactBuilderException("Could not load model from " + url);
+        }
+        return model;
+    }
+
+    private List<Hash> loadHashes(String baseUrl) {
+        var hashes = new ArrayList<Hash>();
+        for (var algorithm : new String[]{"md5", "sha1", "sha256", "sha512"}) {
+            try {
+                hashes.add(loadHash(baseUrl, algorithm));
+            } catch (IOException ignored) {
+            }
+        }
+        return hashes;
+    }
+
+    private Hash loadHash(String baseUrl, String algorithm) throws IOException {
+        try (InputStream inputStream = URI.create(baseUrl + "." + algorithm).toURL().openStream()) {
+            var hash = new HashImpl();
+            hash.setAlgorithm(algorithm);
+            var value = new String(inputStream.readAllBytes());
+            // some files have some spaces and a - at the end. we dont want that
+            if (value.contains(" "))
+                hash.setValue(value.substring(0, value.indexOf(" ")));
+            else
+                hash.setValue(value);
+            return hash;
+        }
+    }
+
+    private List<Vulnerability> loadVulnerabilities(MavenComponent mavenComponent) {
+        return VulnerabilityRepository.getInstance().getVulnerabilities(mavenComponent);
     }
 
     @Override

@@ -4,12 +4,18 @@ import data.Component;
 import data.Dependency;
 import data.Version;
 import enums.RepositoryType;
+import repository.repositoryImpl.MavenRepositoryType;
 import service.VersionRangeResolver;
 import service.VersionResolver;
 
 import java.util.List;
 
 public interface ComponentRepository {
+
+    static ComponentRepository of(RepositoryType repositoryType) {
+        return MavenRepositoryType.of((MavenRepositoryType) repositoryType);
+    }
+
     /**
      * Returns a list of all possible versions for this dependency.
      *
@@ -51,4 +57,6 @@ public interface ComponentRepository {
      * @return the type of the repository
      */
     RepositoryType getType();
+
+
 }

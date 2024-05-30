@@ -2,7 +2,6 @@ package service.serviceImpl;
 
 import data.Component;
 import data.Dependency;
-import logger.AppendingLogger;
 import logger.Logger;
 import service.DocumentBuilder;
 
@@ -58,10 +57,10 @@ public class TreeBuilder implements DocumentBuilder {
                 if (dependency.shouldResolveByScope() && dependency.isNotOptional() && dependency.getComponent() != null)
                     printTree(dependency.getComponent(), depth + 1, prependRow + "   ", writer);
                 else {
-                    if (!dependency.isNotOptional()) writer.print("► [OPTIONAL]: " + dependency.getName() + "\n");
+                    if (!dependency.isNotOptional()) writer.print("► [OPTIONAL]: " + dependency.getQualifiedName() + "\n");
                     else if (!dependency.shouldResolveByScope())
-                        writer.print("► [" + dependency.getScope().toUpperCase() + "]: " + dependency.getName() + "\n");
-                    else writer.print("► [ERROR]: " + dependency.getName() + "\n");
+                        writer.print("► [" + dependency.getScope().toUpperCase() + "]: " + dependency.getQualifiedName() + "\n");
+                    else writer.print("► [ERROR]: " + dependency.getQualifiedName() + "\n");
                 }
                 writer.flush();
 
@@ -72,10 +71,10 @@ public class TreeBuilder implements DocumentBuilder {
                 if (dependency.shouldResolveByScope() && dependency.isNotOptional())
                     printTree(dependency.getComponent(), depth + 1, prependRow + "│  ", writer);
                 else {
-                    if (!dependency.isNotOptional()) writer.print("► [OPTIONAL]: " + dependency.getName() + "\n");
+                    if (!dependency.isNotOptional()) writer.print("► [OPTIONAL]: " + dependency.getQualifiedName() + "\n");
                     else if (!dependency.shouldResolveByScope())
-                        writer.print("► [" + dependency.getScope().toUpperCase() + "]: " + dependency.getName() + "\n");
-                    else writer.print("► [ERROR]: " + dependency.getName() + "\n");
+                        writer.print("► [" + dependency.getScope().toUpperCase() + "]: " + dependency.getQualifiedName() + "\n");
+                    else writer.print("► [ERROR]: " + dependency.getQualifiedName() + "\n");
                 }
                 writer.flush();
             }

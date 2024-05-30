@@ -39,7 +39,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
             logger.appendInfo(" parsing version: " + json.get("licenseListVersion").getAsString() + "...");
 
             for (var license : json.get("licenses").getAsJsonArray()) {
-                var licenseActual = License.of(license.getAsJsonObject());
+                var licenseActual = new SPDXLicense(license.getAsJsonObject());
                 nameToLicense.put(license.getAsJsonObject().get("name").getAsString(), licenseActual);
                 idToLicense.put(license.getAsJsonObject().get("licenseId").getAsString(), licenseActual);
             }

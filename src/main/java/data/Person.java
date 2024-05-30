@@ -9,12 +9,12 @@ public interface Person extends Bom16Component<Bom16.OrganizationalContact> {
     String getName();
     String getEmail();
     String getUrl();
-    String getOrganization();
-    String getOrganizationUrl();
+    String getPhone();
+    Organization getOrganization();
     List<String> getRoles();
 
-    static Person of(String name, String email, String url, String organization, String organizationUrl, List<String> roles) {
-        return new PersonImpl(name, email, url, organization, organizationUrl, roles);
+    static Person of(String name, String email, String url, String phone, Organization organization,  List<String> roles) {
+        return new PersonImpl(name, email, url, organization, roles);
     }
 
 }

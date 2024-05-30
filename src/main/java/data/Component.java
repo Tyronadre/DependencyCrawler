@@ -1,10 +1,8 @@
 package data;
 
-import cyclonedx.v1_6.Bom16;
 import repository.ComponentRepository;
 import repository.repositoryImpl.MavenRepository;
 
-import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.Set;
 
@@ -13,7 +11,7 @@ import java.util.Set;
  * <p>
  * A component should be loaded with {@link #loadComponent()} before any other method is called, when any data from this component is needed.
  */
-public interface Component extends Bom16Component<Bom16.Component> {
+public interface Component {
     /**
      * Loads all data of this component from the repository.
      * If no repository is set, all available repositories should be tried, and one that has the component should be set.
@@ -117,12 +115,9 @@ public interface Component extends Bom16Component<Bom16.Component> {
 
     List<Hash> getAllHashes();
 
-    /**
-     * @return the license expression of the component in SPDX format
-     */
-    String getLicenseExpression();
-
     List<Vulnerability> getAllVulnerabilities();
+
+    void addVulnerability(Vulnerability vulnerability);
 
     String getDownloadLocation();
 
@@ -131,4 +126,12 @@ public interface Component extends Bom16Component<Bom16.Component> {
      * @return the dependencies of the artifact in a flat list
      */
     Set<Dependency> getDependenciesFlat();
+
+    String getPublisher();
+
+    List<LicenseChoice> getAllLicenses();
+
+    List<Property> getAllProperties();
+
+    List<Person> getAllAuthors();
 }

@@ -1,6 +1,6 @@
 package repository.repositoryImpl;
 
-import data.dataImpl.maven.MavenComponent;
+import data.dataImpl.MavenComponent;
 import enums.RepositoryType;
 
 import java.util.ArrayList;
@@ -34,6 +34,7 @@ public enum MavenRepositoryType implements RepositoryType {
     LinkedIn("https://linkedin.jfrog.io/artifactory/open-source/"),
     Clojars("https://clojars.org/repo/"),
     ROOT("ROOT"), // root of the application
+    FILE("FILE"); // load from file
     ;
 
     private final String url;
@@ -55,6 +56,7 @@ public enum MavenRepositoryType implements RepositoryType {
             return;
         }
         for (var repository : MavenRepositoryType.values()) {
+            if (repository == ROOT || repository == FILE) continue;
             if (new MavenRepository(repository).loadComponent(mavenComponent)) {
                 mavenComponent.setRepository(repository.getRepository());
                 return;

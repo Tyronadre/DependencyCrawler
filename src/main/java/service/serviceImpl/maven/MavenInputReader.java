@@ -1,14 +1,13 @@
 package service.serviceImpl.maven;
 
-import data.dataImpl.maven.MavenComponent;
-import data.dataImpl.maven.MavenDependency;
-import data.dataImpl.maven.MavenVersion;
-import dependency_crawler.input.DependencyCrawlerInput;
+import data.dataImpl.MavenComponent;
+import data.dataImpl.MavenDependency;
+import data.dataImpl.MavenVersion;
+import dependencyCrawler.DependencyCrawlerInput;
 import logger.Logger;
 import repository.repositoryImpl.MavenRepositoryType;
 import service.serviceImpl.InputReaderImpl;
 
-import java.io.File;
 import java.util.Optional;
 
 public class MavenInputReader extends InputReaderImpl {

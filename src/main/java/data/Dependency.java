@@ -1,12 +1,13 @@
 package data;
 
+import cyclonedx.sbom.Bom16;
 import cyclonedx.v1_6.Bom16;
 
 /**
  * Represents a dependency of an artifact.
  */
 public interface Dependency extends Bom16Component<Bom16.Dependency> {
-    String getName();
+    String getQualifiedName();
 
     /**
      * The version of the dependency.
@@ -76,4 +77,6 @@ public interface Dependency extends Bom16Component<Bom16.Dependency> {
      * @return true if the dependency is optional, false otherwise
      */
     boolean isNotOptional();
+
+    void setScope(String scope);
 }

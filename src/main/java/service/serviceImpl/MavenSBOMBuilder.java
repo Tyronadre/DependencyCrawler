@@ -1,0 +1,271 @@
+package service.serviceImpl;
+
+import com.google.protobuf.Timestamp;
+import com.google.protobuf.util.JsonFormat;
+import cyclonedx.sbom.Bom16;
+import data.*;
+import service.DocumentBuilder;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.*;
+
+import static service.converter.InternalMavenToBomConverter.*;
+
+public class MavenSBOMBuilder implements DocumentBuilder {
+    private final HashMap<Component, Bom16.Component.Builder> componentToComponentBuilder = new HashMap<>();
+
+    @Override
+    public void buildDocument(Component root, String outputFileName) {
+        var start = System.currentTimeMillis();
+        componentToComponentBuilder.clear();
+
+        logger.info("Creating SBOM for " + root.getQualifiedName() + "...");
+
+        createComponentBuilders(root);
+
+        var bom = buildBom(root);
+
+        logger.info("SBOM created. Writing to file...");
+
+        var outputFileDir = outputFileName.split("/", 2);
+        if (outputFileDir.length > 1) {
+            //create out dir if not exists
+            File outDir = new File(outputFileDir[0]);
+            if (!outDir.exists()) {
+                outDir.mkdir();
+            }
+        }
+
+        // json file
+        try {
+            var file = new File(outputFileName + ".sbom.json");
+            var outputStream = new FileWriter(file);
+            outputStream.write(JsonFormat.printer().print(bom));
+            outputStream.close();
+        } catch (IOException e) {
+            logger.error("Failed writing to JSON.");
+        }
+
+        logger.success(new File(outputFileName).getAbsolutePath() + ".sbom.json saved (" + (System.currentTimeMillis() - start) + "ms)");
+    }
+
+    private void createComponentBuilders(Component root) {
+        createComponentBuilder(root, true);
+
+        for (var dependency : root.getDependencies()) {
+            if (dependency.getComponent() != null && dependency.getComponent().isLoaded()) {
+                createComponentBuilder(dependency.getComponent(), false);
+            }
+        }
+    }
+
+    private void createComponentBuilder(Component component, boolean isRoot) {
+        var componentBuilder = Bom16.Component.newBuilder();
+
+        if (isRoot) componentBuilder.setType(Bom16.Classification.CLASSIFICATION_APPLICATION);
+        else componentBuilder.setType(Bom16.Classification.CLASSIFICATION_LIBRARY);
+
+//        componentBuilder.setMimeType()
+//        componentBuilder.setBomRef()    //Will happen later if we know the scope
+        Optional.ofNullable(component.getSupplier()).ifPresent(v -> componentBuilder.setSupplier(buildOrganization(v)));
+        Optional.ofNullable(component.getPublisher()).ifPresent(componentBuilder::setPublisher);
+        componentBuilder.setGroup(component.getGroup());
+        componentBuilder.setName(component.getName());
+        componentBuilder.setVersion(component.getVersion().getVersion());
+        Optional.ofNullable(component.getDescription()).ifPresent(componentBuilder::setDescription);
+//        componentBuilder.setScope()     //Will happen later if we know the scope
+        Optional.ofNullable(component.getAllHashes()).ifPresent(hashes -> componentBuilder.addAllHashes(buildAllHashes(hashes)));
+        Optional.ofNullable(component.getAllLicenses()).ifPresent(componentBuilder::addLicenses);
+        Optional.ofNullable(component.getManufacturer()).ifPresent(v -> componentBuilder.setPublisher(v.getName()));
+        Optional.ofNullable(component.getContributors()).ifPresent(v -> componentBuilder.addAllAuthors(v.stream().map(Person::toBom16).toList()));
+        componentBuilder.setPurl(component.getPurl());
+        componentBuilder.addAllExternalReferences(buildAllExternalReferences(component));
+
+        componentToComponentBuilder.put(component, componentBuilder);
+
+        for (var dependency : component.getDependencies().stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList()) {
+            if (dependency.getComponent() != null && dependency.getComponent().isLoaded()) {
+                createComponentBuilder(dependency.getComponent(), false);
+            }
+        }
+    }
+
+    private Iterable<Bom16.Hash> buildAllHashes(List<Hash> hashes) {
+        var list = new ArrayList<Bom16.Hash>();
+        for (var hash : hashes) {
+            var hashBuilder = Bom16.Hash.newBuilder();
+            hashBuilder.setAlg(switch (hash.getAlgorithm()) {
+                case "MD5" -> Bom16.HashAlg.HASH_ALG_MD_5;
+                case "SHA-1" -> Bom16.HashAlg.HASH_ALG_SHA_1;
+                case "SHA-256" -> Bom16.HashAlg.HASH_ALG_SHA_256;
+                case "SHA-384" -> Bom16.HashAlg.HASH_ALG_SHA_384;
+                case "SHA-512" -> Bom16.HashAlg.HASH_ALG_SHA_512;
+                case "SHA3-256" -> Bom16.HashAlg.HASH_ALG_SHA_3_256;
+                case "SHA3-384" -> Bom16.HashAlg.HASH_ALG_SHA_3_384;
+                case "SHA3-512" -> Bom16.HashAlg.HASH_ALG_SHA_3_512;
+                case "BLAKE2b-256" -> Bom16.HashAlg.HASH_ALG_BLAKE_2_B_256;
+                case "BLAKE2b-384" -> Bom16.HashAlg.HASH_ALG_BLAKE_2_B_384;
+                case "BLAKE2b-512" -> Bom16.HashAlg.HASH_ALG_BLAKE_2_B_512;
+                case "BLAKE3" -> Bom16.HashAlg.HASH_ALG_BLAKE_3;
+                default -> Bom16.HashAlg.HASH_ALG_NULL;
+            });
+            hashBuilder.setValue(hash.getValue());
+            list.add(hashBuilder.build());
+        }
+        return list;
+    }
+
+    private List<Bom16.ExternalReference> buildAllExternalReferences(Component component) {
+        return component.getAllExternalReferences().stream().map(ExternalReference::toBom16).toList();
+    }
+
+    private Bom16.LicenseChoice buildLicenses(Component component) {
+        var licenseExpression = component.getLicenseExpression();
+        if (licenseExpression == null) return null;
+        return Bom16.LicenseChoice.newBuilder().setExpression(licenseExpression).setAcknowledgement(Bom16.LicenseAcknowledgementEnumeration.LICENSE_ACKNOWLEDGEMENT_ENUMERATION_DECLARED).build();
+    }
+
+    private Bom16.Bom buildBom(Component root) {
+        var bomBuilder = Bom16.Bom.newBuilder();
+
+        bomBuilder.setBomFormat("CycloneDX");
+        bomBuilder.setSpecVersion("1.6");
+        bomBuilder.setVersion(1);
+        bomBuilder.setSerialNumber(UUID.randomUUID().toString());
+        bomBuilder.setMetadata(buildMetadata(root));
+        bomBuilder.addAllServices(buildServices(root));
+        bomBuilder.addAllExternalReferences(buildExternalReferences(root));
+        bomBuilder.addAllDependencies(buildDependencies(root));
+        bomBuilder.addAllComponents(buildComponents());
+        bomBuilder.addAllCompositions(buildCompositions(root));
+        bomBuilder.addAllVulnerabilities(buildVulnerabilities(root));
+        bomBuilder.addAllAnnotations(buildAnnotations(root));
+        bomBuilder.addAllProperties(buildProperties(root));
+        bomBuilder.addAllFormulation(buildFormulation(root));
+        bomBuilder.addAllDeclarations(buildDeclarations(root));
+        bomBuilder.addAllDefinitions(buildDefinitions(root));
+
+        return bomBuilder.build();
+    }
+
+    private Bom16.Metadata buildMetadata(Component root) {
+        var metadataBuilder = Bom16.Metadata.newBuilder();
+
+
+        long millis = System.currentTimeMillis();
+        Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000).setNanos((int) ((millis % 1000) * 1000000)).build();
+        metadataBuilder.setTimestamp(timestamp);
+        metadataBuilder.setComponent(buildComponent(root));
+        metadataBuilder.setManufacturer(buildOrganizationalEntity());
+
+        return metadataBuilder.build();
+    }
+
+    /**
+     * @return the manufacturer of the sbom (us).
+     */
+    private Bom16.OrganizationalEntity buildManufacturer() {
+        var manufacturerBuilder = Bom16.OrganizationalEntity.newBuilder();
+        manufacturerBuilder.setName("Technische Universität Darmstadt");
+        return manufacturerBuilder.build();
+    }
+
+    private Bom16.Component buildComponent(Component component) {
+        return componentToComponentBuilder.get(component).build();
+    }
+
+    private Bom16.Scope buildScope(Dependency dependency) {
+        return switch (dependency.getScope()) {
+            case "provided", "test", "runtime" -> Bom16.Scope.SCOPE_EXCLUDED;
+            default -> Bom16.Scope.SCOPE_REQUIRED;
+        };
+    }
+
+    private Bom16.OrganizationalEntity buildSupplier(Organization supplier) {
+        return null;
+    }
+
+    /**
+     * Recursively build all components of the sbom.
+     *
+     * @return a list of all components of the sbom
+     */
+    private List<Bom16.Component> buildComponents() {
+        return componentToComponentBuilder.values().stream().map(Bom16.Component.Builder::build).toList();
+    }
+
+    private List<Bom16.Service> buildServices(Component component) {
+        List<Bom16.Service> services = new ArrayList<>();
+
+        return services;
+    }
+
+    private List<Bom16.ExternalReference> buildExternalReferences(Component component) {
+        List<Bom16.ExternalReference> externalReferences = new ArrayList<>();
+
+        return externalReferences;
+    }
+
+    private List<Bom16.Dependency> buildDependencies(Component component) {
+        List<Bom16.Dependency> dependencies = new ArrayList<>();
+
+        for (var dependency : component.getDependencies().stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList()) {
+            var componentBuilder = componentToComponentBuilder.get(dependency.getComponent());
+            if (componentBuilder == null) continue;
+            componentBuilder.setScope(buildScope(dependency));
+            dependencies.add(dependency.toBom16());
+        }
+
+        return dependencies;
+    }
+
+    private Bom16.Dependency buildDependency(String bomRef, Dependency dependency) {
+        var dependencyBuilder = Bom16.Dependency.newBuilder();
+        dependencyBuilder.setRef(bomRef);
+        dependencyBuilder.addAllDependencies(buildDependencies(dependency.getComponent()));
+
+        return dependencyBuilder.build();
+    }
+
+    private List<Bom16.Composition> buildCompositions(Component component) {
+        List<Bom16.Composition> compositions = new ArrayList<>();
+
+        return compositions;
+    }
+
+    private List<Bom16.Vulnerability> buildVulnerabilities(Component component) {
+        return componentToComponentBuilder.keySet().stream().map(componentBuilder -> componentBuilder.getAllVulnerabilities().stream().map(Vulnerability::toBom16).toList()).flatMap(Collection::stream).toList();
+    }
+
+    private List<Bom16.Annotation> buildAnnotations(Component component) {
+        List<Bom16.Annotation> annotations = new ArrayList<>();
+
+        return annotations;
+    }
+
+    private List<Bom16.Property> buildProperties(Component component) {
+        List<Bom16.Property> properties = new ArrayList<>();
+
+        return properties;
+    }
+
+    private List<Bom16.Formula> buildFormulation(Component component) {
+        List<Bom16.Formula> formulations = new ArrayList<>();
+
+        return formulations;
+    }
+
+    private List<Bom16.Declarations> buildDeclarations(Component component) {
+        List<Bom16.Declarations> declarations = new ArrayList<>();
+
+        return declarations;
+    }
+
+    private List<Bom16.Definition> buildDefinitions(Component component) {
+        List<Bom16.Definition> definitions = new ArrayList<>();
+
+        return definitions;
+    }
+}
