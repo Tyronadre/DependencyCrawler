@@ -1,32 +1,14 @@
 package service.converter;
 
 import cyclonedx.sbom.Bom16;
-import data.Address;
-import data.Component;
-import data.Dependency;
-import data.ExternalReference;
-import data.Hash;
-import data.License;
-import data.LicenseChoice;
-import data.Licensing;
-import data.Organization;
-import data.OrganizationOrPerson;
-import data.Person;
-import data.Property;
-import data.Version;
-import data.Vulnerability;
-import data.VulnerabilityAffectedVersion;
-import data.VulnerabilityAffects;
-import data.VulnerabilityReference;
-import data.VulnerabilitySeverity;
+import data.*;
 import data.dataImpl.ReadComponent;
 import enums.ComponentType;
+import repository.ComponentRepository;
+import repository.VulnerabilityRepository;
 import util.Pair;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class BomToInternalMavenConverter {
     public static Component buildComponent(Bom16.Component bomComponent) {
@@ -43,6 +25,7 @@ public class BomToInternalMavenConverter {
         for (var bomDependencyParent : bomDependencies) {
             var dependencyParent = components.get(bomDependencyParent.getRef()).second();
             for (var bomDependency : bomDependencyParent.getDependenciesList()) {
+                System.out.println("trying to get " + bomDependency.getRef());
                 var component = components.get(bomDependency.getRef()).second();
                 var bomComponent = components.get(bomDependency.getRef()).first();
                 dependencyParent.addDependency(new Dependency() {
@@ -113,72 +96,83 @@ public class BomToInternalMavenConverter {
     /**
      * Builds and saves the vulnerabilities in the components.
      *
-     * @param bomVulnerabilties the vulnerabilities from the SBOM
-     * @param bomComponents     the components from the SBOM
+     * @param bomVulnerabilities the vulnerabilities from the SBOM
+     * @param bomComponents      the components from the SBOM
      */
-    public static void buildAllVulnerabilities(List<Bom16.Vulnerability> bomVulnerabilties, HashMap<String, Pair<Bom16.Component, Component>> bomComponents) {
-        for (var bomVulnerability : bomVulnerabilties) {
-            var component = bomComponents.get(bomVulnerability.getBomRef()).second();
-            component.addVulnerability(new Vulnerability() {
-                @Override
-                public Component getComponent() {
-                    return component;
-                }
+    public static void buildAllVulnerabilities(List<Bom16.Vulnerability> bomVulnerabilities, HashMap<String, Pair<Bom16.Component, Component>> bomComponents) {
+        for (var bomVulnerability : bomVulnerabilities) {
+            var newVul =
+                    new Vulnerability() {
+                        @Override
+                        public Component getComponent() {
+                            return null;
+                        }
 
-                @Override
-                public String getId() {
-                    return bomVulnerability.hasId() ? bomVulnerability.getId() : null;
-                }
+                        @Override
+                        public String getId() {
+                            return bomVulnerability.hasId() ? bomVulnerability.getId() : null;
+                        }
 
-                @Override
-                public String getSummary() {
-                    return bomVulnerability.hasDescription() ? bomVulnerability.getDescription() : null;
-                }
+                        @Override
+                        public String getDescription() {
+                            return bomVulnerability.hasDescription() ? bomVulnerability.getDescription() : null;
+                        }
 
-                @Override
-                public String getDetails() {
-                    return bomVulnerability.hasDetail() ? bomVulnerability.getDetail() : null;
-                }
+                        @Override
+                        public String getDetails() {
+                            return bomVulnerability.hasDetail() ? bomVulnerability.getDetail() : null;
+                        }
 
-                @Override
-                public List<Property> getAllProperties() {
-                    return buildAllProperties(bomVulnerability.getPropertiesList());
-                }
+                        @Override
+                        public List<Property> getAllProperties() {
+                            return buildAllProperties(bomVulnerability.getPropertiesList());
+                        }
 
-                @Override
-                public String getModified() {
-                    return bomVulnerability.hasUpdated() ? bomVulnerability.getUpdated().toString() : null;
-                }
+                        @Override
+                        public Timestamp getModified() {
+                            return bomVulnerability.hasUpdated() ? buildTimestamp(bomVulnerability.getUpdated()) : null;
+                        }
 
-                @Override
-                public String getPublished() {
-                    return bomVulnerability.hasPublished() ? bomVulnerability.getPublished().toString() : null;
-                }
+                        @Override
+                        public Timestamp getPublished() {
+                            return bomVulnerability.hasPublished() ? buildTimestamp(bomVulnerability.getPublished()) : null;
+                        }
 
-                @Override
-                public List<VulnerabilitySeverity> getAllSeverities() {
-                    return buildVulnerabilitySeverities(bomVulnerability.getRatingsList());
-                }
+                        @Override
+                        public List<VulnerabilityRating> getAllRatings() {
+                            return buildVulnerabilitySeverities(bomVulnerability.getRatingsList());
+                        }
 
-                @Override
-                public List<VulnerabilityReference> getAllReferences() {
-                    return buildVulnerabilityReferences(bomVulnerability.getReferencesList());
-                }
+                        @Override
+                        public List<VulnerabilityReference> getAllReferences() {
+                            return buildVulnerabilityReferences(bomVulnerability.getReferencesList());
+                        }
 
-                @Override
-                public List<VulnerabilityAffects> getAllAffects() {
-                    return buildVulnerabilityAffects(bomVulnerability.getAffectsList(), bomComponents);
-                }
+                        @Override
+                        public List<VulnerabilityAffects> getAllAffects() {
+                            return buildVulnerabilityAffects(bomVulnerability.getAffectsList(), bomComponents);
+                        }
 
-                @Override
-                public List<Integer> getCwes() {
-                    return bomVulnerability.getCwesList();
-                }
+                        @Override
+                        public List<Integer> getAllCwes() {
+                            return bomVulnerability.getCwesList();
+                        }
 
-                @Override
-                public List<String> getRecommendations() {
-                    return bomVulnerability.hasRecommendation() ? Arrays.stream(bomVulnerability.getRecommendation().split("\n")).toList() : null;
-                }
+                        @Override
+                        public List<String> getAllRecommendations() {
+                            return bomVulnerability.hasRecommendation() ? Arrays.stream(bomVulnerability.getRecommendation().split("\n")).toList() : null;
+                        }
+
+                        @Override
+                        public Property getSource() {
+                            return bomVulnerability.hasSource() ? buildSource(bomVulnerability.getSource()) : null;
+                        }
+                    };
+            VulnerabilityRepository.getInstance().addReadVulnerability(newVul);
+
+            bomVulnerability.getPropertiesList().stream().filter(p -> p.getName().equals("componentRef")).findFirst().ifPresent(bomRef -> {
+                Optional.ofNullable(ComponentRepository.getReadComponent(bomRef)).ifPresent(component ->
+                        component.addVulnerability(newVul));
             });
         }
     }
@@ -212,7 +206,7 @@ public class BomToInternalMavenConverter {
             affectedVersions.add(new VulnerabilityAffectedVersion() {
                 @Override
                 public Version getVersion() {
-                    return bomAffectedVersion.hasVersion() ? Version.of(ComponentType.MAVEN, bomAffectedVersion.getVersion()) : null;
+                    return bomAffectedVersion.hasVersion() ? Version.of(bomAffectedVersion.getVersion()) : null;
                 }
 
                 @Override
@@ -252,10 +246,10 @@ public class BomToInternalMavenConverter {
         return references;
     }
 
-    public static List<VulnerabilitySeverity> buildVulnerabilitySeverities(List<Bom16.VulnerabilityRating> bomVulnerabilityRatings) {
-        var severities = new ArrayList<VulnerabilitySeverity>();
+    public static List<VulnerabilityRating> buildVulnerabilitySeverities(List<Bom16.VulnerabilityRating> bomVulnerabilityRatings) {
+        var severities = new ArrayList<VulnerabilityRating>();
         for (var bomRating : bomVulnerabilityRatings) {
-            severities.add(new VulnerabilitySeverity() {
+            severities.add(new VulnerabilityRating() {
                 @Override
                 public Double getBaseScore() {
                     return bomRating.hasScore() ? bomRating.getScore() : null;
@@ -447,13 +441,27 @@ public class BomToInternalMavenConverter {
             }
 
             @Override
-            public String getLastRenewal() {
-                return bomLicensing.hasLastRenewal() ? bomLicensing.getLastRenewal().toString() : null;
+            public Timestamp getLastRenewal() {
+                return bomLicensing.hasLastRenewal() ? buildTimestamp(bomLicensing.getLastRenewal()) : null;
             }
 
             @Override
-            public String getExpiration() {
-                return bomLicensing.hasExpiration() ? bomLicensing.getExpiration().toString() : null;
+            public Timestamp getExpiration() {
+                return bomLicensing.hasExpiration() ? buildTimestamp(bomLicensing.getExpiration()) : null;
+            }
+        };
+    }
+
+    public static Timestamp buildTimestamp(com.google.protobuf.Timestamp timestamp) {
+        return new Timestamp() {
+            @Override
+            public int getNanos() {
+                return timestamp.getNanos();
+            }
+
+            @Override
+            public long getSeconds() {
+                return timestamp.getSeconds();
             }
         };
     }

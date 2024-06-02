@@ -1,12 +1,12 @@
 package data;
 
-import cyclonedx.sbom.Bom16;
-import cyclonedx.v1_6.Bom16;
-
 /**
  * Represents a dependency of an artifact.
  */
-public interface Dependency extends Bom16Component<Bom16.Dependency> {
+public interface Dependency {
+    /**
+     * @return the qualified name of the component that this dependency describes
+     */
     String getQualifiedName();
 
     /**

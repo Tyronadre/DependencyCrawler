@@ -3,7 +3,8 @@ package repository.repositoryImpl;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import data.License;
-import data.dataImpl.CustomLicense;
+import data.Licensing;
+import data.Property;
 import data.dataImpl.SPDXLicense;
 import logger.Logger;
 import repository.LicenseRepository;
@@ -96,7 +97,42 @@ public class LicenseRepositoryImpl implements LicenseRepository {
             case "MPL 1.1" -> idToLicense.get("MPL-1.1");
             case "Mozilla Public License, Version 2.0" -> idToLicense.get("MPL-2.0");
 
-            default -> new CustomLicense(name, url);
+            default -> new License() {
+                @Override
+                public String getId() {
+                    return name;
+                }
+
+                @Override
+                public String getName() {
+                    return name;
+                }
+
+                @Override
+                public String getText() {
+                    return null;
+                }
+
+                @Override
+                public String getUrl() {
+                    return url;
+                }
+
+                @Override
+                public Licensing getLicensing() {
+                    return null;
+                }
+
+                @Override
+                public List<Property> getProperties() {
+                    return null;
+                }
+
+                @Override
+                public String getAcknowledgement() {
+                    return null;
+                }
+            };
         };
     }
 }

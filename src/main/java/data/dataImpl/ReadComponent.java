@@ -1,37 +1,24 @@
 package data.dataImpl;
 
 import cyclonedx.sbom.Bom16;
-import data.Component;
-import data.Dependency;
-import data.ExternalReference;
-import data.Hash;
-import data.LicenseChoice;
-import data.Organization;
-import data.Person;
-import data.Property;
-import data.Version;
-import data.Vulnerability;
+import data.*;
 import enums.ComponentType;
 import repository.ComponentRepository;
 import repository.repositoryImpl.MavenRepository;
+import repository.repositoryImpl.MavenRepositoryType;
+import service.converter.BomToInternalMavenConverter;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-import static service.converter.BomToInternalMavenConverter.buildAllExternalReferences;
-import static service.converter.BomToInternalMavenConverter.buildAllProperties;
-import static service.converter.BomToInternalMavenConverter.buildHashes;
-import static service.converter.BomToInternalMavenConverter.buildOrganization;
-import static service.converter.BomToInternalMavenConverter.buildAllPersons;
+import static service.converter.BomToInternalMavenConverter.*;
 
 public class ReadComponent implements Component {
     private final Bom16.Component bomComponent;
     private final List<Dependency> dependencies;
     private final List<Property> properties;
     private final List<Vulnerability> vulnerabilities;
+    private final List<Person> authors;
+    private final List<LicenseChoice> licenseChoices;
 
     private static final HashMap<String, ReadComponent> components = new HashMap<>();
     private boolean isRoot = false;
@@ -56,7 +43,9 @@ public class ReadComponent implements Component {
         this.bomComponent = bomComponent;
         this.dependencies = new ArrayList<>();
         this.properties = buildAllProperties(bomComponent.getPropertiesList());
+        this.authors = BomToInternalMavenConverter.buildAllPersons(bomComponent.getAuthorsList(), null);
         this.vulnerabilities = new ArrayList<>();
+        this.licenseChoices = buildAllLicenseChoices(this.bomComponent.getLicensesList());
     }
 
     @Override
@@ -70,7 +59,7 @@ public class ReadComponent implements Component {
     }
 
     @Override
-    public List<? extends Dependency> getDependencies() {
+    public List<Dependency> getDependencies() {
         return this.dependencies;
     }
 
@@ -91,7 +80,7 @@ public class ReadComponent implements Component {
 
     @Override
     public Version getVersion() {
-        return Version.of(ComponentType.MAVEN, bomComponent.getVersion());
+        return Version.of(bomComponent.getVersion());
     }
 
     @Override
@@ -116,7 +105,7 @@ public class ReadComponent implements Component {
 
     @Override
     public ComponentRepository getRepository() {
-        throw new IllegalArgumentException("Not implemented");
+        return MavenRepositoryType.of(MavenRepositoryType.FILE);
     }
 
     @Override
@@ -135,7 +124,7 @@ public class ReadComponent implements Component {
 
     @Override
     public Component getParent() {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
@@ -169,6 +158,11 @@ public class ReadComponent implements Component {
     }
 
     @Override
+    public void addVulnerability(Vulnerability vulnerability) {
+        this.vulnerabilities.add(vulnerability);
+    }
+
+    @Override
     public String getDownloadLocation() {
         return null;
     }
@@ -191,6 +185,17 @@ public class ReadComponent implements Component {
 
     @Override
     public List<LicenseChoice> getAllLicenses() {
-        return List.of();
+        return this.licenseChoices;
     }
+
+    @Override
+    public List<Property> getAllProperties() {
+        return properties;
+    }
+
+    @Override
+    public List<Person> getAllAuthors() {
+        return this.authors;
+    }
+
 }

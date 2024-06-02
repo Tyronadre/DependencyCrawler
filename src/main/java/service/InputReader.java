@@ -2,7 +2,7 @@ package service;
 
 import com.google.protobuf.util.JsonFormat;
 import data.Component;
-import dependency_crawler.input.DependencyCrawlerInput;
+import dependencyCrawler.DependencyCrawlerInput;
 import logger.Logger;
 import service.serviceImpl.maven.MavenInputReader;
 
@@ -13,7 +13,7 @@ import java.nio.file.Files;
 
 /**
  * Reads an input file and creates the artifacts and dependencies.
- * The file will be from JSON format into {@link dependency_crawler.input.DependencyCrawlerInput}.
+ * The file will be from JSON format into {@link dependencyCrawler.DependencyCrawlerInput}.
  */
 public interface InputReader {
 

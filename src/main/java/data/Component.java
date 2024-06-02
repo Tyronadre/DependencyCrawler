@@ -29,7 +29,7 @@ public interface Component {
     /**
      * @return the dependencies of the artifact
      */
-    List<? extends Dependency> getDependencies();
+    List<Dependency> getDependencies();
 
     /**
      * @return the name of the artifact

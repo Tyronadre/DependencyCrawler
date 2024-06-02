@@ -11,7 +11,7 @@ public abstract class Logger {
 
     public static Logger of(String name) {
         if (name.isEmpty() || name.length() > 20) {
-            throw new IllegalArgumentException("Name must be between 1 and 20 characters");
+            throw new IllegalArgumentException("Name must be between 1 and 20 characters, was " + name + ".");
         }
         if (!loggers.containsKey(name)) {
             loggers.put(name, new DefaultLogger(name));

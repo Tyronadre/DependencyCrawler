@@ -1,8 +1,5 @@
 package data;
 
-
-import data.dataImpl.OrganizationImpl;
-
 import java.util.List;
 
 public interface Organization {
@@ -15,7 +12,27 @@ public interface Organization {
     List<Person> getContacts();
 
     static Organization of(String name, List<String> urls, Address address, List<Person> contacts) {
-        return new OrganizationImpl(name, urls, address, contacts);
+        return new Organization() {
+            @Override
+            public String getName() {
+                return name;
+            }
+
+            @Override
+            public List<String> getUrls() {
+                return urls;
+            }
+
+            @Override
+            public Address getAddress() {
+                return address;
+            }
+
+            @Override
+            public List<Person> getContacts() {
+                return contacts;
+            }
+        };
     }
 
 }

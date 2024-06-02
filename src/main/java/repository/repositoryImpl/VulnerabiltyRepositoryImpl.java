@@ -6,7 +6,6 @@ import data.Vulnerability;
 import data.dataImpl.OSVVulnerability;
 import logger.Logger;
 import repository.VulnerabilityRepository;
-import service.serviceImpl.NVDVulnerabilityService;
 
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -76,5 +75,10 @@ public class VulnerabiltyRepositoryImpl implements VulnerabilityRepository {
         }
 
         return vulnerabilities;
+    }
+
+    @Override
+    public void addReadVulnerability(Vulnerability vulnerability) {
+
     }
 }

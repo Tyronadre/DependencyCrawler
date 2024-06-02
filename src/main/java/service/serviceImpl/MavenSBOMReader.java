@@ -3,8 +3,6 @@ package service.serviceImpl;
 import com.google.protobuf.util.JsonFormat;
 import cyclonedx.sbom.Bom16;
 import data.Component;
-import data.Metadata;
-import data.dataImpl.MetadataImpl;
 import logger.Logger;
 import repository.LicenseRepository;
 import service.DocumentReader;
@@ -18,20 +16,26 @@ import java.util.HashMap;
 import static service.converter.BomToInternalMavenConverter.*;
 
 public class MavenSBOMReader implements DocumentReader {
+    private static final Logger logger = Logger.of("MavenSBOMReader");
+
     private static final LicenseRepository licenseRepository = LicenseRepository.getInstance();
 
     @Override
     public Component readDocument(String inputFileName) {
-        Logger logger = Logger.of(MavenSBOMReader.class.getName());
+        logger.info("Reading document as SBOM: " + inputFileName);
+
+        var file = new File(inputFileName);
 
         //parse from file
         var builder = Bom16.Bom.newBuilder();
         try {
-            JsonFormat.parser().ignoringUnknownFields().merge(Files.readString(new File(inputFileName).toPath(), StandardCharsets.UTF_8), builder);
+            JsonFormat.parser().ignoringUnknownFields().merge(Files.readString(file.toPath(), StandardCharsets.UTF_8), builder);
         } catch (Exception e) {
             e.printStackTrace();
         }
         var bom = builder.build();
+
+        logger.info("Read from file. Parsing... ");
 
         //check format
         if (!bom.getBomFormat().equals("CycloneDX")) {
@@ -48,14 +52,19 @@ public class MavenSBOMReader implements DocumentReader {
         root.setRoot();
         bomComponents.put(bomRoot.getBomRef(), new Pair<>(bom.getMetadata().getComponent(), root));
 
+        logger.info("building components");
         //build all components in the SBOM
         bom.getComponentsList().forEach(bomComponent -> bomComponents.put(bomComponent.getBomRef(), new Pair<>(bomComponent, buildComponent(bomComponent))));
 
+        logger.info("building dependencies");
         //build dependencies from the SBOM
         buildAllDependencies(bom.getDependenciesList(), bomComponents);
 
+        logger.info("parsing vulnerabilities");
         //build vulnerabilities from the SBOM
         buildAllVulnerabilities(bom.getVulnerabilitiesList(), bomComponents);
+
+        logger.success("Parsed from SBOM File: " + file.getAbsolutePath());
 
         return root;
     }

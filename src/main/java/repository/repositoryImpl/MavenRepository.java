@@ -5,7 +5,6 @@ import data.Dependency;
 import data.Hash;
 import data.Version;
 import data.Vulnerability;
-import data.dataImpl.HashImpl;
 import data.dataImpl.MavenComponent;
 import data.dataImpl.MavenDependency;
 import data.dataImpl.MavenVersion;
@@ -151,15 +150,12 @@ public class MavenRepository implements ComponentRepository {
 
     private Hash loadHash(String baseUrl, String algorithm) throws IOException {
         try (InputStream inputStream = URI.create(baseUrl + "." + algorithm).toURL().openStream()) {
-            var hash = new HashImpl();
-            hash.setAlgorithm(algorithm);
+
             var value = new String(inputStream.readAllBytes());
             // some files have some spaces and a - at the end. we dont want that
             if (value.contains(" "))
-                hash.setValue(value.substring(0, value.indexOf(" ")));
-            else
-                hash.setValue(value);
-            return hash;
+                value = value.substring(0, value.indexOf(" "));
+            return Hash.of(algorithm, value);
         }
     }
 

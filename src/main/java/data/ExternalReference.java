@@ -1,15 +1,34 @@
 package data;
 
 import cyclonedx.sbom.Bom16;
-import cyclonedx.v1_6.Bom16;
 import data.dataImpl.ExternalReferenceImpl;
 
 import java.util.List;
 
-public interface ExternalReference extends Bom16Component<Bom16.ExternalReference> {
+public interface ExternalReference {
 
     static ExternalReference of(String type, String url, String comment, List<Hash> hashes) {
-        return new ExternalReferenceImpl(type, url, comment, hashes);
+        return new ExternalReference() {
+            @Override
+            public String getType() {
+                return type;
+            }
+
+            @Override
+            public String getUrl() {
+                return url;
+            }
+
+            @Override
+            public String getComment() {
+                return comment;
+            }
+
+            @Override
+            public List<Hash> getHashes() {
+                return hashes;
+            }
+        };
     }
 
     String getType();

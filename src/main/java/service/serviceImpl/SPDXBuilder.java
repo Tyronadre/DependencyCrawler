@@ -158,10 +158,8 @@ public class SPDXBuilder implements DocumentBuilder {
             spdxPackage.setPackageFileName(component.getPurl());
             spdxPackage.setDownloadLocation(component.getDownloadLocation() + ".jar");
 //            spdxPackage.setFilesAnalyzed();
-            if (component.getLicenseExpression() != null) {
-                spdxPackage.setLicenseDeclared(
-                        LicenseInfoFactory.parseSPDXLicenseString(component.getLicenseExpression(), store, uri, copyManager)
-                );
+            if (component.getAllLicenses() != null) {
+                buildAllLicenses(component.getAllLicenses(), spdxPackage);
             }
 //            spdxPackage.setPackageVerificationCode();
             spdxPackage.setPrimaryPurpose(Purpose.LIBRARY);
@@ -177,6 +175,17 @@ public class SPDXBuilder implements DocumentBuilder {
             return spdxPackage;
         } catch (InvalidSPDXAnalysisException e) {
             throw new SPDXBuilderException(e.getMessage() + Arrays.toString(e.getStackTrace()));
+        }
+    }
+
+    private void buildAllLicenses(List<LicenseChoice> allLicenses, SpdxPackage spdxPackage) {
+        for (LicenseChoice licenseChoice : allLicenses) {
+            try {
+                var license = LicenseInfoFactory.parseSPDXLicenseString(licenseChoice.getLicense().getId(), store, uri, copyManager);
+                spdxPackage.getLicenseInfoFromFiles().add(license);
+            } catch (InvalidSPDXAnalysisException e) {
+                logger.error("Error building SPDX document" + e.getMessage());
+            }
         }
     }
 }

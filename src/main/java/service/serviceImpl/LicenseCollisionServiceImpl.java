@@ -25,14 +25,15 @@ public class LicenseCollisionServiceImpl implements LicenseCollisionService {
 
     @Override
     public List<LicenseCollision> checkLicenseCollisions(Component component) {
-        var licenses = new ArrayList<String>();
-        for (var dependency : component.getDependencies()) {
-            if (dependency == null || dependency.getComponent() == null || dependency.getComponent().getLicenseExpression() == null || dependency.getComponent().getLicenseExpression().isEmpty())
-                continue;
-            licenses.add(dependency.getComponent().getLicenseExpression());
-        }
-
-        System.out.println(licenses);
+//
+//        var licenses = new ArrayList<String>();
+//        for (var dependency : component.getDependencies()) {
+//            if (dependency == null || dependency.getComponent() == null || dependency.getComponent().getLicenseExpression() == null || dependency.getComponent().getLicenseExpression().isEmpty())
+//                continue;
+//            licenses.add(dependency.getComponent().getLicenseExpression());
+//        }
+//
+//        System.out.println(licenses);
         return List.of();
     }
 }

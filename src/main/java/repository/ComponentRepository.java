@@ -1,5 +1,6 @@
 package repository;
 
+import cyclonedx.sbom.Bom16;
 import data.Component;
 import data.Dependency;
 import data.Version;
@@ -14,6 +15,10 @@ public interface ComponentRepository {
 
     static ComponentRepository of(RepositoryType repositoryType) {
         return MavenRepositoryType.of((MavenRepositoryType) repositoryType);
+    }
+
+    static Component getReadComponent(Bom16.Property bomRef) {
+        return null;
     }
 
     /**

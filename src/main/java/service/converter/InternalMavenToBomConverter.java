@@ -1,23 +1,11 @@
 package service.converter;
 
 import cyclonedx.sbom.Bom16;
-import data.Address;
-import data.Component;
-import data.ExternalReference;
-import data.Hash;
-import data.License;
-import data.LicenseChoice;
-import data.Licensing;
-import data.Organization;
-import data.OrganizationOrPerson;
-import data.Person;
-import data.Property;
-import data.Timestamp;
-import data.dataImpl.OrganizationImpl;
+import data.*;
+import util.Pair;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class InternalMavenToBomConverter {
     public static Bom16.Metadata buildMetadata(Component root) {
@@ -27,10 +15,165 @@ public class InternalMavenToBomConverter {
         metadataBuilder.setTimestamp(com.google.protobuf.Timestamp.newBuilder().setSeconds(now.getEpochSecond()).setNanos(now.getNano()).build());
 //        metadataBuilder.setTools() //TODO set this as a service in tools
         metadataBuilder.setComponent(buildRoot(root));
-        metadataBuilder.setSupplier(buildOrganizationalEntity(new OrganizationImpl("Technische Universitaet Darmstadt", "https://www.tu-darmstadt.de", null)));
-        metadataBuilder.setManufacturer(buildOrganizationalEntity(new OrganizationImpl("Technische Universitaet Darmstadt", "https://www.tu-darmstadt.de", null)));
+        metadataBuilder.setSupplier(buildOrganizationalEntity(Organization.of("Technische Universitaet Darmstadt", List.of("https://www.tu-darmstadt.de"), null, null)));
+        metadataBuilder.setManufacturer(buildOrganizationalEntity(Organization.of("Technische Universitaet Darmstadt", List.of("https://www.tu-darmstadt.de"), null, null)));
 
         return metadataBuilder.build();
+    }
+
+    public static List<Bom16.Vulnerability> buildAllVulnerabilities(List<Vulnerability> vulnerabilities) {
+        return vulnerabilities.stream().map(InternalMavenToBomConverter::buildVulnerability).toList();
+    }
+
+    public static Bom16.Vulnerability buildVulnerability(Vulnerability vulnerability) {
+        var builder = Bom16.Vulnerability.newBuilder();
+        Optional.ofNullable(vulnerability.getId()).ifPresent(builder::setId);
+        Optional.ofNullable(vulnerability.getSource()).ifPresent(s -> builder.setSource(buildSource(s)));
+        Optional.ofNullable(vulnerability.getAllReferences()).ifPresent(allRefs -> builder.addAllReferences(buildAllVulnerabilityReferences(allRefs)));
+        Optional.ofNullable(vulnerability.getAllRatings()).ifPresent(allRatings -> builder.addAllRatings(buildAllVulnerabilityRatings(allRatings)));
+        Optional.ofNullable(vulnerability.getAllCwes()).ifPresent(builder::addAllCwes);
+        Optional.ofNullable(vulnerability.getDescription()).ifPresent(builder::setDescription);
+        Optional.ofNullable(vulnerability.getDetails()).ifPresent(builder::setDetail);
+        Optional.ofNullable(vulnerability.getAllRecommendations()).ifPresent(allRecs -> builder.setRecommendation(String.join("\n ", allRecs)));
+        Optional.ofNullable(vulnerability.getPublished()).ifPresent(p -> builder.setPublished(buildTimestamp(p)));
+        Optional.ofNullable(vulnerability.getModified()).ifPresent(m -> builder.setUpdated(buildTimestamp(m)));
+        Optional.ofNullable(vulnerability.getAllProperties()).ifPresent(allProps -> builder.addAllProperties(buildAllProperties(allProps)));
+        Optional.ofNullable(vulnerability.getAllAffects()).ifPresent(allAffects -> builder.addAllAffects(buildAllVulnerabilityAffects(allAffects)));
+        builder.addProperties(Bom16.Property.newBuilder().setName("componentRef").setValue(vulnerability.getComponent().getQualifiedName()));
+        return builder.build();
+    }
+
+    public static List<Bom16.VulnerabilityAffects> buildAllVulnerabilityAffects(List<VulnerabilityAffects> affects) {
+        return affects.stream().map(InternalMavenToBomConverter::buildVulnerabilityAffect).toList();
+    }
+
+    private static Bom16.VulnerabilityAffects buildVulnerabilityAffect(VulnerabilityAffects vulnerabilityAffects) {
+        var builder = Bom16.VulnerabilityAffects.newBuilder();
+        Optional.ofNullable(vulnerabilityAffects.getAllVersions()).ifPresent(allVersions -> builder.addAllVersions(buildAllVulnerabilityAffectedVersions(allVersions)));
+        Optional.ofNullable(vulnerabilityAffects.getAffectedComponent()).ifPresent(comp -> builder.setRef(comp.getQualifiedName()));
+        return builder.build();
+    }
+
+    private static List<Bom16.VulnerabilityAffectedVersions> buildAllVulnerabilityAffectedVersions(List<VulnerabilityAffectedVersion> allVersions) {
+        return allVersions.stream().map(InternalMavenToBomConverter::buildVulnerabilityAffectedVersions).toList();
+    }
+
+    private static Bom16.VulnerabilityAffectedVersions buildVulnerabilityAffectedVersions(VulnerabilityAffectedVersion vulnerabilityAffectedVersion) {
+        var builder = Bom16.VulnerabilityAffectedVersions.newBuilder();
+        Optional.ofNullable(vulnerabilityAffectedVersion.getVersion()).ifPresent(v -> builder.setVersion(v.getVersion()));
+        Optional.ofNullable(vulnerabilityAffectedVersion.getVersionRange()).ifPresent(builder::setRange);
+        Optional.ofNullable(vulnerabilityAffectedVersion.getAffectedStatus()).ifPresent(s -> builder.setStatus(buildVulnerabilityAffectedStatus(s)));
+        return builder.build();
+    }
+
+    private static Bom16.VulnerabilityAffectedStatus buildVulnerabilityAffectedStatus(String s) {
+        return Bom16.VulnerabilityAffectedStatus.valueOf(s);
+    }
+
+    private static List<Bom16.VulnerabilityRating> buildAllVulnerabilityRatings(List<VulnerabilityRating> vulnerabilityRatings) {
+        return vulnerabilityRatings.stream().map(InternalMavenToBomConverter::buildVulnerabilityRating).toList();
+    }
+
+    private static Bom16.VulnerabilityRating buildVulnerabilityRating(VulnerabilityRating vulnerabilityRating) {
+        var builder = Bom16.VulnerabilityRating.newBuilder();
+        Optional.ofNullable(vulnerabilityRating.getSource()).ifPresent(s -> builder.setSource(buildSource(s)));
+        Optional.ofNullable(vulnerabilityRating.getBaseScore()).ifPresent(builder::setScore);
+        Optional.ofNullable(vulnerabilityRating.getSeverity()).ifPresent(s -> builder.setSeverity(buildSeverity(s)));
+        Optional.ofNullable(vulnerabilityRating.getMethod()).ifPresent(m -> builder.setMethod(buildMethod(m)));
+        Optional.ofNullable(vulnerabilityRating.getVector()).ifPresent(builder::setVector);
+        Optional.ofNullable(vulnerabilityRating.getJustification()).ifPresent(builder::setJustification);
+        return builder.build();
+    }
+
+    private static Bom16.ScoreMethod buildMethod(String m) {
+        return switch (m) {
+            case "4" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV4;
+            case "3.1" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV31;
+            case "3" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV3;
+            case "2" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV2;
+            default -> Bom16.ScoreMethod.valueOf(m);
+        };
+    }
+
+    private static Bom16.Severity buildSeverity(String s) {
+        return switch (s) {
+            case "LOW" -> Bom16.Severity.SEVERITY_LOW;
+            case "MODERATE" -> Bom16.Severity.SEVERITY_MEDIUM;
+            case "HIGH" -> Bom16.Severity.SEVERITY_HIGH;
+            case "CRITICAL" -> Bom16.Severity.SEVERITY_CRITICAL;
+            default -> Bom16.Severity.valueOf(s);
+        };
+    }
+
+    private static List<Bom16.VulnerabilityReference> buildAllVulnerabilityReferences(List<VulnerabilityReference> vulnerabilityReferences) {
+        return vulnerabilityReferences.stream().map(InternalMavenToBomConverter::buildVulnerabilityReference).toList();
+    }
+
+    private static Bom16.VulnerabilityReference buildVulnerabilityReference(VulnerabilityReference vulnerabilityReference) {
+        var builder = Bom16.VulnerabilityReference.newBuilder();
+        builder.setId(vulnerabilityReference.getIdentifier());
+        builder.setSource(buildSource(vulnerabilityReference.getSource()));
+        return builder.build();
+    }
+
+    public static Bom16.Source buildSource(Property source) {
+        var builder = Bom16.Source.newBuilder();
+        Optional.ofNullable(source.getName()).ifPresent(builder::setName);
+        Optional.ofNullable(source.getValue()).ifPresent(builder::setUrl);
+        return builder.build();
+    }
+
+    /**
+     * Build Dependencies and components recursively
+     *
+     * @param component       the root component
+     * @param buildComponents the map that will contain all build components
+     * @return the root dependency
+     */
+    public static Bom16.Dependency buildAllDependenciesAndComponentsRecursively(Component component, HashMap<String, Pair<Bom16.Component, Component>> buildComponents) {
+//        var builder = Bom16.Dependency.newBuilder();
+//        builder.setRef(component.getQualifiedName());
+//        for (var dependency : component.getDependencies().stream().filter(Dependency::isNotOptional).filter(Dependency::shouldResolveByScope).toList()) {
+//            if (dependency.getComponent() != null) {
+//                //check if we have build the component of this dependency
+//                if (!buildComponents.containsKey(dependency.getQualifiedName())) {
+//                    var dependencyComponentBuilder = Bom16.Component.newBuilder(buildComponent(dependency.getComponent()));
+//                    dependencyComponentBuilder.setScope(Bom16.Scope.SCOPE_REQUIRED);
+//                    dependencyComponentBuilder.setBomRef(dependency.getQualifiedName());
+//                    buildComponents.put(dependency.getQualifiedName(), new Pair<>(dependencyComponentBuilder.build(), dependency.getComponent()));
+//                }
+//
+//
+//                builder.addDependencies(buildAllDependenciesAndComponentsRecursively(dependency.getComponent(), buildComponents));
+//            }
+//        }
+//        return builder.build();
+        var builder = Bom16.Dependency.newBuilder();
+        builder.setRef(component.getQualifiedName());
+        for (var dep : component.getDependencies()) {
+            builder.addDependencies(buildAllDependeciesAndComponentsRecursivelyHelper(dep, buildComponents));
+        }
+        return builder.build();
+    }
+
+    private static Bom16.Dependency buildAllDependeciesAndComponentsRecursivelyHelper(Dependency dependency, HashMap<String, Pair<Bom16.Component, Component>> buildComponents) {
+        if (dependency.getComponent() != null && !buildComponents.containsKey(dependency.getQualifiedName())){
+            var dependencyComponentBuilder = Bom16.Component.newBuilder(buildComponent(dependency.getComponent()));
+            dependencyComponentBuilder.setScope(Bom16.Scope.SCOPE_REQUIRED);
+            dependencyComponentBuilder.setBomRef(dependency.getQualifiedName());
+
+            buildComponents.put(dependency.getQualifiedName(), new Pair<>(dependencyComponentBuilder.build(), dependency.getComponent()));
+        }
+        var builder = Bom16.Dependency.newBuilder();
+        builder.setRef(dependency.getQualifiedName());
+        if (dependency.getComponent() != null) {
+            dependency.getComponent().getDependencies().stream().filter(Dependency::isNotOptional).filter(Dependency::shouldResolveByScope).forEach(innerDep -> {
+
+                var innerDepBom = buildAllDependeciesAndComponentsRecursivelyHelper(innerDep, buildComponents);
+                builder.addDependencies(innerDepBom);
+            });
+        }
+        return builder.build();
     }
 
     public static Bom16.Component buildRoot(Component root) {

@@ -1,15 +1,6 @@
 package data.dataImpl;
 
-import cyclonedx.v1_6.Bom16;
-import data.Component;
-import data.Dependency;
-import data.ExternalReference;
-import data.Hash;
-import data.License;
-import data.Organization;
-import data.Person;
-import data.Version;
-import data.Vulnerability;
+import data.*;
 import logger.Logger;
 import org.apache.maven.api.model.DependencyManagement;
 import org.apache.maven.api.model.Model;
@@ -17,11 +8,7 @@ import repository.LicenseRepository;
 import repository.repositoryImpl.MavenRepository;
 import repository.repositoryImpl.MavenRepositoryType;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * An artifact in a Maven repository.
@@ -32,8 +19,7 @@ public class MavenComponent implements Component {
     String groupId;
     String artifactId;
     Version version;
-    String scope;
-    List<MavenDependency> dependencies = new ArrayList<>();
+    List<Dependency> dependencies = new ArrayList<>();
     MavenRepository repository;
     Model model;
     Component parent;
@@ -52,7 +38,7 @@ public class MavenComponent implements Component {
     }
 
     @Override
-    public List<MavenDependency> getDependencies() {
+    public List<Dependency> getDependencies() {
         //return only dependencies that are not provided or test or optional
         return this.dependencies.stream().toList();
     }
@@ -72,7 +58,7 @@ public class MavenComponent implements Component {
         if (this.model == null) return null;
         var org = this.model.getOrganization();
         if (org == null) return null;
-        return new OrganizationImpl(org.getName(), org.getUrl());
+        return  Organization.of(org.getName(), List.of(org.getUrl()), null, null);
     }
 
     @Override
@@ -80,7 +66,7 @@ public class MavenComponent implements Component {
         if (this.model == null) return null;
         var org = this.model.getOrganization();
         if (org == null) return null;
-        return new OrganizationImpl(org.getName(), org.getUrl());
+        return Organization.of(org.getName(), List.of(org.getUrl()), null, null);
     }
 
     @Override
@@ -88,7 +74,7 @@ public class MavenComponent implements Component {
         var l = new ArrayList<Person>();
         if (this.model == null || this.model.getDevelopers() == null) return null;
         for (var developer : model.getDevelopers()) {
-            l.add(Person.of(developer.getName(), developer.getEmail(), developer.getUrl(), developer.getOrganization(), developer.getOrganizationUrl(), developer.getRoles()));
+            l.add(Person.of(developer.getName(), developer.getEmail(), developer.getUrl(), null, Organization.of(developer.getOrganization(), List.of(developer.getOrganizationUrl()), null, null),  developer.getRoles()));
         }
         return l;
     }
@@ -126,7 +112,7 @@ public class MavenComponent implements Component {
 
     @Override
     public void addDependency(Dependency dependency) {
-        this.dependencies.add((MavenDependency) dependency);
+        this.dependencies.add(dependency);
     }
 
     @Override
@@ -259,7 +245,6 @@ public class MavenComponent implements Component {
         return hashes;
     }
 
-    @Override
     public String getLicenseExpression() {
         if (this.licenses == null)
             return null;
@@ -287,6 +272,11 @@ public class MavenComponent implements Component {
     }
 
     @Override
+    public void addVulnerability(Vulnerability vulnerability) {
+
+    }
+
+    @Override
     public String getDownloadLocation() {
         return this.repository.getDownloadLocation(this);
     }
@@ -294,12 +284,32 @@ public class MavenComponent implements Component {
     @Override
     public Set<Dependency> getDependenciesFlat() {
         Set<Dependency> dependencies = new HashSet<>();
-        for (var dependency : this.dependencies.stream().filter(MavenDependency::shouldResolveByScope).filter(MavenDependency::isNotOptional).toList()) {
+        for (var dependency : this.dependencies.stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList()) {
             dependencies.add(dependency);
             if (dependency.getComponent() != null && dependency.getComponent().isLoaded())
                 dependencies.addAll(dependency.getComponent().getDependenciesFlat());
         }
         return dependencies;
+    }
+
+    @Override
+    public String getPublisher() {
+        return "";
+    }
+
+    @Override
+    public List<LicenseChoice> getAllLicenses() {
+        return List.of();
+    }
+
+    @Override
+    public List<Property> getAllProperties() {
+        return List.of();
+    }
+
+    @Override
+    public List<Person> getAllAuthors() {
+        return List.of();
     }
 
     public void setHashes(List<Hash> hashes) {
@@ -308,15 +318,5 @@ public class MavenComponent implements Component {
 
     public void setVulnerabilities(List<Vulnerability> vulnerabilities) {
         this.vulnerabilities = vulnerabilities;
-    }
-
-    @Override
-    public Bom16.Component toBom16() {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    @Override
-    public String getBomRef() {
-        return this.getQualifiedName();
     }
 }

@@ -1,6 +1,5 @@
 package data.dataImpl;
 
-import cyclonedx.v1_6.Bom16;
 import data.Component;
 import data.Dependency;
 import data.Version;
@@ -10,7 +9,6 @@ public class MavenDependency implements Dependency {
     private static final Logger logger = Logger.of("MavenDependency");
 
     private final MavenComponent treeParent; //The component that has this dependency
-    private MavenComponent parent; //The parent of this dependency (specified in the pom file)
     private MavenComponent component;
     private final String groupId;
     private final String artifactId;
@@ -18,10 +16,6 @@ public class MavenDependency implements Dependency {
     private MavenVersion version;
     private final String scope;
     private final Boolean optional;
-
-    public MavenDependency(Component component, Component parent){
-
-    }
 
     /**
      * Constructor for a Maven Dependency with a resolved version.
@@ -69,7 +63,16 @@ public class MavenDependency implements Dependency {
 
     @Override
     public String getQualifiedName() {
-        return groupId + ":" + artifactId + ":" + versionConstraints;
+        var name = "";
+        if (component != null) name = component.getQualifiedName();
+        else if (version != null)  name = groupId + ":" + artifactId + ":" + version;
+        else name = groupId + ":" + artifactId + ":" + versionConstraints;
+
+        if (scope != null && !scope.isEmpty()) {
+            name += "_" + scope;
+        }
+
+        return name;
     }
 
     @Override
@@ -136,15 +139,7 @@ public class MavenDependency implements Dependency {
     }
 
     @Override
-    public Bom16.Dependency toBom16() {
-        if (this.component == null) return null;
-        var builder = Bom16.Dependency.newBuilder();
-        builder.setRef(this.component.getQualifiedName() + "_" + this.getScope());
-        this.component.getDependencies().stream().filter(MavenDependency::shouldResolveByScope).filter(MavenDependency::isNotOptional).forEach(
-                d -> {
-                    if (d.getComponent() != null) builder.addDependencies(d.toBom16());
-                }
-        );
-        return builder.build();
+    public void setScope(String scope) {
+
     }
 }

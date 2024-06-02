@@ -21,7 +21,7 @@ public class Main {
         LicenseRepository.getInstance(); //preload license repository
 
 
-//        fromFile("input_0.json");
+        fromFile("input_0.json");
 //        fromFile("input_1.json");
 //        fromFile("input_2.json");
 
