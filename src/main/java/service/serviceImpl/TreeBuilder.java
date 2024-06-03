@@ -8,6 +8,7 @@ import service.DocumentBuilder;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 
 public class TreeBuilder implements DocumentBuilder {
     private static final Logger logger = Logger.of("TreeBuilder");
@@ -42,8 +43,8 @@ public class TreeBuilder implements DocumentBuilder {
         else writer.println("[ERROR]: " + component.getQualifiedName() + "?");
         writer.flush();
 
-        var dependencies = component.getDependencies();
-        if (dependencies == null) return;
+        var dependencies = new ArrayList<>(component.getDependencies());
+        if (dependencies.isEmpty()) return;
 
         for (int i = 0; i < dependencies.size(); i++) {
             Dependency dependency = dependencies.get(i);

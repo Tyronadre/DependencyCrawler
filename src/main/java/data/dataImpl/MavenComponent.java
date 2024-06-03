@@ -5,7 +5,7 @@ import logger.Logger;
 import org.apache.maven.api.model.DependencyManagement;
 import org.apache.maven.api.model.Model;
 import repository.LicenseRepository;
-import repository.repositoryImpl.MavenRepository;
+import repository.repositoryImpl.MavenComponentRepository;
 import repository.repositoryImpl.MavenRepositoryType;
 
 import java.util.*;
@@ -19,8 +19,8 @@ public class MavenComponent implements Component {
     String groupId;
     String artifactId;
     Version version;
-    List<Dependency> dependencies = new ArrayList<>();
-    MavenRepository repository;
+    Set<Dependency> dependencies = new HashSet<>();
+    MavenComponentRepository repository;
     Model model;
     Component parent;
     List<Hash> hashes = new ArrayList<>();
@@ -30,7 +30,7 @@ public class MavenComponent implements Component {
     private List<License> licenses;
     private List<Person> authors;
 
-    public MavenComponent(String groupId, String artifactId, Version version, MavenRepository repository) {
+    public MavenComponent(String groupId, String artifactId, Version version, MavenComponentRepository repository) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
@@ -38,9 +38,9 @@ public class MavenComponent implements Component {
     }
 
     @Override
-    public List<Dependency> getDependencies() {
+    public Set<Dependency> getDependencies() {
         //return only dependencies that are not provided or test or optional
-        return this.dependencies.stream().toList();
+        return this.dependencies;
     }
 
     @Override
@@ -86,7 +86,7 @@ public class MavenComponent implements Component {
     }
 
     @Override
-    public MavenRepository getRepository() {
+    public MavenComponentRepository getRepository() {
         return this.repository;
     }
 
@@ -106,7 +106,7 @@ public class MavenComponent implements Component {
     }
 
     @Override
-    public void setRepository(MavenRepository mavenRepository) {
+    public void setRepository(MavenComponentRepository mavenRepository) {
         this.repository = mavenRepository;
     }
 
@@ -293,8 +293,20 @@ public class MavenComponent implements Component {
     }
 
     @Override
+    public Set<Component> getDependecyComponentsFlat() {
+        Set<Component> components = new HashSet<>();
+        for (var dependency : this.dependencies.stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList()) {
+            if (dependency.getComponent() != null && dependency.getComponent().isLoaded()) {
+                components.add(dependency.getComponent());
+                components.addAll(dependency.getComponent().getDependecyComponentsFlat());
+            }
+        }
+        return components;
+    }
+
+    @Override
     public String getPublisher() {
-        return "";
+        return null;
     }
 
     @Override
@@ -318,5 +330,21 @@ public class MavenComponent implements Component {
 
     public void setVulnerabilities(List<Vulnerability> vulnerabilities) {
         this.vulnerabilities = vulnerabilities;
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof MavenComponent that)) return false;
+
+        return Objects.equals(groupId, that.groupId) && Objects.equals(artifactId, that.artifactId) && Objects.equals(version, that.version);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hashCode(groupId);
+        result = 31 * result + Objects.hashCode(artifactId);
+        result = 31 * result + Objects.hashCode(version);
+        return result;
     }
 }

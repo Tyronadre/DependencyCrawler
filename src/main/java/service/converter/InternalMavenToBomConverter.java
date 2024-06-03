@@ -1,13 +1,34 @@
 package service.converter;
 
 import cyclonedx.sbom.Bom16;
-import data.*;
-import util.Pair;
+import data.Address;
+import data.Component;
+import data.Dependency;
+import data.ExternalReference;
+import data.Hash;
+import data.License;
+import data.LicenseChoice;
+import data.Licensing;
+import data.Organization;
+import data.OrganizationOrPerson;
+import data.Person;
+import data.Property;
+import data.Timestamp;
+import data.Vulnerability;
+import data.VulnerabilityAffectedVersion;
+import data.VulnerabilityAffects;
+import data.VulnerabilityRating;
+import data.VulnerabilityReference;
+import repository.repositoryImpl.MavenComponentRepository;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 public class InternalMavenToBomConverter {
+
     public static Bom16.Metadata buildMetadata(Component root) {
         var metadataBuilder = Bom16.Metadata.newBuilder();
 
@@ -39,7 +60,7 @@ public class InternalMavenToBomConverter {
         Optional.ofNullable(vulnerability.getModified()).ifPresent(m -> builder.setUpdated(buildTimestamp(m)));
         Optional.ofNullable(vulnerability.getAllProperties()).ifPresent(allProps -> builder.addAllProperties(buildAllProperties(allProps)));
         Optional.ofNullable(vulnerability.getAllAffects()).ifPresent(allAffects -> builder.addAllAffects(buildAllVulnerabilityAffects(allAffects)));
-        builder.addProperties(Bom16.Property.newBuilder().setName("componentRef").setValue(vulnerability.getComponent().getQualifiedName()));
+        Optional.ofNullable(vulnerability.getComponent()).ifPresent(comp -> builder.addProperties(Bom16.Property.newBuilder().setName("componentRef").setValue(comp.getQualifiedName())));
         return builder.build();
     }
 
@@ -130,49 +151,69 @@ public class InternalMavenToBomConverter {
      * @param buildComponents the map that will contain all build components
      * @return the root dependency
      */
-    public static Bom16.Dependency buildAllDependenciesAndComponentsRecursively(Component component, HashMap<String, Pair<Bom16.Component, Component>> buildComponents) {
-//        var builder = Bom16.Dependency.newBuilder();
-//        builder.setRef(component.getQualifiedName());
-//        for (var dependency : component.getDependencies().stream().filter(Dependency::isNotOptional).filter(Dependency::shouldResolveByScope).toList()) {
-//            if (dependency.getComponent() != null) {
-//                //check if we have build the component of this dependency
-//                if (!buildComponents.containsKey(dependency.getQualifiedName())) {
-//                    var dependencyComponentBuilder = Bom16.Component.newBuilder(buildComponent(dependency.getComponent()));
-//                    dependencyComponentBuilder.setScope(Bom16.Scope.SCOPE_REQUIRED);
-//                    dependencyComponentBuilder.setBomRef(dependency.getQualifiedName());
-//                    buildComponents.put(dependency.getQualifiedName(), new Pair<>(dependencyComponentBuilder.build(), dependency.getComponent()));
-//                }
-//
-//
-//                builder.addDependencies(buildAllDependenciesAndComponentsRecursively(dependency.getComponent(), buildComponents));
-//            }
-//        }
-//        return builder.build();
+    public static Bom16.Dependency buildAllDependenciesAndComponentsRecursively(Component component, Map<String, Bom16.Component> buildComponents) {
+        buildComponents.put(component.getQualifiedName(), buildComponent(component));
+
         var builder = Bom16.Dependency.newBuilder();
         builder.setRef(component.getQualifiedName());
         for (var dep : component.getDependencies()) {
-            builder.addDependencies(buildAllDependeciesAndComponentsRecursivelyHelper(dep, buildComponents));
+            builder.addDependencies(buildAllDependenciesAndComponentsRecursivelyHelper(dep, buildComponents));
         }
         return builder.build();
     }
 
-    private static Bom16.Dependency buildAllDependeciesAndComponentsRecursivelyHelper(Dependency dependency, HashMap<String, Pair<Bom16.Component, Component>> buildComponents) {
-        if (dependency.getComponent() != null && !buildComponents.containsKey(dependency.getQualifiedName())){
-            var dependencyComponentBuilder = Bom16.Component.newBuilder(buildComponent(dependency.getComponent()));
-            dependencyComponentBuilder.setScope(Bom16.Scope.SCOPE_REQUIRED);
-            dependencyComponentBuilder.setBomRef(dependency.getQualifiedName());
+    private static Bom16.Dependency buildAllDependenciesAndComponentsRecursivelyHelper(Dependency dependency, Map<String, Bom16.Component> buildComponents) {
+        System.out.println("building dependency: " + dependency.getQualifiedName());
 
-            buildComponents.put(dependency.getQualifiedName(), new Pair<>(dependencyComponentBuilder.build(), dependency.getComponent()));
-        }
         var builder = Bom16.Dependency.newBuilder();
         builder.setRef(dependency.getQualifiedName());
-        if (dependency.getComponent() != null) {
-            dependency.getComponent().getDependencies().stream().filter(Dependency::isNotOptional).filter(Dependency::shouldResolveByScope).forEach(innerDep -> {
 
-                var innerDepBom = buildAllDependeciesAndComponentsRecursivelyHelper(innerDep, buildComponents);
-                builder.addDependencies(innerDepBom);
-            });
+        //if we have build this component already return
+        if (buildComponents.containsKey(dependency.getQualifiedName())) {
+            return builder.build();
         }
+
+        //if this dependency has no component or has failed to load it, return
+        if (dependency.getComponent() == null || !dependency.getComponent().isLoaded()) {
+            return builder.build();
+        }
+
+        //build the component
+        var dependencyComponentBuilder = Bom16.Component.newBuilder(buildComponent(dependency.getComponent()));
+        dependencyComponentBuilder.setScope(Bom16.Scope.SCOPE_REQUIRED);
+        dependencyComponentBuilder.setBomRef(dependency.getQualifiedName());
+        if (dependency.getComponent() != null && !buildComponents.containsKey(dependency.getQualifiedName())) {
+            buildComponents.put(dependency.getQualifiedName(), dependencyComponentBuilder.build());
+        }
+
+        //recurse on the dependencies
+        for (var dep : dependency.getComponent().getDependencies()) {
+            builder.addDependencies(buildAllDependenciesAndComponentsRecursivelyHelper(dep, buildComponents));
+        }
+
+        return builder.build();
+    }
+
+    private static Bom16.Dependency buildNonLoadedComponentFromDependency(Dependency innerDep, boolean optional, Map<String, Bom16.Component> buildComponents) {
+        var builder = Bom16.Dependency.newBuilder();
+        builder.setRef(innerDep.getQualifiedName());
+
+        if (buildComponents.containsKey(innerDep.getQualifiedName())) {
+            return builder.build();
+        }
+
+        var compBuilder = Bom16.Component.newBuilder();
+        compBuilder.setBomRef(innerDep.getQualifiedName());
+
+        var qualifiedName = innerDep.getQualifiedName().split(":");
+        compBuilder.setGroup(qualifiedName[0]);
+        compBuilder.setName(qualifiedName[1]);
+
+        compBuilder.setType(Bom16.Classification.CLASSIFICATION_LIBRARY);
+        compBuilder.setScope(optional ? Bom16.Scope.SCOPE_OPTIONAL : Bom16.Scope.SCOPE_EXCLUDED);
+        buildComponents.put(innerDep.getQualifiedName(), compBuilder.build());
+
+
         return builder.build();
     }
 
@@ -310,21 +351,18 @@ public class InternalMavenToBomConverter {
 
     private static Bom16.Hash buildHash(Hash hash) {
         var builder = Bom16.Hash.newBuilder();
-        builder.setAlg(switch (hash.getAlgorithm()) {
-            case "MD5" -> Bom16.HashAlg.HASH_ALG_MD_5;
-            case "SHA-1" -> Bom16.HashAlg.HASH_ALG_SHA_1;
-            case "SHA-256" -> Bom16.HashAlg.HASH_ALG_SHA_256;
-            case "SHA-384" -> Bom16.HashAlg.HASH_ALG_SHA_384;
-            case "SHA-512" -> Bom16.HashAlg.HASH_ALG_SHA_512;
-            case "SHA3-256" -> Bom16.HashAlg.HASH_ALG_SHA_3_256;
-            case "SHA3-384" -> Bom16.HashAlg.HASH_ALG_SHA_3_384;
-            case "SHA3-512" -> Bom16.HashAlg.HASH_ALG_SHA_3_512;
-            case "BLAKE2b-256" -> Bom16.HashAlg.HASH_ALG_BLAKE_2_B_256;
-            case "BLAKE2b-384" -> Bom16.HashAlg.HASH_ALG_BLAKE_2_B_384;
-            case "BLAKE2b-512" -> Bom16.HashAlg.HASH_ALG_BLAKE_2_B_512;
-            case "BLAKE3" -> Bom16.HashAlg.HASH_ALG_BLAKE_3;
-            default -> Bom16.HashAlg.HASH_ALG_NULL;
-        });
+        try {
+            builder.setAlg(Bom16.HashAlg.valueOf(hash.getAlgorithm()));
+        } catch (IllegalArgumentException e) {
+            builder.setAlg(switch (hash.getAlgorithm()) {
+                case "md5" -> Bom16.HashAlg.HASH_ALG_MD_5;
+                case "sha1" -> Bom16.HashAlg.HASH_ALG_SHA_1;
+                case "sha256" -> Bom16.HashAlg.HASH_ALG_SHA_256;
+                case "sha384" -> Bom16.HashAlg.HASH_ALG_SHA_384;
+                case "sha512" -> Bom16.HashAlg.HASH_ALG_SHA_512;
+                default -> Bom16.HashAlg.HASH_ALG_NULL;
+            });
+        }
         builder.setValue(hash.getValue());
         return builder.build();
     }

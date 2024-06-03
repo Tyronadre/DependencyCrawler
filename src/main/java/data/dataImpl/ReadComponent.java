@@ -2,9 +2,8 @@ package data.dataImpl;
 
 import cyclonedx.sbom.Bom16;
 import data.*;
-import enums.ComponentType;
 import repository.ComponentRepository;
-import repository.repositoryImpl.MavenRepository;
+import repository.repositoryImpl.MavenComponentRepository;
 import repository.repositoryImpl.MavenRepositoryType;
 import service.converter.BomToInternalMavenConverter;
 
@@ -14,7 +13,7 @@ import static service.converter.BomToInternalMavenConverter.*;
 
 public class ReadComponent implements Component {
     private final Bom16.Component bomComponent;
-    private final List<Dependency> dependencies;
+    private final Set<Dependency> dependencies;
     private final List<Property> properties;
     private final List<Vulnerability> vulnerabilities;
     private final List<Person> authors;
@@ -41,7 +40,7 @@ public class ReadComponent implements Component {
 
     private ReadComponent(Bom16.Component bomComponent) {
         this.bomComponent = bomComponent;
-        this.dependencies = new ArrayList<>();
+        this.dependencies = new HashSet<>();
         this.properties = buildAllProperties(bomComponent.getPropertiesList());
         this.authors = BomToInternalMavenConverter.buildAllPersons(bomComponent.getAuthorsList(), null);
         this.vulnerabilities = new ArrayList<>();
@@ -55,11 +54,11 @@ public class ReadComponent implements Component {
 
     @Override
     public boolean isLoaded() {
-        throw new UnsupportedOperationException();
+        return true;
     }
 
     @Override
-    public List<Dependency> getDependencies() {
+    public Set<Dependency> getDependencies() {
         return this.dependencies;
     }
 
@@ -128,7 +127,7 @@ public class ReadComponent implements Component {
     }
 
     @Override
-    public void setRepository(MavenRepository mavenRepository) {
+    public void setRepository(MavenComponentRepository mavenRepository) {
         throw new UnsupportedOperationException();
     }
 
@@ -179,6 +178,18 @@ public class ReadComponent implements Component {
     }
 
     @Override
+    public Set<Component> getDependecyComponentsFlat() {
+        Set<Component> components = new HashSet<>();
+        for (var dependency : this.dependencies.stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList()) {
+            if (dependency.getComponent() != null && dependency.getComponent().isLoaded()) {
+                components.add(dependency.getComponent());
+                components.addAll(dependency.getComponent().getDependecyComponentsFlat());
+            }
+        }
+        return components;
+    }
+
+    @Override
     public String getPublisher() {
         return (bomComponent.hasPublisher()) ? bomComponent.getPublisher() : null;
     }
@@ -198,4 +209,16 @@ public class ReadComponent implements Component {
         return this.authors;
     }
 
+    @Override
+    public String toString() {
+        return new StringJoiner(", ", ReadComponent.class.getSimpleName() + "[", "]")
+                .add("bomComponent=" + bomComponent)
+                .add("dependencies=" + dependencies)
+                .add("properties=" + properties)
+                .add("vulnerabilities=" + vulnerabilities)
+                .add("authors=" + authors)
+                .add("licenseChoices=" + licenseChoices)
+                .add("isRoot=" + isRoot)
+                .toString();
+    }
 }

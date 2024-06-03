@@ -57,7 +57,7 @@ public enum MavenRepositoryType implements RepositoryType {
         }
         for (var repository : MavenRepositoryType.values()) {
             if (repository == ROOT || repository == FILE) continue;
-            if (new MavenRepository(repository).loadComponent(mavenComponent)) {
+            if (new MavenComponentRepository(repository).loadComponent(mavenComponent)) {
                 mavenComponent.setRepository(repository.getRepository());
                 return;
             }
@@ -77,16 +77,16 @@ public enum MavenRepositoryType implements RepositoryType {
 
     // ------------ REPOSITORY LOADING ------------ //
 
-    private static final HashMap<MavenRepositoryType, MavenRepository> loadedRepositories = new HashMap<>();
+    private static final HashMap<MavenRepositoryType, MavenComponentRepository> loadedRepositories = new HashMap<>();
 
-    public static MavenRepository of(MavenRepositoryType repository) {
+    public static MavenComponentRepository of(MavenRepositoryType repository) {
         if (!loadedRepositories.containsKey(repository)) {
-            loadedRepositories.put(repository, new MavenRepository(repository));
+            loadedRepositories.put(repository, new MavenComponentRepository(repository));
         }
         return loadedRepositories.get(repository);
     }
 
-    public MavenRepository getRepository() {
+    public MavenComponentRepository getRepository() {
         return MavenRepositoryType.of(this);
     }
 }

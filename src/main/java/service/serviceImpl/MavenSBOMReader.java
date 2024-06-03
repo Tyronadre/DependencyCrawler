@@ -6,11 +6,13 @@ import data.Component;
 import logger.Logger;
 import repository.LicenseRepository;
 import service.DocumentReader;
+import service.converter.BomToInternalMavenConverter;
 import util.Pair;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayDeque;
 import java.util.HashMap;
 
 import static service.converter.BomToInternalMavenConverter.*;
@@ -45,24 +47,23 @@ public class MavenSBOMReader implements DocumentReader {
             logger.error("Unsupported SBOM version: " + bom.getSpecVersion() + ". Try parsing anyway. May result in errors/missing data. Supported version: 1.6");
         }
 
-        var bomComponents = new HashMap<String, Pair<Bom16.Component, Component>>();
         //build root
         var bomRoot = bom.getMetadata().getComponent();
         var root = buildComponent(bomRoot);
         root.setRoot();
-        bomComponents.put(bomRoot.getBomRef(), new Pair<>(bom.getMetadata().getComponent(), root));
 
         logger.info("building components");
         //build all components in the SBOM
-        bom.getComponentsList().forEach(bomComponent -> bomComponents.put(bomComponent.getBomRef(), new Pair<>(bomComponent, buildComponent(bomComponent))));
+        bom.getComponentsList().forEach(BomToInternalMavenConverter::buildComponent);
 
         logger.info("building dependencies");
         //build dependencies from the SBOM
-        buildAllDependencies(bom.getDependenciesList(), bomComponents);
+        buildAllDependenciesRecursively(bom.getDependencies(0), null);
+
 
         logger.info("parsing vulnerabilities");
         //build vulnerabilities from the SBOM
-        buildAllVulnerabilities(bom.getVulnerabilitiesList(), bomComponents);
+        buildAllVulnerabilities(bom.getVulnerabilitiesList());
 
         logger.success("Parsed from SBOM File: " + file.getAbsolutePath());
 

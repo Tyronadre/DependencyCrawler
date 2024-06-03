@@ -3,6 +3,8 @@ package service.serviceImpl;
 import com.google.protobuf.util.JsonFormat;
 import cyclonedx.sbom.Bom16;
 import data.*;
+import org.spdx.library.Read;
+import repository.repositoryImpl.ReadVulnerabilityRepository;
 import service.DocumentBuilder;
 import util.Pair;
 
@@ -52,7 +54,7 @@ public class MavenSBOMBuilder implements DocumentBuilder {
     private Bom16.Bom buildBom(Component root) {
         var bomBuilder = Bom16.Bom.newBuilder();
 
-        var components = new HashMap<String, Pair<Bom16.Component, Component>>();
+        var components = new HashMap<String, Bom16.Component>();
         var dependency = buildAllDependenciesAndComponentsRecursively(root, components);
 
         bomBuilder.setBomFormat("CycloneDX");
@@ -61,8 +63,9 @@ public class MavenSBOMBuilder implements DocumentBuilder {
         bomBuilder.setSerialNumber(UUID.randomUUID().toString());
         bomBuilder.setMetadata(buildMetadata(root));
         bomBuilder.addDependencies(dependency);
-        bomBuilder.addAllComponents(components.values().stream().map(Pair::first).toList());
-        bomBuilder.addAllVulnerabilities(buildAllVulnerabilities(components.values().stream().map(Pair::second).flatMap(component -> component.getAllVulnerabilities().stream()).toList()));
+        bomBuilder.addAllComponents(components.values().stream().sorted(Comparator.comparing(Bom16.Component::getBomRef)).toList());
+        bomBuilder.addAllVulnerabilities(buildAllVulnerabilities(root.getDependecyComponentsFlat().stream().map(Component::getAllVulnerabilities).flatMap(Collection::stream).toList()));
+        bomBuilder.addAllVulnerabilities(buildAllVulnerabilities(ReadVulnerabilityRepository.getInstance().getAllVulnerabilities()));
 
         return bomBuilder.build();
     }

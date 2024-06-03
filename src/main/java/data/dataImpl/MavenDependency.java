@@ -68,9 +68,9 @@ public class MavenDependency implements Dependency {
         else if (version != null)  name = groupId + ":" + artifactId + ":" + version;
         else name = groupId + ":" + artifactId + ":" + versionConstraints;
 
-        if (scope != null && !scope.isEmpty()) {
-            name += "_" + scope;
-        }
+//        if (scope != null && !scope.isEmpty()) {
+//            name += "_" + scope;
+//        }
 
         return name;
     }

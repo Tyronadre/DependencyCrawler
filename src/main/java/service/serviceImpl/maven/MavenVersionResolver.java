@@ -6,13 +6,13 @@ import data.dataImpl.MavenDependency;
 import data.dataImpl.MavenVersion;
 import exceptions.VersionRangeResolutionException;
 import exceptions.VersionResolveException;
-import repository.repositoryImpl.MavenRepository;
+import repository.repositoryImpl.MavenComponentRepository;
 import service.VersionResolver;
 
 public class MavenVersionResolver implements VersionResolver {
-    private final MavenRepository repository;
+    private final MavenComponentRepository repository;
 
-    public MavenVersionResolver(MavenRepository repository) {
+    public MavenVersionResolver(MavenComponentRepository repository) {
         this.repository = repository;
     }
 

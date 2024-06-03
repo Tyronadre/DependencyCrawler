@@ -69,10 +69,7 @@ public class VexBuilder implements DocumentBuilder {
     private Iterable<VexOuterClass.Vulnerability> buildAllVulnerabilities(Component root) {
         var list = new ArrayList<VexOuterClass.Vulnerability>();
 
-        var components = new ArrayList<>(root.getDependenciesFlat().stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).map(Dependency::getComponent).filter(Objects::nonNull).toList());
-        components.add(root);
-
-        for (var component : components) {
+        for (var component : root.getDependecyComponentsFlat()) {
             var vulnerabilities = component.getAllVulnerabilities();
             if (vulnerabilities != null) {
                 for (var vulnerability : vulnerabilities) {
@@ -128,8 +125,7 @@ public class VexBuilder implements DocumentBuilder {
 
     private VexOuterClass.ScoreSource buildMethod(VulnerabilityRating severity) {
         return switch (severity.getMethod()) {
-            case "3.1" -> VexOuterClass.ScoreSource.CVSSv3;
-            case "3.0" -> VexOuterClass.ScoreSource.CVSSv3;
+            case "3.1", "3.0" -> VexOuterClass.ScoreSource.CVSSv3;
             case "2.0" -> VexOuterClass.ScoreSource.CVSSv2;
             default -> VexOuterClass.ScoreSource.UNRECOGNIZED;
         };

@@ -1,7 +1,7 @@
 package data;
 
 import repository.ComponentRepository;
-import repository.repositoryImpl.MavenRepository;
+import repository.repositoryImpl.MavenComponentRepository;
 
 import java.util.List;
 import java.util.Set;
@@ -29,7 +29,7 @@ public interface Component {
     /**
      * @return the dependencies of the artifact
      */
-    List<Dependency> getDependencies();
+    Set<Dependency> getDependencies();
 
     /**
      * @return the name of the artifact
@@ -98,7 +98,7 @@ public interface Component {
      * Sets the repository of this component
      * @param mavenRepository the repository
      */
-    void setRepository(MavenRepository mavenRepository);
+    void setRepository(MavenComponentRepository mavenRepository);
 
     /**
      * Adds a dependency to this component
@@ -126,6 +126,8 @@ public interface Component {
      * @return the dependencies of the artifact in a flat list
      */
     Set<Dependency> getDependenciesFlat();
+
+    Set<Component> getDependecyComponentsFlat();
 
     String getPublisher();
 

@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
  * <p>
  * Example BaseURL: <a href="https://repo1.maven.org/maven2/">Maven Central</a>
  */
-public class MavenRepository implements ComponentRepository {
+public class MavenComponentRepository implements ComponentRepository {
     private final RepositoryType repositoryType;
     private final String baseUrl;
     private final HashMap<String, Component> components;
@@ -48,7 +48,7 @@ public class MavenRepository implements ComponentRepository {
 
     private static final Logger logger = Logger.of("MavenRepository");
 
-    MavenRepository(MavenRepositoryType repositoryType) {
+    MavenComponentRepository(MavenRepositoryType repositoryType) {
         this.repositoryType = repositoryType;
         this.baseUrl = repositoryType.getUrl();
         components = new HashMap<>();
@@ -174,6 +174,10 @@ public class MavenRepository implements ComponentRepository {
         }
     }
 
+    public Component getComponent(String qualifedName) {
+        return components.get(qualifedName);
+    }
+
     @Override
     public VersionRangeResolver getVersionRangeResolver() {
         return versionRangeResolver;
@@ -186,10 +190,11 @@ public class MavenRepository implements ComponentRepository {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", MavenRepository.class.getSimpleName() + "[", "]").add("'" + baseUrl + "'").toString();
+        return new StringJoiner(", ", MavenComponentRepository.class.getSimpleName() + "[", "]").add("'" + baseUrl + "'").toString();
     }
 
     public String getDownloadLocation(Component mavenComponent) {
         return baseUrl + mavenComponent.getGroup().replace(".", "/") + "/" + mavenComponent.getName() + "/" + mavenComponent.getVersion().getVersion() + "/" + mavenComponent.getName() + "-" + mavenComponent.getVersion().getVersion();
     }
+
 }

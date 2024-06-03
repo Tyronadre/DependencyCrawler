@@ -6,7 +6,7 @@ import data.dataImpl.MavenDependency;
 import data.dataImpl.MavenVersion;
 import data.dataImpl.MavenVersionRange;
 import exceptions.VersionRangeResolutionException;
-import repository.repositoryImpl.MavenRepository;
+import repository.repositoryImpl.MavenComponentRepository;
 import service.VersionRangeResolver;
 import service.VersionResolver;
 
@@ -20,9 +20,9 @@ import static java.util.Objects.requireNonNull;
 
 public class MavenVersionRangeResolver implements VersionRangeResolver {
 
-    private final MavenRepository repository;
+    private final MavenComponentRepository repository;
 
-    public MavenVersionRangeResolver(MavenRepository repository) {
+    public MavenVersionRangeResolver(MavenComponentRepository repository) {
         this.repository = repository;
     }
 

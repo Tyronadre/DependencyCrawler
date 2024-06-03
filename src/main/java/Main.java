@@ -1,3 +1,4 @@
+import data.Component;
 import repository.LicenseRepository;
 import service.BFDependencyCrawler;
 import service.DocumentReader;
@@ -21,11 +22,17 @@ public class Main {
         LicenseRepository.getInstance(); //preload license repository
 
 
-        fromFile("input_0.json");
+//        fromFile("input_0.json");
 //        fromFile("input_1.json");
 //        fromFile("input_2.json");
 
-        readSBOMFile("generated/output_0.sbom.json");
+        var component = readSBOMFile("generated/output_0.sbom.json");
+        writeSBOMFile(component, "generated/output_0_0");
+    }
+
+    private static void writeSBOMFile(Component component, String path) {
+        MavenSBOMBuilder sbomBuilder = new MavenSBOMBuilder();
+        sbomBuilder.buildDocument(component, path);
     }
 
     private static void fromFile(String fileName) throws URISyntaxException {
@@ -47,9 +54,9 @@ public class Main {
         vexBuilder.buildDocument(rootComponent, inputReader.getOutputFileName());
     }
 
-    private static void readSBOMFile(String fileName) {
+    private static Component readSBOMFile(String fileName) {
         DocumentReader sbomReader = new MavenSBOMReader();
-        sbomReader.readDocument(fileName);
+        return sbomReader.readDocument(fileName);
     }
 
 }
