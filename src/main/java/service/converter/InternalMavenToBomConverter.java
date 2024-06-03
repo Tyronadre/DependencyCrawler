@@ -22,6 +22,7 @@ import data.VulnerabilityReference;
 import repository.repositoryImpl.MavenComponentRepository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -42,7 +43,7 @@ public class InternalMavenToBomConverter {
         return metadataBuilder.build();
     }
 
-    public static List<Bom16.Vulnerability> buildAllVulnerabilities(List<Vulnerability> vulnerabilities) {
+    public static List<Bom16.Vulnerability> buildAllVulnerabilities(Collection<Vulnerability> vulnerabilities) {
         return vulnerabilities.stream().map(InternalMavenToBomConverter::buildVulnerability).toList();
     }
 

@@ -11,7 +11,9 @@ import util.Pair;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static service.converter.InternalMavenToBomConverter.*;
 
@@ -41,7 +43,7 @@ public class MavenSBOMBuilder implements DocumentBuilder {
         // json file
         try {
             var file = new File(outputFileName + ".sbom.json");
-            var outputStream = new FileWriter(file);
+            var outputStream = new FileWriter(file, StandardCharsets.UTF_8);
             outputStream.write(JsonFormat.printer().print(bom));
             outputStream.close();
         } catch (IOException e) {
@@ -64,8 +66,9 @@ public class MavenSBOMBuilder implements DocumentBuilder {
         bomBuilder.setMetadata(buildMetadata(root));
         bomBuilder.addDependencies(dependency);
         bomBuilder.addAllComponents(components.values().stream().sorted(Comparator.comparing(Bom16.Component::getBomRef)).toList());
-        bomBuilder.addAllVulnerabilities(buildAllVulnerabilities(root.getDependecyComponentsFlat().stream().map(Component::getAllVulnerabilities).flatMap(Collection::stream).toList()));
-        bomBuilder.addAllVulnerabilities(buildAllVulnerabilities(ReadVulnerabilityRepository.getInstance().getAllVulnerabilities()));
+        var vuls = root.getDependecyComponentsFlat().stream().map(Component::getAllVulnerabilities).flatMap(Collection::stream).collect(Collectors.toSet());
+        vuls.addAll(ReadVulnerabilityRepository.getInstance().getAllVulnerabilities());
+        bomBuilder.addAllVulnerabilities(buildAllVulnerabilities(vuls));
 
         return bomBuilder.build();
     }

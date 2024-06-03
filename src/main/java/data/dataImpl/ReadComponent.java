@@ -54,7 +54,7 @@ public class ReadComponent implements Component {
 
     @Override
     public boolean isLoaded() {
-        return true;
+        return false;
     }
 
     @Override

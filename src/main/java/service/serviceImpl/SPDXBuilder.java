@@ -150,11 +150,13 @@ public class SPDXBuilder implements DocumentBuilder {
                 spdxPackage.setSupplier("Organization: " + supplier.getName());
                 spdxPackage.setOriginator("Organization: " + supplier.getName());
             }
-            for (ExternalReference externalReference : component.getAllExternalReferences()) {
-                var ref = spdxPackage.createExternalRef(ReferenceCategory.OTHER, new ReferenceType(externalReference.getType()), externalReference.getUrl(), null);
-                spdxPackage.addExternalRef(ref);
 
-            }
+            if (component.getAllExternalReferences() != null)
+                for (ExternalReference externalReference : component.getAllExternalReferences()) {
+                    var ref = spdxPackage.createExternalRef(ReferenceCategory.OTHER, new ReferenceType(externalReference.getType()), externalReference.getUrl(), null);
+                    spdxPackage.addExternalRef(ref);
+
+                }
             spdxPackage.setPackageFileName(component.getPurl());
             spdxPackage.setDownloadLocation(component.getDownloadLocation() + ".jar");
 //            spdxPackage.setFilesAnalyzed();

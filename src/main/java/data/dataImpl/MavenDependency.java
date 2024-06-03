@@ -13,7 +13,7 @@ public class MavenDependency implements Dependency {
     private final String groupId;
     private final String artifactId;
     private String versionConstraints;
-    private MavenVersion version;
+    private Version version;
     private final String scope;
     private final Boolean optional;
 
@@ -31,7 +31,7 @@ public class MavenDependency implements Dependency {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.treeParent = treeParent;
-        this.version = (MavenVersion) version;
+        this.version = version;
         this.optional = false;
         this.scope = "compile";
     }

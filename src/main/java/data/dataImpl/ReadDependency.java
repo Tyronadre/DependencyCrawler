@@ -37,7 +37,7 @@ public class ReadDependency implements Dependency {
 
     @Override
     public String getScope() {
-        throw new UnsupportedOperationException("Not supported.");
+        return "EXCLUDED";
     }
 
     @Override
@@ -47,7 +47,7 @@ public class ReadDependency implements Dependency {
 
     @Override
     public Boolean shouldResolveByScope() {
-        return ref != null;
+        return ref == null;
     }
 
     @Override

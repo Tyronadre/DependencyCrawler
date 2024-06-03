@@ -20,6 +20,7 @@ import data.VulnerabilityAffectedVersion;
 import data.VulnerabilityAffects;
 import data.VulnerabilityRating;
 import data.VulnerabilityReference;
+import data.dataImpl.OSVVulnerability;
 import data.dataImpl.ReadComponent;
 import data.dataImpl.ReadDependency;
 import repository.repositoryImpl.ReadComponentRepository;
@@ -28,6 +29,7 @@ import repository.repositoryImpl.ReadVulnerabilityRepository;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class BomToInternalMavenConverter {
     private static final ReadComponentRepository componentRepository = ReadComponentRepository.getInstance();
@@ -137,7 +139,24 @@ public class BomToInternalMavenConverter {
                 public Property getSource() {
                     return bomVulnerability.hasSource() ? buildSource(bomVulnerability.getSource()) : null;
                 }
+
+                @Override
+                public boolean equals(Object o) {
+                    if (this == o) return true;
+                    if (!(o instanceof OSVVulnerability that)) return false;
+
+                    return Objects.equals(getId(), that.getId());
+                }
+
+                @Override
+                public int hashCode() {
+                    return Objects.hashCode(getId());
+                }
+
+
             };
+
+
 
             vulnerabilityRepository.addReadVulnerability(newVul);
         }
