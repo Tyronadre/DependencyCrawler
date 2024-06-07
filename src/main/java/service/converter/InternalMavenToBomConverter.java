@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 public class InternalMavenToBomConverter {
@@ -48,9 +49,6 @@ public class InternalMavenToBomConverter {
     }
 
     public static Bom16.Vulnerability buildVulnerability(Vulnerability vulnerability) {
-        if (vulnerability instanceof ReadVulnerability readVulnerability)
-            return readVulnerability.getBomComponent();
-
         var builder = Bom16.Vulnerability.newBuilder();
         Optional.ofNullable(vulnerability.getId()).ifPresent(builder::setId);
         Optional.ofNullable(vulnerability.getSource()).ifPresent(s -> builder.setSource(buildSource(s)));
@@ -324,7 +322,7 @@ public class InternalMavenToBomConverter {
         return builder.build();
     }
 
-    private static com.google.protobuf.Timestamp buildTimestamp(Timestamp timestamp) {
+    public static com.google.protobuf.Timestamp buildTimestamp(Timestamp timestamp) {
         var builder = com.google.protobuf.Timestamp.newBuilder();
         builder.setNanos(timestamp.getNanos());
         builder.setSeconds(timestamp.getSeconds());

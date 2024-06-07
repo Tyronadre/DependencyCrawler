@@ -1,9 +1,6 @@
 import cyclonedx.sbom.Bom16;
 import data.Component;
-import data.dataImpl.MavenComponent;
-import data.dataImpl.MavenDependency;
 import repository.LicenseRepository;
-import repository.repositoryImpl.MavenRepositoryType;
 import service.BFDependencyCrawler;
 import service.InputReader;
 import service.LicenseCollisionService;
@@ -27,51 +24,47 @@ public class Main {
 
 
 //        var in1 = readInputFile("input_0.json");
-//        writeSBOMFile(in1, "generated/output_0");
-//        writeSPDXFile(in1, "generated/output_0");
-//        writeTreeFile(in1, "generated/output_0");
-//        writeVexFile(in1, "generated/output_0");
+//        crawlComponent(in1);
+//        buildSBOMFile(in1, "generated/output_0");
+//        buildSPDXFile(in1, "generated/output_0");
+//        buildTreeFile(in1, "generated/output_0");
+//        buildVexFile(in1, "generated/output_0");
 //
 //        var in2 = readInputFile("input_1.json");
-//        writeSBOMFile(in2, "generated/output_1");
-//        writeSPDXFile(in2, "generated/output_1");
-//        writeTreeFile(in2, "generated/output_1");
-//        writeVexFile(in2, "generated/output_1");
+//        crawlComponent(in2);
+//        buildSBOMFile(in2, "generated/output_1");
+//        buildSPDXFile(in2, "generated/output_1");
+//        buildTreeFile(in2, "generated/output_1");
+//        buildVexFile(in2, "generated/output_1");
 //
 //        var in3 = readInputFile("input_2.json");
-//        writeSBOMFile(in3, "generated/output_2");
-//        writeSPDXFile(in3, "generated/output_2");
-//        writeTreeFile(in3, "generated/output_2");
-//        writeVexFile(in3, "generated/output_2");
+//        crawlComponent(in3);
+//        buildSBOMFile(in3, "generated/output_2");
+//        buildSPDXFile(in3, "generated/output_2");
+//        buildTreeFile(in3, "generated/output_2");
+//        buildVexFile(in3, "generated/output_2");
 
 
         var rein1 = readSBOMFile("generated/output_0.sbom.json");
-        updateComponent(rein1.second());
+        crawlComponent(rein1.second());
         writeSBOMFile(rein1.first(), "generated/output_0_rebuild");
+
 //        buildSPDXFile(updatedRein1, "generated/output_0_rebuild");
 //        buildTreeFile(updatedRein1, "generated/output_0_rebuild");
 //        buildVexFile(updatedRein1, "generated/output_0_rebuild");
 
     }
 
-    private static Component updateComponent(Component rein1) {
-        var root = new MavenComponent(rein1.getGroup(), rein1.getName(), rein1.getVersion(), MavenRepositoryType.of(MavenRepositoryType.ROOT));
-        root.setRoot();
-        for (var dep : rein1.getDependencies()) {
-            var depSplit = dep.getQualifiedName().split(":");
-            root.addDependency(new MavenDependency(depSplit[0], depSplit[1], dep.getVersion(), root));
-        }
-
+    private static void crawlComponent(Component component) {
         BFDependencyCrawler bfDependencyCrawler = new BFDependencyCrawlerImpl();
         LicenseCollisionService licenseCollisionService = LicenseCollisionService.getInstance();
-        bfDependencyCrawler.crawl(root, true);
-        licenseCollisionService.checkLicenseCollisions(root);
-        return root;
+        bfDependencyCrawler.crawl(component, true);
+        licenseCollisionService.checkLicenseCollisions(component);
     }
 
     private static void writeSBOMFile(Bom16.Bom bom, String path) {
         MavenSBOMBuilder sbomBuilder = new MavenSBOMBuilder();
-        sbomBuilder.writeDocument(bom, path);
+        sbomBuilder.rebuildDocument(bom, path);
     }
 
     private static void buildSBOMFile(Component component, String path) {
@@ -96,14 +89,7 @@ public class Main {
 
     private static Component readInputFile(String fileName) throws URISyntaxException {
         InputReader inputReader = InputReader.of(new File(Main.class.getClassLoader().getResource(fileName).toURI()));
-        LicenseCollisionService licenseCollisionService = LicenseCollisionService.getInstance();
-        BFDependencyCrawler bfDependencyCrawler = new BFDependencyCrawlerImpl();
-
-        var rootComponent = inputReader.loadRootComponent();
-        bfDependencyCrawler.crawl(rootComponent, true);
-        licenseCollisionService.checkLicenseCollisions(rootComponent);
-
-        return rootComponent;
+        return inputReader.loadRootComponent();
     }
 
 

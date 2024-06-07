@@ -4,6 +4,7 @@ import data.*;
 import logger.Logger;
 import org.apache.maven.api.model.DependencyManagement;
 import org.apache.maven.api.model.Model;
+import repository.ComponentRepository;
 import repository.LicenseRepository;
 import repository.repositoryImpl.MavenComponentRepository;
 import repository.repositoryImpl.MavenRepositoryType;
@@ -20,7 +21,7 @@ public class MavenComponent implements Component {
     String artifactId;
     Version version;
     Set<Dependency> dependencies = new HashSet<>();
-    MavenComponentRepository repository;
+    ComponentRepository repository;
     Model model;
     Component parent;
     List<Hash> hashes = new ArrayList<>();
@@ -30,7 +31,7 @@ public class MavenComponent implements Component {
     private List<License> licenses;
     private List<Person> authors;
 
-    public MavenComponent(String groupId, String artifactId, Version version, MavenComponentRepository repository) {
+    public MavenComponent(String groupId, String artifactId, Version version, ComponentRepository repository) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
@@ -58,7 +59,7 @@ public class MavenComponent implements Component {
         if (this.model == null) return null;
         var org = this.model.getOrganization();
         if (org == null) return null;
-        return  Organization.of(org.getName(), List.of(org.getUrl()), null, null);
+        return Organization.of(org.getName(), List.of(org.getUrl()), null, null);
     }
 
     @Override
@@ -74,7 +75,7 @@ public class MavenComponent implements Component {
         var l = new ArrayList<Person>();
         if (this.model == null || this.model.getDevelopers() == null) return null;
         for (var developer : model.getDevelopers()) {
-            l.add(Person.of(developer.getName(), developer.getEmail(), developer.getUrl(), null, Organization.of(developer.getOrganization(), List.of(developer.getOrganizationUrl()), null, null),  developer.getRoles()));
+            l.add(Person.of(developer.getName(), developer.getEmail(), developer.getUrl(), null, Organization.of(developer.getOrganization(), List.of(developer.getOrganizationUrl()), null, null), developer.getRoles()));
         }
         return l;
     }
@@ -86,7 +87,7 @@ public class MavenComponent implements Component {
     }
 
     @Override
-    public MavenComponentRepository getRepository() {
+    public ComponentRepository getRepository() {
         return this.repository;
     }
 
@@ -106,11 +107,6 @@ public class MavenComponent implements Component {
     }
 
     @Override
-    public void setRepository(MavenComponentRepository mavenRepository) {
-        this.repository = mavenRepository;
-    }
-
-    @Override
     public void addDependency(Dependency dependency) {
         this.dependencies.add(dependency);
     }
@@ -123,57 +119,58 @@ public class MavenComponent implements Component {
 
     @Override
     public synchronized void loadComponent() {
-        if (!loaded) {
-            if (this.isRoot) {
-                this.loaded = true;
-                return;
-            }
+        if (loaded) return;
 
-            var start = System.currentTimeMillis();
-            logger.info("Loading component: " + this.getQualifiedName());
-
-            if (this.repository != null) this.repository.loadComponent(this);
-            //if we dont have a model we try other repositories
-            if (model == null) MavenRepositoryType.tryLoadComponent(this);
-            //if we still dont have the model, we cant load the component
-            if (model == null) {
-                logger.error("Could not load component: " + this.getQualifiedName() + " [no model] (" + (System.currentTimeMillis() - start) + "ms)");
-                return;
-            }
-
-            // DEPENDENCIES
-            for (var modelDependency : model.getDependencies()) {
-                // special case
-                if (modelDependency.getGroupId().equals("${project.groupId}") || modelDependency.getGroupId().equals("${pom.groupId}"))
-                    this.dependencies.add(new MavenDependency(this.getGroup(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
-                else
-                    this.dependencies.add(new MavenDependency(modelDependency.getGroupId(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
-            }
-
-            // PARENT
-            if (this.model.getParent() != null)
-                this.parent = this.repository.getComponent(this.model.getParent().getGroupId(), this.model.getParent().getArtifactId(), new MavenVersion(this.model.getParent().getVersion()));
-            else this.parent = null;
-
-            // LICENSES
-            var licenseRepository = LicenseRepository.getInstance();
-            if (this.model.getLicenses() != null){
-                this.licenses = new ArrayList<>();
-                for (var license : this.model.getLicenses()) {
-                    if (license.getName() == null) continue;
-                    var newLicense = licenseRepository.getLicense(license.getName(), license.getUrl());
-                    if (newLicense == null) {
-                        logger.error("Could not resolve license for " + this.getQualifiedName() + ": " + license.getName());
-                        continue;
-                    }
-                    this.licenses.add(newLicense);
-                }
-
-            }
-
-            loaded = true;
-            logger.success("Loaded component: " + this.getQualifiedName() + " (" + (System.currentTimeMillis() - start) + "ms)");
+        if (this.isRoot) {
+            this.loaded = true;
+            return;
         }
+
+        var start = System.currentTimeMillis();
+        logger.info("Loading component: " + this.getQualifiedName());
+
+        if (this.repository != null) this.repository.loadComponent(this);
+        //if we dont have a model we try other repositories
+        if (model == null) MavenRepositoryType.tryLoadComponent(this);
+        //if we still dont have the model, we cant load the component
+        if (model == null) {
+            logger.error("Could not load component: " + this.getQualifiedName() + " [no model] (" + (System.currentTimeMillis() - start) + "ms)");
+            return;
+        }
+
+
+        // DEPENDENCIES
+        for (var modelDependency : model.getDependencies()) {
+            // special case
+            if (modelDependency.getGroupId().equals("${project.groupId}") || modelDependency.getGroupId().equals("${pom.groupId}"))
+                this.dependencies.add(new MavenDependency(this.getGroup(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
+            else
+                this.dependencies.add(new MavenDependency(modelDependency.getGroupId(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
+        }
+
+        // PARENT
+        if (this.model.getParent() != null)
+            this.parent = this.repository.getComponent(this.model.getParent().getGroupId(), this.model.getParent().getArtifactId(), new MavenVersion(this.model.getParent().getVersion()));
+        else this.parent = null;
+
+        // LICENSES
+        var licenseRepository = LicenseRepository.getInstance();
+        if (this.model.getLicenses() != null){
+            this.licenses = new ArrayList<>();
+            for (var license : this.model.getLicenses()) {
+                if (license.getName() == null) continue;
+                var newLicense = licenseRepository.getLicense(license.getName(), license.getUrl());
+                if (newLicense == null) {
+                    logger.error("Could not resolve license for " + this.getQualifiedName() + ": " + license.getName());
+                    continue;
+                }
+                this.licenses.add(newLicense);
+            }
+        }
+
+        loaded = true;
+        logger.success("Loaded component: " + this.getQualifiedName() + " (" + (System.currentTimeMillis() - start) + "ms)");
+
     }
 
     @Override
@@ -191,10 +188,6 @@ public class MavenComponent implements Component {
         return this.artifactId;
     }
 
-    public void setModel(Model model) {
-        this.model = model;
-    }
-
     @Override
     public String toString() {
         return this.getQualifiedName();
@@ -206,7 +199,6 @@ public class MavenComponent implements Component {
         }
         return this.model.getDependencyManagement();
     }
-
 
 
     @Override
@@ -239,41 +231,14 @@ public class MavenComponent implements Component {
     }
 
 
-
     @Override
     public List<Hash> getAllHashes() {
         return hashes;
     }
 
-    public String getLicenseExpression() {
-        if (this.licenses == null)
-            return null;
-        var licenses = this.licenses.stream().filter(l -> l instanceof SPDXLicense).toList();
-        if (licenses.isEmpty()) {
-            return null;
-        }
-
-        if (licenses.size() == 1) return licenses.get(0).getId();
-        StringBuilder licenseSetString = new StringBuilder("(");
-        for (int i = 0; i < licenses.size(); i++) {
-            var license = licenses.get(i);
-            licenseSetString.append("\"").append(license.getId()).append("\"");
-            if (i < licenses.size() - 1) {
-                licenseSetString.append(" AND ");
-            }
-        }
-        licenseSetString.append(")");
-        return licenseSetString.toString();
-    }
-
     @Override
     public List<Vulnerability> getAllVulnerabilities() {
         return Objects.requireNonNullElseGet(this.vulnerabilities, ArrayList::new);
-    }
-
-    @Override
-    public void addVulnerability(Vulnerability vulnerability) {
-
     }
 
     @Override
@@ -324,11 +289,30 @@ public class MavenComponent implements Component {
         return List.of();
     }
 
-    public void setHashes(List<Hash> hashes) {
+    @Override
+    public void setData(String key, Object value) {
+        switch (key) {
+            case "model" -> setModel((Model) value);
+            case "hashes" -> setHashes((List<Hash>) value);
+            case "vulnerabilities" -> setVulnerabilities((List<Vulnerability>) value);
+            case "repository" -> setRepository((ComponentRepository) value);
+            default -> logger.error("Unknown key: " + key);
+        }
+    }
+
+    private void setRepository(ComponentRepository repository){
+        this.repository = repository;
+    }
+
+    private void setModel(Model model){
+        this.model = model;
+    }
+
+    private void setHashes(List<Hash> hashes){
         this.hashes = hashes;
     }
 
-    public void setVulnerabilities(List<Vulnerability> vulnerabilities) {
+    private void setVulnerabilities(List<Vulnerability> vulnerabilities) {
         this.vulnerabilities = vulnerabilities;
     }
 

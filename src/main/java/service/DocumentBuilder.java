@@ -1,6 +1,5 @@
 package service;
 
-import cyclonedx.sbom.Bom16;
 import data.Component;
 import logger.Logger;
 
@@ -9,5 +8,7 @@ public interface DocumentBuilder <T> {
 
     void buildDocument(Component root, String outputFileName);
 
-    void writeDocument(T bom, String path);
+    default void rebuildDocument(T bom, String path){
+        throw new UnsupportedOperationException("Not implemented");
+    }
 }

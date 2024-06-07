@@ -2,7 +2,11 @@ package data.dataImpl;
 
 import cyclonedx.sbom.Bom16;
 import data.*;
+import enums.ComponentType;
+import logger.Logger;
+import org.apache.maven.api.model.Model;
 import repository.ComponentRepository;
+import repository.LicenseRepository;
 import repository.repositoryImpl.MavenComponentRepository;
 import repository.repositoryImpl.MavenRepositoryType;
 import service.converter.BomToInternalMavenConverter;
@@ -19,8 +23,13 @@ public class ReadComponent implements Component {
     private final List<Person> authors;
     private final List<LicenseChoice> licenseChoices;
 
+    private static final Logger logger = Logger.of("ReadComponent");
     private static final HashMap<String, ReadComponent> components = new HashMap<>();
     private boolean isRoot = false;
+    private boolean isLoaded = false;
+
+    private ComponentRepository repository;
+    private ComponentType type = ComponentType.MAVEN;
 
     /**
      * Returns a ReadComponent object of the given Bom16.Component object.
@@ -49,12 +58,62 @@ public class ReadComponent implements Component {
 
     @Override
     public void loadComponent() {
-        throw new UnsupportedOperationException();
+        if (this.isLoaded)
+            return;
+
+        if (this.isRoot) {
+            this.isLoaded = true;
+            return;
+        }
+
+        var start = System.currentTimeMillis();
+        logger.info("Updating read component: " + this.getQualifiedName());
+
+        if (this.repository != null) this.repository.loadComponent(this);
+
+        switch (this.type) {
+            case MAVEN -> MavenRepositoryType.tryLoadComponent(this);
+            default -> throw new UnsupportedOperationException("Cannot load read component of type " + type);
+        }
+
+//        // DEPENDENCIES
+//        for (var modelDependency : model.getDependencies()) {
+//            // special case
+//            if (modelDependency.getGroupId().equals("${project.groupId}") || modelDependency.getGroupId().equals("${pom.groupId}"))
+//                this.dependencies.add(new MavenDependency(this.getGroup(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
+//            else
+//                this.dependencies.add(new MavenDependency(modelDependency.getGroupId(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
+//        }
+//
+//        // PARENT
+//        if (this.model.getParent() != null)
+//            this.parent = this.repository.getComponent(this.model.getParent().getGroupId(), this.model.getParent().getArtifactId(), new MavenVersion(this.model.getParent().getVersion()));
+//        else this.parent = null;
+//
+//        // LICENSES
+//        var licenseRepository = LicenseRepository.getInstance();
+//        if (this.model.getLicenses() != null) {
+//            this.licenses = new ArrayList<>();
+//            for (var license : this.model.getLicenses()) {
+//                if (license.getName() == null) continue;
+//                var newLicense = licenseRepository.getLicense(license.getName(), license.getUrl());
+//                if (newLicense == null) {
+//                    logger.error("Could not resolve license for " + this.getQualifiedName() + ": " + license.getName());
+//                    continue;
+//                }
+//                this.licenses.add(newLicense);
+//            }
+//
+//        }
+
+        isLoaded = true;
+        logger.success("Loaded component: " + this.getQualifiedName() + " (" + (System.currentTimeMillis() - start) + "ms)");
+        //throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean isLoaded() {
-        return false;
+        return isLoaded;
     }
 
     @Override
@@ -127,11 +186,6 @@ public class ReadComponent implements Component {
     }
 
     @Override
-    public void setRepository(MavenComponentRepository mavenRepository) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void addDependency(Dependency dependency) {
         this.dependencies.add(dependency);
     }
@@ -139,6 +193,7 @@ public class ReadComponent implements Component {
     @Override
     public void setRoot() {
         this.isRoot = true;
+        this.isLoaded = true;
     }
 
     @Override
@@ -154,11 +209,6 @@ public class ReadComponent implements Component {
     @Override
     public List<Vulnerability> getAllVulnerabilities() {
         return this.vulnerabilities;
-    }
-
-    @Override
-    public void addVulnerability(Vulnerability vulnerability) {
-        this.vulnerabilities.add(vulnerability);
     }
 
     @Override
@@ -207,6 +257,17 @@ public class ReadComponent implements Component {
     @Override
     public List<Person> getAllAuthors() {
         return this.authors;
+    }
+
+    @Override
+    public void setData(String key, Object value) {
+        switch (key) {
+//            case "model" -> this.setModel((Model) value);
+//            case "repository" -> this.repository = (ComponentRepository) value;
+//            case "type" -> this.type = (ComponentType) value;
+//            case ""
+            default -> throw new UnsupportedOperationException("Cannot set data for key " + key);
+        }
     }
 
     @Override

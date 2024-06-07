@@ -53,10 +53,11 @@ public class MavenSBOMBuilder implements DocumentBuilder<Bom16.Bom> {
     }
 
     @Override
-    public void writeDocument(Bom16.Bom bom, String path) {
+    public void rebuildDocument(Bom16.Bom bom, String path) {
+        bom = updateBom(bom);
         try {
             var file = new File(path);
-            var outputStream = new FileWriter(file, StandardCharsets.UTF_8);
+            var outputStream = new FileWriter(file + ".sbom.json", StandardCharsets.UTF_8);
             outputStream.write(JsonFormat.printer().print(bom));
             outputStream.close();
         } catch (IOException e) {
@@ -65,12 +66,7 @@ public class MavenSBOMBuilder implements DocumentBuilder<Bom16.Bom> {
     }
 
     private Bom16.Bom buildBom(Component root) {
-        if (root instanceof ReadComponent readComponent) {
-            return buildBomFromReadComponent(readComponent);
-        }
-
         var bomBuilder = Bom16.Bom.newBuilder();
-
 
         var components = new HashMap<String, Bom16.Component>();
         var dependency = buildAllDependenciesAndComponentsRecursively(root, components);
@@ -89,16 +85,14 @@ public class MavenSBOMBuilder implements DocumentBuilder<Bom16.Bom> {
         return bomBuilder.build();
     }
 
-    private Bom16.Bom buildBomFromReadComponent(ReadComponent root) {
+    private Bom16.Bom updateBom(Bom16.Bom bom) {
+        var bomBuilder = Bom16.Bom.newBuilder(bom);
 
-        var bomBuilder = Bom16.Bom.newBuilder();
+        bomBuilder.setVersion(bom.getVersion() + 1);
 
-        bomBuilder.setBomFormat("CycloneDX");
-        bomBuilder.setSpecVersion("1.6");
-        bomBuilder.setVersion(1);
-        bomBuilder.setSerialNumber(UUID.randomUUID().toString());
-        bomBuilder.setMetadata(buildMetadata(root));
+        bomBuilder.setMetadata(bom.getMetadata().toBuilder().setTimestamp(buildTimestamp(Timestamp.of(System.currentTimeMillis()/1000,0))));
 
+        return bomBuilder.build();
     }
 
 }

@@ -1,5 +1,6 @@
 package repository.repositoryImpl;
 
+import data.Component;
 import data.dataImpl.MavenComponent;
 import enums.RepositoryType;
 
@@ -51,14 +52,14 @@ public enum MavenRepositoryType implements RepositoryType {
      *
      * @param mavenComponent The component to load.
      */
-    public static void tryLoadComponent(MavenComponent mavenComponent) {
+    public static void tryLoadComponent(Component mavenComponent) {
         if (unloadableComponents.contains(mavenComponent.getQualifiedName())) {
             return;
         }
         for (var repository : MavenRepositoryType.values()) {
             if (repository == ROOT || repository == FILE) continue;
             if (new MavenComponentRepository(repository).loadComponent(mavenComponent)) {
-                mavenComponent.setRepository(repository.getRepository());
+                mavenComponent.setData("repository", repository.getRepository());
                 return;
             }
         }

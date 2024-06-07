@@ -35,7 +35,7 @@ public class BomToInternalMavenConverter {
     private static final ReadComponentRepository componentRepository = ReadComponentRepository.getInstance();
     private static final ReadVulnerabilityRepository vulnerabilityRepository = ReadVulnerabilityRepository.getInstance();
 
-    public static Component buildComponent(Bom16.Component bomComponent) {
+    public static ReadComponent buildComponent(Bom16.Component bomComponent) {
         var newComponent = ReadComponent.of(bomComponent);
         componentRepository.addReadComponent(bomComponent.getBomRef(), newComponent);
         return newComponent;

@@ -57,6 +57,11 @@ public class ReadComponentRepository implements ComponentRepository {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public String getDownloadLocation(Component component) {
+        return "";
+    }
+
     public void addReadComponent(String qualifier, Component component) {
         this.readComponents.put(qualifier, component);
     }

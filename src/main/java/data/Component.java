@@ -93,13 +93,6 @@ public interface Component {
      */
     Component getParent();
 
-
-    /**
-     * Sets the repository of this component
-     * @param mavenRepository the repository
-     */
-    void setRepository(MavenComponentRepository mavenRepository);
-
     /**
      * Adds a dependency to this component
      * @param dependency the dependency to add
@@ -117,14 +110,8 @@ public interface Component {
 
     List<Vulnerability> getAllVulnerabilities();
 
-    void addVulnerability(Vulnerability vulnerability);
-
     String getDownloadLocation();
 
-    /**
-     *
-     * @return the dependencies of the artifact in a flat list
-     */
     Set<Dependency> getDependenciesFlat();
 
     Set<Component> getDependecyComponentsFlat();
@@ -136,4 +123,7 @@ public interface Component {
     List<Property> getAllProperties();
 
     List<Person> getAllAuthors();
+
+    <T> void setData(String key, T value);
 }
+

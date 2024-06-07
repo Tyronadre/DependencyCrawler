@@ -4,6 +4,7 @@ import cyclonedx.sbom.Bom16;
 import data.Component;
 import data.Dependency;
 import data.Version;
+import data.dataImpl.MavenComponent;
 import enums.RepositoryType;
 import repository.repositoryImpl.MavenRepositoryType;
 import service.VersionRangeResolver;
@@ -64,4 +65,5 @@ public interface ComponentRepository {
     RepositoryType getType();
 
 
+    String getDownloadLocation(Component component);
 }

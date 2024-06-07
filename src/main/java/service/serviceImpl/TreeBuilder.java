@@ -10,7 +10,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 
-public class TreeBuilder implements DocumentBuilder {
+public class TreeBuilder implements DocumentBuilder<Object> {
     private static final Logger logger = Logger.of("TreeBuilder");
 
     @Override

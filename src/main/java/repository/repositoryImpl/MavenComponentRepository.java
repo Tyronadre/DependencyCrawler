@@ -115,11 +115,10 @@ public class MavenComponentRepository implements ComponentRepository {
         if (this.repositoryType == MavenRepositoryType.ROOT) {
             return false;
         }
-        var mavenComponent = (MavenComponent) component;
         try {
-            mavenComponent.setModel(loadModel(URI.create(getDownloadLocation(component) + ".pom").toURL()));
-            mavenComponent.setHashes(loadHashes(getDownloadLocation(component) + ".jar"));
-            mavenComponent.setVulnerabilities(loadVulnerabilities(mavenComponent));
+            component.setData("model", loadModel(URI.create(getDownloadLocation(component) + ".pom").toURL()));
+            component.setData("hashes", loadHashes(getDownloadLocation(component) + ".jar"));
+            component.setData("vulnerabilities", loadVulnerabilities(component));
             return true;
         } catch (MalformedURLException | ArtifactBuilderException e) {
             return false;
@@ -159,7 +158,7 @@ public class MavenComponentRepository implements ComponentRepository {
         }
     }
 
-    private List<Vulnerability> loadVulnerabilities(MavenComponent mavenComponent) {
+    private List<Vulnerability> loadVulnerabilities(Component mavenComponent) {
         return VulnerabilityRepository.getInstance().getVulnerabilities(mavenComponent);
     }
 
@@ -193,6 +192,7 @@ public class MavenComponentRepository implements ComponentRepository {
         return new StringJoiner(", ", MavenComponentRepository.class.getSimpleName() + "[", "]").add("'" + baseUrl + "'").toString();
     }
 
+    @Override
     public String getDownloadLocation(Component mavenComponent) {
         return baseUrl + mavenComponent.getGroup().replace(".", "/") + "/" + mavenComponent.getName() + "/" + mavenComponent.getVersion().getVersion() + "/" + mavenComponent.getName() + "-" + mavenComponent.getVersion().getVersion();
     }
