@@ -1,4 +1,4 @@
-package service.serviceImpl.maven;
+package service.serviceImpl;
 
 import data.dataImpl.MavenComponent;
 import data.dataImpl.MavenDependency;
@@ -6,7 +6,6 @@ import data.dataImpl.MavenVersion;
 import dependencyCrawler.DependencyCrawlerInput;
 import logger.Logger;
 import repository.repositoryImpl.MavenRepositoryType;
-import service.serviceImpl.InputReaderImpl;
 
 import java.util.Optional;
 

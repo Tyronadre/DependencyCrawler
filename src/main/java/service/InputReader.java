@@ -1,10 +1,11 @@
 package service;
 
 import com.google.protobuf.util.JsonFormat;
+import cyclonedx.sbom.Bom16;
 import data.Component;
 import dependencyCrawler.DependencyCrawlerInput;
 import logger.Logger;
-import service.serviceImpl.maven.MavenInputReader;
+import service.serviceImpl.MavenInputReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,6 +19,7 @@ import java.nio.file.Files;
 public interface InputReader {
 
     Component loadRootComponent();
+
 
     String getOutputFileName();
 

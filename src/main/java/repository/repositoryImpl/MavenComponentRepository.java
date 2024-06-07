@@ -17,8 +17,8 @@ import repository.ComponentRepository;
 import repository.VulnerabilityRepository;
 import service.VersionRangeResolver;
 import service.VersionResolver;
-import service.serviceImpl.maven.MavenVersionRangeResolver;
-import service.serviceImpl.maven.MavenVersionResolver;
+import service.serviceImpl.MavenVersionRangeResolver;
+import service.serviceImpl.MavenVersionResolver;
 
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;

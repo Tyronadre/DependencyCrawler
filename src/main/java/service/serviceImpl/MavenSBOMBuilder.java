@@ -3,10 +3,9 @@ package service.serviceImpl;
 import com.google.protobuf.util.JsonFormat;
 import cyclonedx.sbom.Bom16;
 import data.*;
-import org.spdx.library.Read;
+import data.dataImpl.ReadComponent;
 import repository.repositoryImpl.ReadVulnerabilityRepository;
 import service.DocumentBuilder;
-import util.Pair;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -17,7 +16,7 @@ import java.util.stream.Collectors;
 
 import static service.converter.InternalMavenToBomConverter.*;
 
-public class MavenSBOMBuilder implements DocumentBuilder {
+public class MavenSBOMBuilder implements DocumentBuilder<Bom16.Bom> {
     private final HashMap<Component, Bom16.Component.Builder> componentToComponentBuilder = new HashMap<>();
 
     @Override
@@ -53,8 +52,25 @@ public class MavenSBOMBuilder implements DocumentBuilder {
         logger.success(new File(outputFileName).getAbsolutePath() + ".sbom.json saved (" + (System.currentTimeMillis() - start) + "ms)");
     }
 
+    @Override
+    public void writeDocument(Bom16.Bom bom, String path) {
+        try {
+            var file = new File(path);
+            var outputStream = new FileWriter(file, StandardCharsets.UTF_8);
+            outputStream.write(JsonFormat.printer().print(bom));
+            outputStream.close();
+        } catch (IOException e) {
+            logger.error("Failed writing to JSON.");
+        }
+    }
+
     private Bom16.Bom buildBom(Component root) {
+        if (root instanceof ReadComponent readComponent) {
+            return buildBomFromReadComponent(readComponent);
+        }
+
         var bomBuilder = Bom16.Bom.newBuilder();
+
 
         var components = new HashMap<String, Bom16.Component>();
         var dependency = buildAllDependenciesAndComponentsRecursively(root, components);
@@ -72,4 +88,19 @@ public class MavenSBOMBuilder implements DocumentBuilder {
 
         return bomBuilder.build();
     }
+
+    private Bom16.Bom buildBomFromReadComponent(ReadComponent root) {
+
+        var bomBuilder = Bom16.Bom.newBuilder();
+
+        bomBuilder.setBomFormat("CycloneDX");
+        bomBuilder.setSpecVersion("1.6");
+        bomBuilder.setVersion(1);
+        bomBuilder.setSerialNumber(UUID.randomUUID().toString());
+        bomBuilder.setMetadata(buildMetadata(root));
+
+    }
+
 }
+
+

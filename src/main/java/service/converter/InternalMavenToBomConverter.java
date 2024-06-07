@@ -19,13 +19,13 @@ import data.VulnerabilityAffectedVersion;
 import data.VulnerabilityAffects;
 import data.VulnerabilityRating;
 import data.VulnerabilityReference;
-import repository.repositoryImpl.MavenComponentRepository;
+import data.dataImpl.ReadComponent;
+import data.dataImpl.ReadVulnerability;
 
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 public class InternalMavenToBomConverter {
@@ -48,6 +48,9 @@ public class InternalMavenToBomConverter {
     }
 
     public static Bom16.Vulnerability buildVulnerability(Vulnerability vulnerability) {
+        if (vulnerability instanceof ReadVulnerability readVulnerability)
+            return readVulnerability.getBomComponent();
+
         var builder = Bom16.Vulnerability.newBuilder();
         Optional.ofNullable(vulnerability.getId()).ifPresent(builder::setId);
         Optional.ofNullable(vulnerability.getSource()).ifPresent(s -> builder.setSource(buildSource(s)));
@@ -226,6 +229,9 @@ public class InternalMavenToBomConverter {
     }
 
     public static Bom16.Component buildComponent(Component component) {
+        if (component instanceof ReadComponent readComponent)
+            return readComponent.getBomComponent();
+
         var builder = Bom16.Component.newBuilder();
         builder.setType(Bom16.Classification.CLASSIFICATION_LIBRARY);
 //        builder.setBomRef(); //do it when building dependencies, we may need to duplicate componentes then

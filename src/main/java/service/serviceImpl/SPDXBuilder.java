@@ -2,7 +2,6 @@ package service.serviceImpl;
 
 import data.*;
 import exceptions.SPDXBuilderException;
-import logger.AppendingLogger;
 import logger.Logger;
 import org.spdx.jacksonstore.MultiFormatStore;
 import org.spdx.library.InvalidSPDXAnalysisException;

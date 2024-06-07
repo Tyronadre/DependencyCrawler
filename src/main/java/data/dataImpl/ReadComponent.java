@@ -221,4 +221,8 @@ public class ReadComponent implements Component {
                 .add("isRoot=" + isRoot)
                 .toString();
     }
+
+    public Bom16.Component getBomComponent() {
+        return bomComponent;
+    }
 }

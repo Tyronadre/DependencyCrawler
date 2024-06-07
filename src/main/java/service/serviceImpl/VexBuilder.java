@@ -3,7 +3,6 @@ package service.serviceImpl;
 import com.google.protobuf.util.JsonFormat;
 import cyclonedx.vex.VexOuterClass;
 import data.Component;
-import data.Dependency;
 import data.Vulnerability;
 import data.VulnerabilityReference;
 import data.VulnerabilityRating;
@@ -15,7 +14,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 

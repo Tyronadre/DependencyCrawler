@@ -12,18 +12,16 @@ import util.Pair;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.ArrayDeque;
-import java.util.HashMap;
 
 import static service.converter.BomToInternalMavenConverter.*;
 
-public class MavenSBOMReader implements DocumentReader {
+public class MavenSBOMReader implements DocumentReader<Bom16.Bom> {
     private static final Logger logger = Logger.of("MavenSBOMReader");
 
     private static final LicenseRepository licenseRepository = LicenseRepository.getInstance();
 
     @Override
-    public Component readDocument(String inputFileName) {
+    public Pair<Bom16.Bom, Component> readDocument(String inputFileName) {
         logger.info("Reading document as SBOM: " + inputFileName);
 
         var file = new File(inputFileName);
@@ -67,25 +65,7 @@ public class MavenSBOMReader implements DocumentReader {
 
         logger.success("Parsed from SBOM File: " + file.getAbsolutePath());
 
-        return root;
+        return new Pair<>(bom, root);
     }
-
-//    private Metadata buildMetadata(Bom16.Metadata bomMetadata) {
-//        var metadataImpl = new MetadataImpl();
-//        if (bomMetadata.hasTimestamp()) metadataImpl.setProperty("timestamp", bomMetadata.getTimestamp().toString());
-//        if (bomMetadata.hasTools()) metadataImpl.setProperty("tools", bomMetadata.getTools());
-//        if (bomMetadata.getAuthorsCount() > 0)
-//            metadataImpl.setProperty("authors", buildAllPersons(bomMetadata.getAuthorsList(), null));
-//        if (bomMetadata.hasComponent()) metadataImpl.setProperty("component", buildRoot(bomMetadata.getComponent()));
-//        if (bomMetadata.hasSupplier())
-//            metadataImpl.setProperty("supplier", buildOrganization(bomMetadata.getSupplier()));
-//        if (bomMetadata.getLicensesCount() > 0)
-//            metadataImpl.setProperty("licenses", buildAllLicenseChoices(bomMetadata.getLicensesList()));
-//        if (bomMetadata.getPropertiesCount() > 0)
-//            metadataImpl.setProperty("properties", buildAllProperties(bomMetadata.getPropertiesList()));
-//        if (bomMetadata.hasManufacturer())
-//            metadataImpl.setProperty("manufacturer", buildOrganization(bomMetadata.getManufacturer()));
-//        return metadataImpl;
-//    }
 }
 

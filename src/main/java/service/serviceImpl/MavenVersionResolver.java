@@ -1,4 +1,4 @@
-package service.serviceImpl.maven;
+package service.serviceImpl;
 
 import data.Dependency;
 import data.dataImpl.MavenComponent;

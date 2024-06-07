@@ -53,13 +53,8 @@ public class BomToInternalMavenConverter {
 
         var component = componentRepository.getReadComponent(dependency.getRef());
 
-        Dependency newDependency;
+        Dependency newDependency = new ReadDependency(dependency, component, parent);
 
-        if (component == null) {
-            newDependency = new ReadDependency(dependency.getRef(), parent);
-        } else {
-            newDependency = new ReadDependency(component, parent);
-        }
 
         if (parent != null) parent.addDependency(newDependency);
 

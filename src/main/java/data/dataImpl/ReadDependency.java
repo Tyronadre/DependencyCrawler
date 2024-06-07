@@ -1,5 +1,6 @@
 package data.dataImpl;
 
+import cyclonedx.sbom.Bom16;
 import data.Component;
 import data.Dependency;
 import data.Version;
@@ -10,15 +11,15 @@ public class ReadDependency implements Dependency {
     Component component;
     Component parent;
     String ref;
+    Bom16.Dependency dependency;
 
-    public ReadDependency(Component component,  Component parent) {
-        this.component = component;
+    public ReadDependency(Bom16.Dependency dependency, Component parent, Component component) {
+        this.dependency = dependency;
         this.parent = parent;
-    }
-
-    public ReadDependency(String ref, Component parent) {
-        this.parent = parent;
-        this.ref = ref;
+        if (component == null)
+            this.ref = dependency.getRef();
+        else
+            this.component = component;
     }
 
     @Override
@@ -101,5 +102,9 @@ public class ReadDependency implements Dependency {
         if (!(o instanceof ReadDependency that)) return false;
 
         return Objects.equals(this.getQualifiedName(), that.getQualifiedName());
+    }
+
+    public Bom16.Dependency toBom16() {
+        return dependency;
     }
 }

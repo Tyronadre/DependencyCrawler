@@ -1,14 +1,10 @@
 package service.serviceImpl;
 
 import data.Component;
-import data.Dependency;
 import data.LicenseCollision;
 import service.LicenseCollisionService;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class LicenseCollisionServiceImpl implements LicenseCollisionService {
     private static LicenseCollisionServiceImpl instance;
