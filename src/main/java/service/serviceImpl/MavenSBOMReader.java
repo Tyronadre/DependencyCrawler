@@ -45,14 +45,15 @@ public class MavenSBOMReader implements DocumentReader<Bom16.Bom> {
             logger.error("Unsupported SBOM version: " + bom.getSpecVersion() + ". Try parsing anyway. May result in errors/missing data. Supported version: 1.6");
         }
 
+        //build all components in the SBOM
+        logger.info("building components");
+        bom.getComponentsList().forEach(BomToInternalMavenConverter::buildComponent);
+
         //build root
+        logger.info("building root");
         var bomRoot = bom.getMetadata().getComponent();
         var root = buildComponent(bomRoot);
         root.setRoot();
-
-        logger.info("building components");
-        //build all components in the SBOM
-        bom.getComponentsList().forEach(BomToInternalMavenConverter::buildComponent);
 
         logger.info("building dependencies");
         //build dependencies from the SBOM

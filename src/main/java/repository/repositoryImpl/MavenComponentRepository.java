@@ -121,6 +121,7 @@ public class MavenComponentRepository implements ComponentRepository {
             component.setData("vulnerabilities", loadVulnerabilities(component));
             return true;
         } catch (MalformedURLException | ArtifactBuilderException e) {
+            logger.error(e.getMessage());
             return false;
         }
     }
@@ -131,7 +132,7 @@ public class MavenComponentRepository implements ComponentRepository {
         try (InputStream inputStream = url.openStream()) {
             model = reader.read(inputStream);
         } catch (IOException | XMLStreamException e) {
-            throw new ArtifactBuilderException("Could not load model from " + url);
+            throw new ArtifactBuilderException("Could not load model from " + url + ". " + e);
         }
         return model;
     }

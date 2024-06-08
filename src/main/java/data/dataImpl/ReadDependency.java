@@ -13,7 +13,7 @@ public class ReadDependency implements Dependency {
     String ref;
     Bom16.Dependency dependency;
 
-    public ReadDependency(Bom16.Dependency dependency, Component parent, Component component) {
+    public ReadDependency(Bom16.Dependency dependency, Component component, Component parent) {
         this.dependency = dependency;
         this.parent = parent;
         if (component == null)

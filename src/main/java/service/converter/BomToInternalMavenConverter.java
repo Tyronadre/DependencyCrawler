@@ -35,9 +35,12 @@ public class BomToInternalMavenConverter {
     private static final ReadComponentRepository componentRepository = ReadComponentRepository.getInstance();
     private static final ReadVulnerabilityRepository vulnerabilityRepository = ReadVulnerabilityRepository.getInstance();
 
-    public static ReadComponent buildComponent(Bom16.Component bomComponent) {
+    public static Component buildComponent(Bom16.Component bomComponent) {
+        var componentFromRepository = componentRepository.getReadComponent(bomComponent);
+        if (componentFromRepository != null) return componentFromRepository;
+
         var newComponent = ReadComponent.of(bomComponent);
-        componentRepository.addReadComponent(bomComponent.getBomRef(), newComponent);
+        componentRepository.addReadComponent(bomComponent, newComponent);
         return newComponent;
     }
 
@@ -53,10 +56,13 @@ public class BomToInternalMavenConverter {
 
         var component = componentRepository.getReadComponent(dependency.getRef());
 
-        Dependency newDependency = new ReadDependency(dependency, component, parent);
 
 
-        if (parent != null) parent.addDependency(newDependency);
+        if (parent != null) {
+            Dependency newDependency = new ReadDependency(dependency, component, parent);
+            parent.addDependency(newDependency);
+        }
+
 
         dependency.getDependenciesList().forEach(dep -> buildAllDependenciesRecursively(dep, component));
 
@@ -150,7 +156,6 @@ public class BomToInternalMavenConverter {
 
 
             };
-
 
 
             vulnerabilityRepository.addReadVulnerability(newVul);

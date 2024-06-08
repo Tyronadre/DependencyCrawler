@@ -1,5 +1,6 @@
 package repository.repositoryImpl;
 
+import cyclonedx.sbom.Bom16;
 import data.Component;
 import data.Dependency;
 import data.Version;
@@ -62,8 +63,12 @@ public class ReadComponentRepository implements ComponentRepository {
         return "";
     }
 
-    public void addReadComponent(String qualifier, Component component) {
-        this.readComponents.put(qualifier, component);
+    public void addReadComponent(Bom16.Component bomComponent, Component component) {
+        this.readComponents.put(bomComponent.getBomRef(), component);
+    }
+
+    public Component getReadComponent(Bom16.Component bomComponent) {
+        return this.readComponents.get(bomComponent.getBomRef());
     }
 
     public List<Component> getAllComponents() {

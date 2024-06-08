@@ -193,7 +193,6 @@ public class ReadComponent implements Component {
     @Override
     public void setRoot() {
         this.isRoot = true;
-        this.isLoaded = true;
     }
 
     @Override
