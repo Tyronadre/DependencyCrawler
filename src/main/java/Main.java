@@ -48,10 +48,23 @@ public class Main {
         var rein1 = readSBOMFile("generated/output_0.sbom.json");
         crawlComponent(rein1.second());
         writeSBOMFile(rein1.first(), "generated/output_0_rebuild");
+        buildSPDXFile(rein1.second(), "generated/output_0_rebuild");
+        buildTreeFile(rein1.second(), "generated/output_0_rebuild");
+        buildVexFile(rein1.second(), "generated/output_0_rebuild");
 
-//        buildSPDXFile(updatedRein1, "generated/output_0_rebuild");
-//        buildTreeFile(updatedRein1, "generated/output_0_rebuild");
-//        buildVexFile(updatedRein1, "generated/output_0_rebuild");
+        var rein2 = readSBOMFile("generated/output_1.sbom.json");
+        crawlComponent(rein2.second());
+        writeSBOMFile(rein2.first(), "generated/output_1_rebuild");
+        buildSPDXFile(rein2.second(), "generated/output_1_rebuild");
+        buildTreeFile(rein2.second(), "generated/output_1_rebuild");
+        buildVexFile(rein2.second(), "generated/output_1_rebuild");
+
+        var rein3 = readSBOMFile("generated/output_2.sbom.json");
+        crawlComponent(rein3.second());
+        writeSBOMFile(rein3.first(), "generated/output_2_rebuild");
+        buildSPDXFile(rein3.second(), "generated/output_2_rebuild");
+        buildTreeFile(rein3.second(), "generated/output_2_rebuild");
+        buildVexFile(rein3.second(), "generated/output_2_rebuild");
 
     }
 

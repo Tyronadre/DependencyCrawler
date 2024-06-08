@@ -6,6 +6,7 @@ import data.Dependency;
 import data.Version;
 import data.dataImpl.MavenComponent;
 import enums.RepositoryType;
+import exceptions.ArtifactBuilderException;
 import repository.repositoryImpl.MavenRepositoryType;
 import service.VersionRangeResolver;
 import service.VersionResolver;

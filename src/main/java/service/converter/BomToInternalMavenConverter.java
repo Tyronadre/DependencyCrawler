@@ -51,9 +51,6 @@ public class BomToInternalMavenConverter {
      * @param parent     the parent component
      */
     public static void buildAllDependenciesRecursively(Bom16.Dependency dependency, Component parent) {
-        System.out.println("Building dependency " + dependency.getRef() + " for " + (parent == null ? "root" : parent.getQualifiedName()));
-
-
         var component = componentRepository.getReadComponent(dependency.getRef());
 
 

@@ -58,7 +58,7 @@ public enum MavenRepositoryType implements RepositoryType {
         }
         for (var repository : MavenRepositoryType.values()) {
             if (repository == ROOT || repository == FILE) continue;
-            if (new MavenComponentRepository(repository).loadComponent(mavenComponent)) {
+            if (of(repository).loadComponent(mavenComponent)) {
                 mavenComponent.setData("repository", repository.getRepository());
                 return;
             }

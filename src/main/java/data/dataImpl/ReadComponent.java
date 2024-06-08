@@ -19,7 +19,9 @@ public class ReadComponent implements Component {
     private final Bom16.Component bomComponent;
     private final Set<Dependency> dependencies;
     private final List<Property> properties;
-    private final List<Vulnerability> vulnerabilities;
+    private Model model;
+    private List<Hash> hashes;
+    private List<Vulnerability> vulnerabilities;
     private final List<Person> authors;
     private final List<LicenseChoice> licenseChoices;
 
@@ -77,34 +79,54 @@ public class ReadComponent implements Component {
         }
 
 //        // DEPENDENCIES
-//        for (var modelDependency : model.getDependencies()) {
-//            // special case
-//            if (modelDependency.getGroupId().equals("${project.groupId}") || modelDependency.getGroupId().equals("${pom.groupId}"))
-//                this.dependencies.add(new MavenDependency(this.getGroup(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
-//            else
-//                this.dependencies.add(new MavenDependency(modelDependency.getGroupId(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
+//        //we keep the dependencies that we read
+//        var dependenciesToRemove = new ArrayList<>(this.dependencies);
+//        var dependenciesToAdd = new ArrayList<Dependency>();
+//        for (var modelDependency : this.model.getDependencies()) {
+//            for (var currentDependency : this.dependencies) {
+//                if ((modelDependency.getGroupId() + modelDependency.getArtifactId()).equals(currentDependency.getComponent().getGroup() + currentDependency.getComponent().getName())) {
+//                    dependenciesToRemove.remove(currentDependency);
+//                    break;
+//                }
+//            }
+//            dependenciesToAdd.add(new MavenDependency(modelDependency.getGroupId(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
 //        }
-//
-//        // PARENT
-//        if (this.model.getParent() != null)
+//        logger.info("Removing " + dependenciesToRemove + " dependencies from " + this.getQualifiedName());
+//        dependenciesToRemove.forEach(this.dependencies::remove);
+//        logger.info("Adding " + dependenciesToAdd + " dependencies to " + this.getQualifiedName());
+//        this.dependencies.addAll(dependenciesToAdd);
+
+
+        // PARENT
+//        if (this.model.getParent() != null && this.getParent().getGroup() + this.getParent().get)
 //            this.parent = this.repository.getComponent(this.model.getParent().getGroupId(), this.model.getParent().getArtifactId(), new MavenVersion(this.model.getParent().getVersion()));
 //        else this.parent = null;
 //
-//        // LICENSES
-//        var licenseRepository = LicenseRepository.getInstance();
-//        if (this.model.getLicenses() != null) {
-//            this.licenses = new ArrayList<>();
-//            for (var license : this.model.getLicenses()) {
-//                if (license.getName() == null) continue;
-//                var newLicense = licenseRepository.getLicense(license.getName(), license.getUrl());
-//                if (newLicense == null) {
-//                    logger.error("Could not resolve license for " + this.getQualifiedName() + ": " + license.getName());
-//                    continue;
-//                }
-//                this.licenses.add(newLicense);
-//            }
-//
-//        }
+        // LICENSES
+        var licenseRepository = LicenseRepository.getInstance();
+        var licenseChoices = new ArrayList<>(this.licenseChoices.stream().map(LicenseChoice::getLicense).map(License::getName).toList());
+        if (this.model.getLicenses() != null) {
+            var licenses = new ArrayList<>();
+            for (var license : this.model.getLicenses()) {
+                if (license.getName() == null) continue;
+                var newLicense = licenseRepository.getLicense(license.getName(), license.getUrl());
+                if (newLicense == null) {
+                    logger.error("Could not resolve license for " + this.getQualifiedName() + ": " + license.getName());
+                    continue;
+                }
+
+                if (licenseChoices.contains(newLicense.getName())) {
+                    licenseChoices.remove(newLicense.getName());
+                    continue;
+                }
+                logger.info("Adding new License " + newLicense + " to " + this.getQualifiedName());
+                licenses.add(newLicense);
+            }
+        }
+        if (!licenseChoices.isEmpty()) {
+            logger.info("removing licenses: " + licenseChoices + " from " + this.getQualifiedName());
+            licenseChoices.forEach(licenseChoice -> this.licenseChoices.removeIf(licenseChoice1 -> licenseChoice1.getLicense().getName().equals(licenseChoice)));
+        }
 
         isLoaded = true;
         logger.success("Loaded component: " + this.getQualifiedName() + " (" + (System.currentTimeMillis() - start) + "ms)");
@@ -212,7 +234,9 @@ public class ReadComponent implements Component {
 
     @Override
     public String getDownloadLocation() {
-        return null;
+        if (this.repository == null)
+            return null;
+        return this.repository.getDownloadLocation(this);
     }
 
     @Override
@@ -261,10 +285,10 @@ public class ReadComponent implements Component {
     @Override
     public void setData(String key, Object value) {
         switch (key) {
-//            case "model" -> this.setModel((Model) value);
-//            case "repository" -> this.repository = (ComponentRepository) value;
-//            case "type" -> this.type = (ComponentType) value;
-//            case ""
+            case "model" -> this.model = (Model) value;
+            case "repository" -> this.repository = (ComponentRepository) value;
+            case "hashes" -> this.hashes = (List<Hash>) value;
+            case "vulnerabilities" -> this.vulnerabilities = (List<Vulnerability>) value;
             default -> throw new UnsupportedOperationException("Cannot set data for key " + key);
         }
     }

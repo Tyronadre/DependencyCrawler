@@ -5,13 +5,16 @@ import data.License;
 import data.Licensing;
 import data.Property;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SPDXLicense implements License {
     JsonObject data;
+    JsonObject details;
 
-    public SPDXLicense(JsonObject data) {
+    public SPDXLicense(JsonObject data, JsonObject details) {
         this.data = data;
+        this.details = details;
     }
 
     @Override
@@ -21,17 +24,17 @@ public class SPDXLicense implements License {
 
     @Override
     public String getName() {
-        return data.get("name").getAsString();
+        return null;
     }
 
     @Override
     public String getText() {
-        return null;
+        return details.get("licenseText").getAsString();
     }
 
     @Override
     public String getUrl() {
-        return null;
+        return data.get("detailsUrl").getAsString();
     }
 
     @Override
@@ -41,7 +44,15 @@ public class SPDXLicense implements License {
 
     @Override
     public List<Property> getProperties() {
-        return null;
+        return List.of(
+                Property.of("licenseId", data.get("licenseId").getAsString()),
+                Property.of("seeAlso", data.get("seeAlso").getAsJsonArray().toString()),
+                Property.of("isOsiApproved", data.get("isOsiApproved").getAsString()),
+                Property.of("isFsfLibre", data.get("isFsfLibre").getAsString()),
+                Property.of("standardLicenseTemplate", details.get("standardLicenseTemplate").getAsString()),
+                Property.of("name", details.get("name").getAsString()),
+                Property.of("crossRef", details.get("crossRef").getAsJsonArray().toString())
+        );
     }
 
     @Override

@@ -5,10 +5,12 @@ import data.Dependency;
 import data.Version;
 import logger.Logger;
 
+import java.util.Objects;
+
 public class MavenDependency implements Dependency {
     private static final Logger logger = Logger.of("MavenDependency");
 
-    private final MavenComponent treeParent; //The component that has this dependency
+    private final Component treeParent; //The component that has this dependency
     private MavenComponent component;
     private final String groupId;
     private final String artifactId;
@@ -44,7 +46,7 @@ public class MavenDependency implements Dependency {
      * @param artifactId the artifact id
      * @param treeParent the parent component
      */
-    public MavenDependency(String groupId, String artifactId, String versionConstraints, String scope, String optional, MavenComponent treeParent) {
+    public MavenDependency(String groupId, String artifactId, String versionConstraints, String scope, String optional, Component treeParent) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.treeParent = treeParent;
@@ -101,7 +103,7 @@ public class MavenDependency implements Dependency {
     }
 
     @Override
-    public MavenComponent getTreeParent() {
+    public Component getTreeParent() {
         return treeParent;
     }
 
@@ -141,5 +143,21 @@ public class MavenDependency implements Dependency {
     @Override
     public void setScope(String scope) {
 
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof MavenDependency that)) return false;
+
+        return Objects.equals(groupId, that.groupId) && Objects.equals(artifactId, that.artifactId) && Objects.equals(version, that.version);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hashCode(groupId);
+        result = 31 * result + Objects.hashCode(artifactId);
+        result = 31 * result + Objects.hashCode(version);
+        return result;
     }
 }

@@ -28,7 +28,7 @@ public class MavenComponent implements Component {
     boolean loaded = false;
     boolean isRoot = false;
     private List<Vulnerability> vulnerabilities;
-    private List<License> licenses;
+    private List<LicenseChoice> licenseChoices;
     private List<Person> authors;
 
     public MavenComponent(String groupId, String artifactId, Version version, ComponentRepository repository) {
@@ -155,8 +155,8 @@ public class MavenComponent implements Component {
 
         // LICENSES
         var licenseRepository = LicenseRepository.getInstance();
-        if (this.model.getLicenses() != null){
-            this.licenses = new ArrayList<>();
+        if (this.model.getLicenses() != null && !this.model.getLicenses().isEmpty()){
+            this.licenseChoices = new ArrayList<>();
             for (var license : this.model.getLicenses()) {
                 if (license.getName() == null) continue;
                 var newLicense = licenseRepository.getLicense(license.getName(), license.getUrl());
@@ -164,7 +164,7 @@ public class MavenComponent implements Component {
                     logger.error("Could not resolve license for " + this.getQualifiedName() + ": " + license.getName());
                     continue;
                 }
-                this.licenses.add(newLicense);
+                this.licenseChoices.add(new MavenLicenseChoice(newLicense));
             }
         }
 
@@ -276,7 +276,7 @@ public class MavenComponent implements Component {
 
     @Override
     public List<LicenseChoice> getAllLicenses() {
-        return List.of();
+        return this.licenseChoices;
     }
 
     @Override

@@ -165,8 +165,6 @@ public class InternalMavenToBomConverter {
     }
 
     private static Bom16.Dependency buildAllDependenciesAndComponentsRecursivelyHelper(Dependency dependency, Map<String, Bom16.Component> buildComponents) {
-        System.out.println("building dependency: " + dependency.getQualifiedName());
-
         var builder = Bom16.Dependency.newBuilder();
         builder.setRef(dependency.getQualifiedName());
 

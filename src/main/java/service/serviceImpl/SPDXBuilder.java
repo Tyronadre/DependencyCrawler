@@ -25,9 +25,11 @@ import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 
 public class SPDXBuilder implements DocumentBuilder {
@@ -94,7 +96,7 @@ public class SPDXBuilder implements DocumentBuilder {
     private List<SpdxElement> buildDocumentDescribes() {
         var list = new ArrayList<SpdxElement>();
 
-        for (Dependency dependency : root.getDependenciesFlat()) {
+        for (Dependency dependency : root.getDependenciesFlat().stream().sorted(Comparator.comparing(Dependency::getQualifiedName)).toList()) {
             if (dependency.getComponent() != null && dependency.getComponent().isLoaded())
                 try {
                     list.add(getSpdxElement(dependency.getComponent()));
@@ -125,23 +127,27 @@ public class SPDXBuilder implements DocumentBuilder {
     private SpdxElement getSpdxElement(Component component) throws SPDXBuilderException {
         try {
             var spdxPackage = new SpdxPackage(store, uri, SpdxConstants.SPDX_ELEMENT_REF_PRENUM + component.getQualifiedName(), copyManager, true);
-            for (Hash hash : component.getAllHashes()) {
-                try {
+            if (component.getAllHashes() != null) {
 
-                    var checksum = spdxPackage.createChecksum(switch (hash.getAlgorithm()) {
-                        case "sha1" -> ChecksumAlgorithm.SHA1;
-                        case "sha256" -> ChecksumAlgorithm.SHA256;
-                        case "sha512" -> ChecksumAlgorithm.SHA512;
-                        case "md5" -> ChecksumAlgorithm.MD5;
-                        default -> throw new SPDXBuilderException("Unexpected value: " + hash.getAlgorithm());
-                    }, hash.getValue());
-                    spdxPackage.addChecksum(checksum);
+                for (Hash hash : component.getAllHashes()) {
+                    try {
+
+                        var checksum = spdxPackage.createChecksum(switch (hash.getAlgorithm()) {
+                            case "sha1", "HASH_ALG_SHA_1" -> ChecksumAlgorithm.SHA1;
+                            case "sha256", "HASH_ALG_SHA_256" -> ChecksumAlgorithm.SHA256;
+                            case "sha512", "HASH_ALG_SHA_512" -> ChecksumAlgorithm.SHA512;
+                            case "md5", "HASH_ALG_MD_5" -> ChecksumAlgorithm.MD5;
+                            default -> throw new SPDXBuilderException("Unexpected value: " + hash.getAlgorithm());
+                        }, hash.getValue());
+                        spdxPackage.addChecksum(checksum);
 
 
-                } catch (Exception e) {
-                    logger.error(hash.getValue() + " " + component + " " + e.getMessage());
+                    } catch (Exception e) {
+                        logger.error(hash.getValue() + " " + component + " " + e.getMessage());
+                    }
                 }
             }
+
 //            spdxPackage.setBuiltDate();
             spdxPackage.setDescription(component.getDescription());
             var supplier = component.getSupplier();
@@ -170,9 +176,6 @@ public class SPDXBuilder implements DocumentBuilder {
 //            spdxPackage.setValidUntilDate();
             spdxPackage.setVersionInfo(component.getVersion().getVersion());
 //            spdxPackage.getFiles();
-            spdxPackage.getExternalRefs();
-
-
             return spdxPackage;
         } catch (InvalidSPDXAnalysisException e) {
             throw new SPDXBuilderException(e.getMessage() + Arrays.toString(e.getStackTrace()));
@@ -185,7 +188,7 @@ public class SPDXBuilder implements DocumentBuilder {
                 var license = LicenseInfoFactory.parseSPDXLicenseString(licenseChoice.getLicense().getId(), store, uri, copyManager);
                 spdxPackage.getLicenseInfoFromFiles().add(license);
             } catch (InvalidSPDXAnalysisException e) {
-                logger.error("Error building SPDX document" + e.getMessage());
+                logger.info("Could not build license  " + licenseChoice.getLicense() + ". " + e.getMessage());
             }
         }
     }

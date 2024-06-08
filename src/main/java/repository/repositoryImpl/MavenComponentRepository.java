@@ -120,10 +120,10 @@ public class MavenComponentRepository implements ComponentRepository {
             component.setData("hashes", loadHashes(getDownloadLocation(component) + ".jar"));
             component.setData("vulnerabilities", loadVulnerabilities(component));
             return true;
-        } catch (MalformedURLException | ArtifactBuilderException e) {
-            logger.error(e.getMessage());
-            return false;
+        } catch (MalformedURLException | ArtifactBuilderException ignored) {
+
         }
+        return false;
     }
 
     private Model loadModel(URL url) throws ArtifactBuilderException {

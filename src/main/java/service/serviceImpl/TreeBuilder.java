@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Comparator;
 
 public class TreeBuilder implements DocumentBuilder<Object> {
     private static final Logger logger = Logger.of("TreeBuilder");
@@ -43,7 +44,7 @@ public class TreeBuilder implements DocumentBuilder<Object> {
         else writer.println("[ERROR]: " + component.getQualifiedName() + "?");
         writer.flush();
 
-        var dependencies = new ArrayList<>(component.getDependencies());
+        var dependencies = component.getDependencies().stream().sorted(Comparator.comparing(Dependency::getQualifiedName)).toList();
         if (dependencies.isEmpty()) return;
 
         for (int i = 0; i < dependencies.size(); i++) {

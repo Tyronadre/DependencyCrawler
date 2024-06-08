@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -29,7 +30,7 @@ public class VexBuilder implements DocumentBuilder {
 
         var vex = buildVex(root);
 
-        if (vex.getVulnerabilitiesCount() == 0 ){
+        if (vex.getVulnerabilitiesCount() == 0) {
             logger.info("No vulnerabilities found.");
             return;
         }
@@ -67,7 +68,7 @@ public class VexBuilder implements DocumentBuilder {
     private Iterable<VexOuterClass.Vulnerability> buildAllVulnerabilities(Component root) {
         var list = new ArrayList<VexOuterClass.Vulnerability>();
 
-        for (var component : root.getDependecyComponentsFlat()) {
+        for (var component : root.getDependecyComponentsFlat().stream().sorted(Comparator.comparing(Component::getQualifiedName)).toList()) {
             var vulnerabilities = component.getAllVulnerabilities();
             if (vulnerabilities != null) {
                 for (var vulnerability : vulnerabilities) {

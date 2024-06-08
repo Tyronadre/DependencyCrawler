@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
@@ -115,6 +116,15 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
         }
 
         executorService.shutdown();
+        try {
+            if (!executorService.awaitTermination(1, TimeUnit.MINUTES)) {
+                logger.error("Failed to resolve all components in time.");
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
         logger.success("Resolved " + loadCount + " components.");
         if (failCount.get() > 0) logger.error("Failed to resolve " + failCount + " components.");
         else logger.success("All components resolved successfully.");
@@ -159,6 +169,9 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
                     }
                 }
 
+        } catch(Exception e) {
+            logger.error("Failed to resolve dependency " + dependency + ": " + e.getMessage());
+            failCount.getAndIncrement();
         } finally {
             // remove the component from the processing list
             processing.remove(dependency);
