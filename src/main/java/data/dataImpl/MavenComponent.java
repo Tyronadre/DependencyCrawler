@@ -59,15 +59,12 @@ public class MavenComponent implements Component {
         if (this.model == null) return null;
         var org = this.model.getOrganization();
         if (org == null) return null;
-        return Organization.of(org.getName(), List.of(org.getUrl()), null, null);
+        return Organization.of(org.getName(), org.getUrl() != null ? List.of(org.getUrl()) : null, null, null);
     }
 
     @Override
     public Organization getManufacturer() {
-        if (this.model == null) return null;
-        var org = this.model.getOrganization();
-        if (org == null) return null;
-        return Organization.of(org.getName(), List.of(org.getUrl()), null, null);
+        return this.getSupplier();
     }
 
     @Override

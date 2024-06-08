@@ -72,7 +72,7 @@ public class MavenComponentRepository implements ComponentRepository {
      * @param url The URL to get the versions from
      * @return The versions as Strings
      */
-    public List<MavenVersion> getVersions(URL url) {
+    private List<MavenVersion> getVersions(URL url) {
         List<String> versions = null;
 
         var factory = XMLInputFactory.newInstance();
@@ -172,10 +172,6 @@ public class MavenComponentRepository implements ComponentRepository {
             components.put(groupId + ":" + artifactId + ":" + version.getVersion(), component);
             return component;
         }
-    }
-
-    public Component getComponent(String qualifedName) {
-        return components.get(qualifedName);
     }
 
     @Override

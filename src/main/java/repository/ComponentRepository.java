@@ -52,6 +52,7 @@ public interface ComponentRepository {
 
     /**
      * Returns a component from the repository if it exists. Otherwise, returns null.
+     * Returns the component with the highest version if multiple components with group and artifact id exist.
      *
      * @param groupId    the group id
      * @param artifactId the artifact id

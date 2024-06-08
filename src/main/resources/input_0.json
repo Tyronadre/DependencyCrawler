@@ -6,9 +6,14 @@
     "type": "JAVA",
     "dependencies": [
       {
-        "groupId": "org.apache.logging.log4j",
-        "name": "log4j-core",
-        "version": "2.15.0"
+        "groupId": "androidx.core",
+        "name": "core",
+        "version": "1.13.1"
+      },
+      {
+        "groupId": "androidx.activity",
+        "name": "activity",
+        "version": "1.6.0"
       }
     ]
   },
