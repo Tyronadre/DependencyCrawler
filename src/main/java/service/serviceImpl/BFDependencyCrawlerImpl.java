@@ -2,81 +2,34 @@ package service.serviceImpl;
 
 import data.Component;
 import data.Dependency;
-import exceptions.VersionResolveException;
+import data.Property;
 import logger.Logger;
 import repository.ComponentRepository;
 import service.BFDependencyCrawler;
 
 import java.text.DecimalFormat;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
     private static final Logger logger = Logger.of("DependencyCrawler");
 
-    public void crawl(Component parentComponent, boolean multiThreaded) {
+    public void crawl(Component parentComponent) {
 
         var time = System.currentTimeMillis();
         logger.info("Crawling dependencies of " + parentComponent.getQualifiedName() + "...");
-        int numberOfComponents;
-        if (multiThreaded) {
-            numberOfComponents = crawlMulti(parentComponent);
-        } else {
-            numberOfComponents = crawlSingle(parentComponent);
-        }
+        int numberOfComponents = crawlMulti(parentComponent);
+
 
         double timeTaken = (System.currentTimeMillis() - time) / 1000.0;
         var format = new DecimalFormat("0.##");
         logger.success("Crawling finished in " + timeTaken + "s. (" + format.format(timeTaken / numberOfComponents) + "s per component)");
-    }
-
-    public int crawlSingle(Component parentComponent) {
-        int loadCount = 0;
-        int failCount = 0;
-        parentComponent.loadComponent();
-        var repository = parentComponent.getRepository();
-        var queue = new ArrayDeque<Dependency>(parentComponent.getDependencies());
-        while (!queue.isEmpty()) {
-            var dependency = queue.poll();
-            //resolve the version of the dependency if we dont have done that yet
-            if (!dependency.hasVersion()) {
-                try {
-                    repository.getVersionResolver().resolveVersion(dependency);
-                } catch (VersionResolveException e) {
-                    logger.error(e.getMessage());
-                }
-            }
-            var component = dependency.getComponent();
-            if (component != null) {
-                component.loadComponent();
-                if (component.isLoaded()) {
-                    for (var unloadedDependency : component.getDependencies()) {
-                        if (unloadedDependency.shouldResolveByScope() && unloadedDependency.isNotOptional()) {
-                            queue.add(unloadedDependency);
-                        } else {
-                            if (!unloadedDependency.isNotOptional())
-                                logger.info("Dependency " + unloadedDependency + " is not resolved because it is optional.");
-                            else if (!unloadedDependency.shouldResolveByScope())
-                                logger.info("Dependency " + unloadedDependency + " is not resolved because it is of scope \"" + unloadedDependency.getScope() + "\".");
-                        }
-                    }
-                    loadCount++;
-                } else {
-                    failCount++;
-                }
-            }
-        }
-        logger.success("Resolved " + loadCount + " components.");
-        if (failCount > 0) logger.error("Failed to resolve " + failCount + " components.");
-        else logger.success("All components loaded successfully.");
-        return loadCount + failCount;
     }
 
     public int crawlMulti(Component parentComponent) {
@@ -85,97 +38,117 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
 
         AtomicInteger loadCount = new AtomicInteger();
         AtomicInteger failCount = new AtomicInteger();
-        int numThreads = Runtime.getRuntime().availableProcessors();
-        ExecutorService executorService = Executors.newFixedThreadPool(Math.min(numThreads * 2, 20));
-        var queue = new ConcurrentLinkedDeque<>(parentComponent.getDependencies());
-        var processing = Collections.synchronizedList(new ArrayList<Dependency>());
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
+        CompletionService<Void> completionService = new ExecutorCompletionService<>(executorService);
+        var queue = new ConcurrentLinkedDeque<>(parentComponent.getDependenciesFiltered());
+        AtomicInteger activeTasks = new AtomicInteger(0);
 
-        while (true) {
-            //get next dependency in queue
-            Dependency dependency;
-            dependency = queue.poll();
+        while (!queue.isEmpty() || activeTasks.get() > 0) {
+            Dependency dependency = queue.poll();
+            if (dependency != null) {
+                activeTasks.incrementAndGet();
+                completionService.submit(() -> {
+                    try {
+                        //get the version of the dependency
+                        if (!dependency.hasVersion()) {
+                            repository.getVersionResolver().resolveVersion(dependency);
+                        }
 
-            //check if we are processing something, if yes wait and try again
-            if (dependency == null) {
-                if (processing.isEmpty()) {
-                    break;
-                }
+                        //get the component of the dependency
+                        var component = dependency.getComponent();
 
-                //wait a moment before checking again
+                        // process the component
+                        if (component != null)
+                            if (!component.isLoaded()) {
+                                component.loadComponent();
+
+                                if (component.isLoaded()) {
+                                    queue.addAll(component.getDependenciesFiltered());
+
+                                    component.getDependencies().forEach(c -> {
+                                        if (!c.isNotOptional()) {
+                                            logger.info("Dependency " + c + " is not resolved because it is optional.");
+                                        } else if (!c.shouldResolveByScope()) {
+                                            logger.info("Dependency " + c + " is not resolved because it is of scope \"" + c.getScope() + "\".");
+                                        }
+                                    });
+
+                                    loadCount.getAndIncrement();
+                                } else {
+                                    failCount.getAndIncrement();
+                                }
+                            }
+
+                    } catch (Exception e) {
+                        logger.error("Failed to resolve dependency " + dependency + ": " + e.getMessage());
+                        failCount.getAndIncrement();
+                    } finally {
+                        activeTasks.decrementAndGet();
+                    }
+                    return null;
+                });
+            } else {
                 try {
-                    Thread.sleep(100);
+                    Future<Void> future = completionService.poll(100, TimeUnit.MILLISECONDS);
+                    if (future != null) {
+                        future.get(); // ensure exceptions are propagated
+                    }
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+                    logger.error("Thread interrupted while waiting for tasks to complete." + e);
+                    break;
+                } catch (Exception e) {
+                    logger.error("Error occurred during task execution." + e);
                 }
-                continue;
             }
-
-            // add the dependency to the processing list
-            processing.add(dependency);
-            executorService.submit(() -> multiCrawlHelper(dependency, queue, processing, repository, loadCount, failCount));
         }
 
         executorService.shutdown();
         try {
             if (!executorService.awaitTermination(1, TimeUnit.MINUTES)) {
-                logger.error("Failed to resolve all components in time.");
+                logger.error("Failed to resolve all components within the timeout period.");
                 executorService.shutdownNow();
             }
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            Thread.currentThread().interrupt();
+            logger.error("Thread interrupted while waiting for executor service to terminate." + e);
+            executorService.shutdownNow();
         }
 
-        logger.success("Resolved " + loadCount + " components.");
-        if (failCount.get() > 0) logger.error("Failed to resolve " + failCount + " components.");
-        else logger.success("All components resolved successfully.");
+        logger.info("Resolved " + loadCount.get() + " components.");
+        if (failCount.get() > 0) {
+            logger.error("Failed to resolve " + failCount.get() + " components.");
+        } else {
+            logger.info("All components resolved successfully.");
+        }
+
+        logger.info("Applying overwritten versions...");
+        updateDependenciesToNewestVersion(parentComponent);
+
         return loadCount.get() + failCount.get();
     }
 
-    private Component multiCrawlHelper(Dependency dependency, ConcurrentLinkedDeque<Dependency> queue, List<Dependency> processing, ComponentRepository repository, AtomicInteger loadCount, AtomicInteger failCount) {
-        try {
-            //get the version of the dependency
-            if (!dependency.hasVersion()) {
-                try {
-                    repository.getVersionResolver().resolveVersion(dependency);
-                } catch (VersionResolveException e) {
-                    logger.error(e.getMessage());
-                }
-            }
+    public void updateDependenciesToNewestVersion(Component rootComponent) {
+        for (var dependency : rootComponent.getDependenciesFlatFiltered()) {
+            var dependencyComponent = dependency.getComponent();
+            if (dependencyComponent == null) continue;
+            var newestComponent = ComponentRepository.getLoadedComponents(dependencyComponent.getGroup(), dependencyComponent.getName()).last();
+            if (newestComponent.getVersion().compareTo(dependencyComponent.getVersion()) > 0) {
+                //check if we have a version in the tree parent
+                var treeParent = dependency.getTreeParent();
+                if (treeParent != null) {
+                    if (treeParent.getDependenciesFiltered().stream().anyMatch(d -> d.getComponent() != null && d.getComponent().getGroup().equals(dependencyComponent.getGroup()) && d.getComponent().getName().equals(dependencyComponent.getName()))) {
 
-            //get the component of the dependency
-            var component = dependency.getComponent();
+                        treeParent.removeDependency(dependency);
 
-            // process the component
-            if (component != null)
-                if (!component.isLoaded()) {
-
-                    component.loadComponent();
-
-                    if (component.isLoaded()) {
-                        queue.addAll(component.getDependencies().stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList());
-
-                        component.getDependencies().forEach(c -> {
-                            if (!c.isNotOptional()) {
-                                logger.info("Dependency " + c + " is not resolved because it is optional.");
-                            } else if (!c.shouldResolveByScope()) {
-                                logger.info("Dependency " + c + " is not resolved because it is of scope \"" + c.getScope() + "\".");
-                            }
-                        });
-
-
-                        loadCount.getAndIncrement();
-                    } else {
-                        failCount.getAndIncrement();
                     }
                 }
 
-        } catch(Exception e) {
-            logger.error("Failed to resolve dependency " + dependency + ": " + e.getMessage());
-            failCount.getAndIncrement();
-        } finally {
-            // remove the component from the processing list
-            processing.remove(dependency);
+                dependency.setComponent(newestComponent);
+                dependency.setVersion(newestComponent.getVersion());
+
+                newestComponent.setData("addProperty", Property.of("overwritesDependencyVersion", dependencyComponent.getQualifiedName()));
+            }
         }
-        return dependency.getComponent();
     }
 }

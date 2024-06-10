@@ -4,6 +4,7 @@ import data.Component;
 import data.Dependency;
 import data.Version;
 import logger.Logger;
+import repository.repositoryImpl.MavenComponentRepositoryType;
 
 import java.util.Objects;
 
@@ -11,7 +12,7 @@ public class MavenDependency implements Dependency {
     private static final Logger logger = Logger.of("MavenDependency");
 
     private final Component treeParent; //The component that has this dependency
-    private MavenComponent component;
+    private Component component;
     private final String groupId;
     private final String artifactId;
     private String versionConstraints;
@@ -28,7 +29,7 @@ public class MavenDependency implements Dependency {
      * @param treeParent the parent component
      */
     public MavenDependency(String groupId, String artifactId, Version version, MavenComponent treeParent) {
-        this.component = (MavenComponent) treeParent.getRepository().getComponent(groupId, artifactId, version);
+        this.component = treeParent.getRepository().getComponent(groupId, artifactId, version);
         this.component = new MavenComponent(groupId, artifactId, version, treeParent.getRepository());
         this.groupId = groupId;
         this.artifactId = artifactId;
@@ -88,14 +89,18 @@ public class MavenDependency implements Dependency {
     }
 
     @Override
-    public synchronized MavenComponent getComponent() {
+    public synchronized Component getComponent() {
         if (component == null && version != null) {
-            this.component = (MavenComponent) treeParent.getRepository().getComponent(getGroupId(), getArtifactId(), getVersion());
+            this.component = treeParent.getRepository().getComponent(getGroupId(), getArtifactId(), getVersion());
         } else if (component == null) {
-            logger.error("Can not get Component of Dependency " + this + ". Parent is: " + this.treeParent + ". [Version is not resolved]");
-            return null;
+            logger.error("Can not get Component of Dependency " + this + ". Parent is: " + this.treeParent + ". [Version is not resolved].");
+            var possibleComponents = MavenComponentRepositoryType.getLoadedComponents(getGroupId(), getArtifactId());
+            if (!possibleComponents.isEmpty()) {
+                logger.info("Using " + possibleComponents.last() + " as fallback.");
+                this.component = possibleComponents.last();
+            }
         }
-        return component;
+        return this.component;
     }
 
     public Boolean shouldResolveByScope() {
@@ -114,7 +119,7 @@ public class MavenDependency implements Dependency {
 
     @Override
     public String toString() {
-        if (versionConstraints == null)
+        if (version != null)
             return groupId + ":" + artifactId + ":" + version;
         return groupId + ":" + artifactId + ":" + versionConstraints;
     }
@@ -132,7 +137,7 @@ public class MavenDependency implements Dependency {
     @Override
     public void setComponent(Component component) {
         this.component = (MavenComponent) component;
-        this.version = (MavenVersion) component.getVersion();
+        this.version = component.getVersion();
     }
 
     @Override

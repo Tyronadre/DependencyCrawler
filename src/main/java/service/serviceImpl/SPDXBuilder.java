@@ -29,7 +29,6 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 
 public class SPDXBuilder implements DocumentBuilder {
@@ -96,14 +95,13 @@ public class SPDXBuilder implements DocumentBuilder {
     private List<SpdxElement> buildDocumentDescribes() {
         var list = new ArrayList<SpdxElement>();
 
-        for (Dependency dependency : root.getDependenciesFlat().stream().sorted(Comparator.comparing(Dependency::getQualifiedName)).toList()) {
-            if (dependency.getComponent() != null && dependency.getComponent().isLoaded())
-                try {
-                    list.add(getSpdxElement(dependency.getComponent()));
-                } catch (SPDXBuilderException e) {
-                    logger.error("Error building SPDX document" + e.getMessage());
-                    e.printStackTrace();
-                }
+        for (Component component : root.getDependencyComponentsFlatFiltered()) {
+            try {
+                list.add(getSpdxElement(component));
+            } catch (SPDXBuilderException e) {
+                logger.error("Error building SPDX document" + e.getMessage());
+                e.printStackTrace();
+            }
         }
         return list;
     }

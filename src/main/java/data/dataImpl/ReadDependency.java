@@ -104,7 +104,4 @@ public class ReadDependency implements Dependency {
         return Objects.equals(this.getQualifiedName(), that.getQualifiedName());
     }
 
-    public Bom16.Dependency toBom16() {
-        return dependency;
-    }
 }

@@ -53,16 +53,12 @@ public class BomToInternalMavenConverter {
     public static void buildAllDependenciesRecursively(Bom16.Dependency dependency, Component parent) {
         var component = componentRepository.getReadComponent(dependency.getRef());
 
-
-
         if (parent != null) {
             Dependency newDependency = new ReadDependency(dependency, component, parent);
             parent.addDependency(newDependency);
         }
 
-
         dependency.getDependenciesList().forEach(dep -> buildAllDependenciesRecursively(dep, component));
-
     }
 
     /**

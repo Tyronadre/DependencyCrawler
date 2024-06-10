@@ -1,7 +1,6 @@
 package data;
 
 import repository.ComponentRepository;
-import repository.repositoryImpl.MavenComponentRepository;
 
 import java.util.List;
 import java.util.Set;
@@ -29,7 +28,14 @@ public interface Component {
     /**
      * @return the dependencies of the artifact
      */
-    Set<Dependency> getDependencies();
+    List<Dependency> getDependencies();
+
+    /**
+     * Only dependencies that are resolved are returned.
+     *
+     * @return the filtered dependencies of the artifact.
+     */
+    List<Dependency> getDependenciesFiltered();
 
     /**
      * @return the name of the artifact
@@ -112,9 +118,15 @@ public interface Component {
 
     String getDownloadLocation();
 
-    Set<Dependency> getDependenciesFlat();
+    /**
+     * @return a filtered list of dependencies, that only contains the dependencies that are resolved in alphabetical order
+     */
+    List<Dependency> getDependenciesFlatFiltered();
 
-    Set<Component> getDependecyComponentsFlat();
+    /**
+     * @return a filtered list of components, that only contains the components that are resolved in alphabetical order
+     */
+    List<Component> getDependencyComponentsFlatFiltered();
 
     String getPublisher();
 
@@ -124,6 +136,16 @@ public interface Component {
 
     List<Person> getAllAuthors();
 
+    /**
+     * Sets the data for the given key.
+     * Exact implementation is up to the component.
+     *
+     * @param key the key
+     * @param value the value
+     * @param <T> the type of the value
+     */
     <T> void setData(String key, T value);
+
+    void removeDependency(Dependency dependency);
 }
 

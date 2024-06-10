@@ -4,19 +4,19 @@ import cyclonedx.sbom.Bom16;
 import data.Component;
 import data.Dependency;
 import data.Version;
-import data.dataImpl.MavenComponent;
 import enums.RepositoryType;
-import exceptions.ArtifactBuilderException;
-import repository.repositoryImpl.MavenRepositoryType;
+import repository.repositoryImpl.MavenComponentRepositoryType;
+import repository.repositoryImpl.ReadComponentRepository;
 import service.VersionRangeResolver;
 import service.VersionResolver;
 
 import java.util.List;
+import java.util.TreeSet;
 
 public interface ComponentRepository {
 
     static ComponentRepository of(RepositoryType repositoryType) {
-        return MavenRepositoryType.of((MavenRepositoryType) repositoryType);
+        return MavenComponentRepositoryType.of((MavenComponentRepositoryType) repositoryType);
     }
 
     static Component getReadComponent(Bom16.Property bomRef) {
@@ -68,4 +68,11 @@ public interface ComponentRepository {
 
 
     String getDownloadLocation(Component component);
+
+    static TreeSet<Component> getLoadedComponents(String groupName, String artifactName){
+        var set = MavenComponentRepositoryType.getLoadedComponents(groupName, artifactName);
+        set.addAll(ReadComponentRepository.getInstance().getLoadedComponents(groupName, artifactName));
+        return set;
+    }
+
 }

@@ -6,10 +6,11 @@ import org.apache.maven.api.model.DependencyManagement;
 import org.apache.maven.api.model.Model;
 import repository.ComponentRepository;
 import repository.LicenseRepository;
-import repository.repositoryImpl.MavenComponentRepository;
-import repository.repositoryImpl.MavenRepositoryType;
+import repository.repositoryImpl.MavenComponentRepositoryType;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * An artifact in a Maven repository.
@@ -20,7 +21,7 @@ public class MavenComponent implements Component {
     String groupId;
     String artifactId;
     Version version;
-    Set<Dependency> dependencies = new HashSet<>();
+    List<Dependency> dependencies = new ArrayList<>();
     ComponentRepository repository;
     Model model;
     Component parent;
@@ -39,9 +40,18 @@ public class MavenComponent implements Component {
     }
 
     @Override
-    public Set<Dependency> getDependencies() {
-        //return only dependencies that are not provided or test or optional
+    public List<Dependency> getDependencies() {
         return this.dependencies;
+    }
+
+    @Override
+    public List<Dependency> getDependenciesFiltered() {
+        return this.dependencies.stream()
+                .filter(Objects::nonNull)
+                .filter(Dependency::shouldResolveByScope)
+                .filter(Dependency::isNotOptional)
+                .sorted(Comparator.comparing(Dependency::getQualifiedName))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -128,7 +138,7 @@ public class MavenComponent implements Component {
 
         if (this.repository != null) this.repository.loadComponent(this);
         //if we dont have a model we try other repositories
-        if (model == null) MavenRepositoryType.tryLoadComponent(this);
+        if (model == null) MavenComponentRepositoryType.tryLoadComponent(this);
         //if we still dont have the model, we cant load the component
         if (model == null) {
             logger.error("Could not load component: " + this.getQualifiedName() + " [no model] (" + (System.currentTimeMillis() - start) + "ms)");
@@ -152,7 +162,7 @@ public class MavenComponent implements Component {
 
         // LICENSES
         var licenseRepository = LicenseRepository.getInstance();
-        if (this.model.getLicenses() != null && !this.model.getLicenses().isEmpty()){
+        if (this.model.getLicenses() != null && !this.model.getLicenses().isEmpty()) {
             this.licenseChoices = new ArrayList<>();
             for (var license : this.model.getLicenses()) {
                 if (license.getName() == null) continue;
@@ -163,6 +173,11 @@ public class MavenComponent implements Component {
                 }
                 this.licenseChoices.add(new MavenLicenseChoice(newLicense));
             }
+        }
+
+        //PROPERTIES
+        for (var entry : this.model.getProperties().entrySet()) {
+            this.properties.add(Property.of(entry.getKey(), entry.getValue()));
         }
 
         loaded = true;
@@ -244,26 +259,28 @@ public class MavenComponent implements Component {
     }
 
     @Override
-    public Set<Dependency> getDependenciesFlat() {
-        Set<Dependency> dependencies = new HashSet<>();
-        for (var dependency : this.dependencies.stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList()) {
-            dependencies.add(dependency);
-            if (dependency.getComponent() != null && dependency.getComponent().isLoaded())
-                dependencies.addAll(dependency.getComponent().getDependenciesFlat());
-        }
-        return dependencies;
+    public List<Dependency> getDependenciesFlatFiltered() {
+        return this.dependencies.stream()
+                .filter(Dependency::shouldResolveByScope)
+                .filter(Dependency::isNotOptional)
+                .flatMap(dependency -> Stream.concat(
+                        Stream.of(dependency),
+                        dependency.getComponent() != null && dependency.getComponent().isLoaded()
+                                ? dependency.getComponent().getDependenciesFlatFiltered().stream()
+                                : Stream.empty()
+                ))
+                .sorted(Comparator.comparing(Dependency::getQualifiedName))
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Set<Component> getDependecyComponentsFlat() {
-        Set<Component> components = new HashSet<>();
-        for (var dependency : this.dependencies.stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList()) {
-            if (dependency.getComponent() != null && dependency.getComponent().isLoaded()) {
-                components.add(dependency.getComponent());
-                components.addAll(dependency.getComponent().getDependecyComponentsFlat());
-            }
-        }
-        return components;
+    public List<Component> getDependencyComponentsFlatFiltered() {
+        return this.getDependenciesFlatFiltered().stream()
+                .distinct()
+                .map(Dependency::getComponent)
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(Component::getQualifiedName))
+                .toList();
     }
 
     @Override
@@ -276,14 +293,21 @@ public class MavenComponent implements Component {
         return this.licenseChoices;
     }
 
+    List<Property> properties = new ArrayList<>();
+
     @Override
     public List<Property> getAllProperties() {
-        return List.of();
+        return properties;
     }
 
     @Override
     public List<Person> getAllAuthors() {
         return List.of();
+    }
+
+    @Override
+    public void removeDependency(Dependency dependency) {
+        this.dependencies.remove(dependency);
     }
 
     @Override
@@ -293,19 +317,30 @@ public class MavenComponent implements Component {
             case "hashes" -> setHashes((List<Hash>) value);
             case "vulnerabilities" -> setVulnerabilities((List<Vulnerability>) value);
             case "repository" -> setRepository((ComponentRepository) value);
+            case "addProperty" -> {
+                var property = (Property) value;
+                this.properties.add(Property.of(property.getName(), property.getValue()));
+            }
+            case "removeDependencyIfOtherVersionPresent" -> {
+                var dependency = (Dependency) value;
+                if (this.dependencies.stream().anyMatch(d -> d.getComponent().getGroup().equals(dependency.getComponent().getGroup()) && d.getComponent().getName().equals(dependency.getComponent().getName()) && !d.getComponent().getVersion().equals(dependency.getComponent().getVersion()))) {
+                    this.dependencies.remove(dependency);
+                    logger.info("Removed dependency " + dependency + " from " + this.getQualifiedName() + " because newer version is present.");
+                }
+            }
             default -> logger.error("Unknown key: " + key);
         }
     }
 
-    private void setRepository(ComponentRepository repository){
+    private void setRepository(ComponentRepository repository) {
         this.repository = repository;
     }
 
-    private void setModel(Model model){
+    private void setModel(Model model) {
         this.model = model;
     }
 
-    private void setHashes(List<Hash> hashes){
+    private void setHashes(List<Hash> hashes) {
         this.hashes = hashes;
     }
 

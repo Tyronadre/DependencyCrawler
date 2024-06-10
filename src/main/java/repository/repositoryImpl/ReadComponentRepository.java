@@ -11,6 +11,7 @@ import service.VersionResolver;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.TreeSet;
 
 public class ReadComponentRepository implements ComponentRepository {
     HashMap<String, Component> readComponents = new HashMap<>();
@@ -63,16 +64,16 @@ public class ReadComponentRepository implements ComponentRepository {
         return "";
     }
 
+    public List<Component> getLoadedComponents(String groupName, String artifactName) {
+        return this.readComponents.values().stream().filter(c -> c.getGroup().equals(groupName) && c.getName().equals(artifactName)).toList();
+    }
+
     public void addReadComponent(Bom16.Component bomComponent, Component component) {
         this.readComponents.put(bomComponent.getBomRef(), component);
     }
 
     public Component getReadComponent(Bom16.Component bomComponent) {
         return this.readComponents.get(bomComponent.getBomRef());
-    }
-
-    public List<Component> getAllComponents() {
-        return readComponents.values().stream().toList();
     }
 
     public Component getReadComponent(String qualifier) {

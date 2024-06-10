@@ -187,7 +187,7 @@ public class InternalMavenToBomConverter {
         }
 
         //recurse on the dependencies
-        for (var dep : dependency.getComponent().getDependencies()) {
+        for (var dep : dependency.getComponent().getDependenciesFiltered()) {
             builder.addDependencies(buildAllDependenciesAndComponentsRecursivelyHelper(dep, buildComponents));
         }
 
@@ -297,7 +297,7 @@ public class InternalMavenToBomConverter {
     }
 
     private static Iterable<Bom16.Property> buildAllProperties(List<Property> properties) {
-        return properties.stream().map(InternalMavenToBomConverter::buildProperty).toList();
+        return properties.stream().distinct().map(InternalMavenToBomConverter::buildProperty).toList();
     }
 
     private static Bom16.Property buildProperty(Property property) {

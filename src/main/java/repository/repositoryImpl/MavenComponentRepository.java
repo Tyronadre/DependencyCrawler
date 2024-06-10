@@ -29,9 +29,11 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 /**
@@ -42,13 +44,13 @@ import java.util.stream.Collectors;
 public class MavenComponentRepository implements ComponentRepository {
     private final RepositoryType repositoryType;
     private final String baseUrl;
-    private final HashMap<String, Component> components;
+    private final HashMap<String, TreeSet<Component>> components;
     private final MavenVersionRangeResolver versionRangeResolver = new MavenVersionRangeResolver(this);
     private final MavenVersionResolver versionResolver = new MavenVersionResolver(this);
 
     private static final Logger logger = Logger.of("MavenRepository");
 
-    MavenComponentRepository(MavenRepositoryType repositoryType) {
+    MavenComponentRepository(MavenComponentRepositoryType repositoryType) {
         this.repositoryType = repositoryType;
         this.baseUrl = repositoryType.getUrl();
         components = new HashMap<>();
@@ -112,7 +114,7 @@ public class MavenComponentRepository implements ComponentRepository {
 
     @Override
     public boolean loadComponent(Component component) {
-        if (this.repositoryType == MavenRepositoryType.ROOT) {
+        if (this.repositoryType == MavenComponentRepositoryType.ROOT) {
             return false;
         }
         try {
@@ -164,14 +166,18 @@ public class MavenComponentRepository implements ComponentRepository {
     }
 
     @Override
-    public Component getComponent(String groupId, String artifactId, Version version) {
-        if (components.containsKey(groupId + ":" + artifactId + ":" + version.getVersion())) {
-            return components.get(groupId + ":" + artifactId + ":" + version.getVersion());
-        } else {
-            var component = new MavenComponent(groupId, artifactId, version, this);
-            components.put(groupId + ":" + artifactId + ":" + version.getVersion(), component);
-            return component;
+    public synchronized Component getComponent(String groupId, String artifactId, Version version) {
+        if (!components.containsKey(groupId + ":" + artifactId)) {
+            components.put(groupId + ":" + artifactId, new TreeSet<>(Comparator.comparing(Component::getVersion)));
         }
+        var set = components.get(groupId + ":" + artifactId);
+        var newComponent = new MavenComponent(groupId, artifactId, version, this);
+        var component = set.floor(newComponent);
+        if (component == null || !component.getVersion().equals(version)) {
+            components.get(groupId + ":" + artifactId).add(newComponent);
+            return newComponent;
+        }
+        return component;
     }
 
     @Override
@@ -192,6 +198,10 @@ public class MavenComponentRepository implements ComponentRepository {
     @Override
     public String getDownloadLocation(Component mavenComponent) {
         return baseUrl + mavenComponent.getGroup().replace(".", "/") + "/" + mavenComponent.getName() + "/" + mavenComponent.getVersion().getVersion() + "/" + mavenComponent.getName() + "-" + mavenComponent.getVersion().getVersion();
+    }
+
+    public TreeSet<Component> getLoadedComponents(String groupName, String artifactName) {
+        return components.get(groupName + ":" + artifactName);
     }
 
 }

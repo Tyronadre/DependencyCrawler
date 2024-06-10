@@ -13,6 +13,12 @@ import java.util.Comparator;
 
 public class TreeBuilder implements DocumentBuilder<Object> {
     private static final Logger logger = Logger.of("TreeBuilder");
+    private final boolean showUnresolved;
+
+    public TreeBuilder(boolean showUnresolved) {
+        this.showUnresolved = showUnresolved;
+    }
+
 
     @Override
     public void buildDocument(Component root, String outputFileName) {
@@ -50,6 +56,9 @@ public class TreeBuilder implements DocumentBuilder<Object> {
         for (int i = 0; i < dependencies.size(); i++) {
             Dependency dependency = dependencies.get(i);
             if (dependency == null) continue;
+            if (!dependency.shouldResolveByScope() && !showUnresolved) continue;
+            if (!dependency.isNotOptional() && !showUnresolved) continue;
+
             writer.print(prependRow);
             writer.flush();
 
@@ -59,7 +68,8 @@ public class TreeBuilder implements DocumentBuilder<Object> {
                 if (dependency.shouldResolveByScope() && dependency.isNotOptional() && dependency.getComponent() != null)
                     printTree(dependency.getComponent(), depth + 1, prependRow + "   ", writer);
                 else {
-                    if (!dependency.isNotOptional()) writer.print("► [OPTIONAL]: " + dependency.getQualifiedName() + "\n");
+                    if (!dependency.isNotOptional())
+                        writer.print("► [OPTIONAL]: " + dependency.getQualifiedName() + "\n");
                     else if (!dependency.shouldResolveByScope())
                         writer.print("► [" + dependency.getScope().toUpperCase() + "]: " + dependency.getQualifiedName() + "\n");
                     else writer.print("► [ERROR]: " + dependency.getQualifiedName() + "\n");
@@ -73,7 +83,8 @@ public class TreeBuilder implements DocumentBuilder<Object> {
                 if (dependency.shouldResolveByScope() && dependency.isNotOptional())
                     printTree(dependency.getComponent(), depth + 1, prependRow + "│  ", writer);
                 else {
-                    if (!dependency.isNotOptional()) writer.print("► [OPTIONAL]: " + dependency.getQualifiedName() + "\n");
+                    if (!dependency.isNotOptional())
+                        writer.print("► [OPTIONAL]: " + dependency.getQualifiedName() + "\n");
                     else if (!dependency.shouldResolveByScope())
                         writer.print("► [" + dependency.getScope().toUpperCase() + "]: " + dependency.getQualifiedName() + "\n");
                     else writer.print("► [ERROR]: " + dependency.getQualifiedName() + "\n");

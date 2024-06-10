@@ -7,17 +7,18 @@ import logger.Logger;
 import org.apache.maven.api.model.Model;
 import repository.ComponentRepository;
 import repository.LicenseRepository;
-import repository.repositoryImpl.MavenComponentRepository;
-import repository.repositoryImpl.MavenRepositoryType;
+import repository.repositoryImpl.MavenComponentRepositoryType;
 import service.converter.BomToInternalMavenConverter;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static service.converter.BomToInternalMavenConverter.*;
 
 public class ReadComponent implements Component {
     private final Bom16.Component bomComponent;
-    private final Set<Dependency> dependencies;
+    private final List<Dependency> dependencies;
     private final List<Property> properties;
     private Model model;
     private List<Hash> hashes;
@@ -51,7 +52,7 @@ public class ReadComponent implements Component {
 
     private ReadComponent(Bom16.Component bomComponent) {
         this.bomComponent = bomComponent;
-        this.dependencies = new HashSet<>();
+        this.dependencies = new ArrayList<>();
         this.properties = buildAllProperties(bomComponent.getPropertiesList());
         this.authors = BomToInternalMavenConverter.buildAllPersons(bomComponent.getAuthorsList(), null);
         this.vulnerabilities = new ArrayList<>();
@@ -74,34 +75,10 @@ public class ReadComponent implements Component {
         if (this.repository != null) this.repository.loadComponent(this);
 
         switch (this.type) {
-            case MAVEN -> MavenRepositoryType.tryLoadComponent(this);
+            case MAVEN -> MavenComponentRepositoryType.tryLoadComponent(this);
             default -> throw new UnsupportedOperationException("Cannot load read component of type " + type);
         }
 
-//        // DEPENDENCIES
-//        //we keep the dependencies that we read
-//        var dependenciesToRemove = new ArrayList<>(this.dependencies);
-//        var dependenciesToAdd = new ArrayList<Dependency>();
-//        for (var modelDependency : this.model.getDependencies()) {
-//            for (var currentDependency : this.dependencies) {
-//                if ((modelDependency.getGroupId() + modelDependency.getArtifactId()).equals(currentDependency.getComponent().getGroup() + currentDependency.getComponent().getName())) {
-//                    dependenciesToRemove.remove(currentDependency);
-//                    break;
-//                }
-//            }
-//            dependenciesToAdd.add(new MavenDependency(modelDependency.getGroupId(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
-//        }
-//        logger.info("Removing " + dependenciesToRemove + " dependencies from " + this.getQualifiedName());
-//        dependenciesToRemove.forEach(this.dependencies::remove);
-//        logger.info("Adding " + dependenciesToAdd + " dependencies to " + this.getQualifiedName());
-//        this.dependencies.addAll(dependenciesToAdd);
-
-
-        // PARENT
-//        if (this.model.getParent() != null && this.getParent().getGroup() + this.getParent().get)
-//            this.parent = this.repository.getComponent(this.model.getParent().getGroupId(), this.model.getParent().getArtifactId(), new MavenVersion(this.model.getParent().getVersion()));
-//        else this.parent = null;
-//
         // LICENSES
         var licenseRepository = LicenseRepository.getInstance();
         var licenseChoices = new ArrayList<>(this.licenseChoices.stream().map(LicenseChoice::getLicense).map(License::getName).toList());
@@ -139,8 +116,16 @@ public class ReadComponent implements Component {
     }
 
     @Override
-    public Set<Dependency> getDependencies() {
+    public List<Dependency> getDependencies() {
         return this.dependencies;
+    }
+
+    @Override
+    public List<Dependency> getDependenciesFiltered() {
+        return this.dependencies.stream()
+                .filter(Dependency::shouldResolveByScope)
+                .filter(Dependency::isNotOptional)
+                .toList();
     }
 
     @Override
@@ -185,7 +170,7 @@ public class ReadComponent implements Component {
 
     @Override
     public ComponentRepository getRepository() {
-        return MavenRepositoryType.of(MavenRepositoryType.FILE);
+        return MavenComponentRepositoryType.of(MavenComponentRepositoryType.FILE);
     }
 
     @Override
@@ -240,26 +225,29 @@ public class ReadComponent implements Component {
     }
 
     @Override
-    public Set<Dependency> getDependenciesFlat() {
-        Set<Dependency> dependencies = new HashSet<>();
-        for (var dependency : this.dependencies.stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList()) {
-            dependencies.add(dependency);
-            if (dependency.getComponent() != null && dependency.getComponent().isLoaded())
-                dependencies.addAll(dependency.getComponent().getDependenciesFlat());
-        }
-        return dependencies;
+    public List<Dependency> getDependenciesFlatFiltered() {
+        return this.dependencies.stream()
+                .filter(Dependency::shouldResolveByScope)
+                .filter(Dependency::isNotOptional)
+                .flatMap(dependency -> Stream.concat(
+                        Stream.of(dependency),
+                        dependency.getComponent() != null && dependency.getComponent().isLoaded()
+                                ? dependency.getComponent().getDependenciesFlatFiltered().stream()
+                                : Stream.empty()
+                ))
+                .distinct()
+                .sorted(Comparator.comparing(Dependency::getQualifiedName))
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Set<Component> getDependecyComponentsFlat() {
-        Set<Component> components = new HashSet<>();
-        for (var dependency : this.dependencies.stream().filter(Dependency::shouldResolveByScope).filter(Dependency::isNotOptional).toList()) {
-            if (dependency.getComponent() != null && dependency.getComponent().isLoaded()) {
-                components.add(dependency.getComponent());
-                components.addAll(dependency.getComponent().getDependecyComponentsFlat());
-            }
-        }
-        return components;
+    public List<Component> getDependencyComponentsFlatFiltered() {
+        return this.getDependenciesFlatFiltered().stream()
+                .map(Dependency::getComponent)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted(Comparator.comparing(Component::getQualifiedName))
+                .toList();
     }
 
     @Override
@@ -280,6 +268,11 @@ public class ReadComponent implements Component {
     @Override
     public List<Person> getAllAuthors() {
         return this.authors;
+    }
+
+    @Override
+    public void removeDependency(Dependency dependency) {
+        this.dependencies.remove(dependency);
     }
 
     @Override

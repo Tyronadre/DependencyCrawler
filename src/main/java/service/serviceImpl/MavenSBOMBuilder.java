@@ -3,7 +3,6 @@ package service.serviceImpl;
 import com.google.protobuf.util.JsonFormat;
 import cyclonedx.sbom.Bom16;
 import data.*;
-import data.dataImpl.ReadComponent;
 import repository.repositoryImpl.ReadVulnerabilityRepository;
 import service.DocumentBuilder;
 
@@ -78,7 +77,7 @@ public class MavenSBOMBuilder implements DocumentBuilder<Bom16.Bom> {
         bomBuilder.setMetadata(buildMetadata(root));
         bomBuilder.addDependencies(dependency);
         bomBuilder.addAllComponents(components.values().stream().sorted(Comparator.comparing(Bom16.Component::getBomRef)).toList());
-        var vuls = root.getDependecyComponentsFlat().stream().map(Component::getAllVulnerabilities).flatMap(Collection::stream).collect(Collectors.toSet());
+        var vuls = root.getDependencyComponentsFlatFiltered().stream().map(Component::getAllVulnerabilities).flatMap(Collection::stream).collect(Collectors.toSet());
         vuls.addAll(ReadVulnerabilityRepository.getInstance().getAllVulnerabilities());
         bomBuilder.addAllVulnerabilities(buildAllVulnerabilities(vuls));
 

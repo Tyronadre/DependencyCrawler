@@ -8,5 +8,5 @@ public interface BFDependencyCrawler {
      *
      * @param parentComponent the parent component
      */
-    void crawl(Component parentComponent, boolean multiThreaded);
+    void crawl(Component parentComponent);
 }

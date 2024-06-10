@@ -23,25 +23,25 @@ public class Main {
         LicenseRepository.getInstance(); //preload license repository
 
 
-        var in1 = readInputFile("input_0.json");
-        crawlComponent(in1);
-        buildSBOMFile(in1, "generated/output_0");
-        buildSPDXFile(in1, "generated/output_0");
-        buildTreeFile(in1, "generated/output_0");
-        buildVexFile(in1, "generated/output_0");
+//        var in1 = readInputFile("input_0.json");
+//        crawlComponent(in1);
+//        buildSBOMFile(in1, "generated/output_0");
+//        buildSPDXFile(in1, "generated/output_0");
+//        buildTreeFile(in1, "generated/output_0", false);
+//        buildVexFile(in1, "generated/output_0");
 //
 //        var in2 = readInputFile("input_1.json");
 //        crawlComponent(in2);
 //        buildSBOMFile(in2, "generated/output_1");
 //        buildSPDXFile(in2, "generated/output_1");
-//        buildTreeFile(in2, "generated/output_1");
+//        buildTreeFile(in2, "generated/output_1", false);
 //        buildVexFile(in2, "generated/output_1");
 //
 //        var in3 = readInputFile("input_2.json");
 //        crawlComponent(in3);
 //        buildSBOMFile(in3, "generated/output_2");
 //        buildSPDXFile(in3, "generated/output_2");
-//        buildTreeFile(in3, "generated/output_2");
+//        buildTreeFile(in3, "generated/output_2", false);
 //        buildVexFile(in3, "generated/output_2");
 
 
@@ -49,29 +49,29 @@ public class Main {
 //        crawlComponent(rein1.second());
 //        writeSBOMFile(rein1.first(), "generated/output_0_rebuild");
 //        buildSPDXFile(rein1.second(), "generated/output_0_rebuild");
-//        buildTreeFile(rein1.second(), "generated/output_0_rebuild");
+//        buildTreeFile(rein1.second(), "generated/output_0_rebuild", false);
 //        buildVexFile(rein1.second(), "generated/output_0_rebuild");
-//
+
 //        var rein2 = readSBOMFile("generated/output_1.sbom.json");
 //        crawlComponent(rein2.second());
 //        writeSBOMFile(rein2.first(), "generated/output_1_rebuild");
 //        buildSPDXFile(rein2.second(), "generated/output_1_rebuild");
-//        buildTreeFile(rein2.second(), "generated/output_1_rebuild");
+//        buildTreeFile(rein2.second(), "generated/output_1_rebuild", false);
 //        buildVexFile(rein2.second(), "generated/output_1_rebuild");
-//
-//        var rein3 = readSBOMFile("generated/output_2.sbom.json");
-//        crawlComponent(rein3.second());
-//        writeSBOMFile(rein3.first(), "generated/output_2_rebuild");
-//        buildSPDXFile(rein3.second(), "generated/output_2_rebuild");
-//        buildTreeFile(rein3.second(), "generated/output_2_rebuild");
-//        buildVexFile(rein3.second(), "generated/output_2_rebuild");
+
+        var rein3 = readSBOMFile("generated/output_2.sbom.json");
+        crawlComponent(rein3.second());
+        writeSBOMFile(rein3.first(), "generated/output_2_rebuild");
+        buildSPDXFile(rein3.second(), "generated/output_2_rebuild");
+        buildTreeFile(rein3.second(), "generated/output_2_rebuild", false);
+        buildVexFile(rein3.second(), "generated/output_2_rebuild");
 
     }
 
     private static void crawlComponent(Component component) {
         BFDependencyCrawler bfDependencyCrawler = new BFDependencyCrawlerImpl();
         LicenseCollisionService licenseCollisionService = LicenseCollisionService.getInstance();
-        bfDependencyCrawler.crawl(component, true);
+        bfDependencyCrawler.crawl(component);
         licenseCollisionService.checkLicenseCollisions(component);
     }
 
@@ -90,8 +90,8 @@ public class Main {
         spdxBuilder.buildDocument(component, path);
     }
 
-    private static void buildTreeFile(Component component, String path) {
-        TreeBuilder treeBuilder = new TreeBuilder();
+    private static void buildTreeFile(Component component, String path, boolean showUnresolved) {
+        TreeBuilder treeBuilder = new TreeBuilder(showUnresolved);
         treeBuilder.buildDocument(component, path);
     }
 

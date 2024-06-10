@@ -5,7 +5,7 @@ import data.dataImpl.MavenDependency;
 import data.dataImpl.MavenVersion;
 import dependencyCrawler.DependencyCrawlerInput;
 import logger.Logger;
-import repository.repositoryImpl.MavenRepositoryType;
+import repository.repositoryImpl.MavenComponentRepositoryType;
 
 import java.util.Optional;
 
@@ -27,7 +27,7 @@ public class MavenInputReader extends InputReaderImpl {
         }
 
         //get the parent artifact
-        MavenComponent parentArtifact = (MavenComponent) MavenRepositoryType.of(MavenRepositoryType.ROOT).getComponent(application.getGroupId(), application.getName(), new MavenVersion(application.getVersion()));
+        MavenComponent parentArtifact = (MavenComponent) MavenComponentRepositoryType.of(MavenComponentRepositoryType.ROOT).getComponent(application.getGroupId(), application.getName(), new MavenVersion(application.getVersion()));
         parentArtifact.setRoot();
 
         //read the dependencies

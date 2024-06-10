@@ -68,7 +68,7 @@ public class VexBuilder implements DocumentBuilder {
     private Iterable<VexOuterClass.Vulnerability> buildAllVulnerabilities(Component root) {
         var list = new ArrayList<VexOuterClass.Vulnerability>();
 
-        for (var component : root.getDependecyComponentsFlat().stream().sorted(Comparator.comparing(Component::getQualifiedName)).toList()) {
+        for (var component : root.getDependencyComponentsFlatFiltered().stream().sorted(Comparator.comparing(Component::getQualifiedName)).toList()) {
             var vulnerabilities = component.getAllVulnerabilities();
             if (vulnerabilities != null) {
                 for (var vulnerability : vulnerabilities) {

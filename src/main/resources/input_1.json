@@ -1,7 +1,7 @@
 {
   "application": {
-    "name": "app",
-    "version": "1.0.0",
+    "name": "app_1",
+    "version": "1.1.0",
     "groupId": "de.henrik",
     "type": "JAVA",
     "dependencies": [

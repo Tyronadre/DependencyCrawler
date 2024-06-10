@@ -1,17 +1,18 @@
 package repository.repositoryImpl;
 
 import data.Component;
-import data.dataImpl.MavenComponent;
 import enums.RepositoryType;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.TreeSet;
 
 /**
  * Default Maven Repositorys and their URLs.
  */
-public enum MavenRepositoryType implements RepositoryType {
+public enum MavenComponentRepositoryType implements RepositoryType {
     Central("https://repo1.maven.org/maven2/"),
     Google("https://maven.google.com/"),
     Atlassian("https://packages.atlassian.com/mvn/maven-atlassian-external/"),
@@ -40,7 +41,7 @@ public enum MavenRepositoryType implements RepositoryType {
 
     private final String url;
 
-    MavenRepositoryType(String url) {
+    MavenComponentRepositoryType(String url) {
         this.url = url;
     }
 
@@ -56,7 +57,7 @@ public enum MavenRepositoryType implements RepositoryType {
         if (unloadableComponents.contains(mavenComponent.getQualifiedName())) {
             return;
         }
-        for (var repository : MavenRepositoryType.values()) {
+        for (var repository : MavenComponentRepositoryType.values()) {
             if (repository == ROOT || repository == FILE) continue;
             if (of(repository).loadComponent(mavenComponent)) {
                 mavenComponent.setData("repository", repository.getRepository());
@@ -64,6 +65,16 @@ public enum MavenRepositoryType implements RepositoryType {
             }
         }
         unloadableComponents.add(mavenComponent.getQualifiedName());
+    }
+
+    public static TreeSet<Component> getLoadedComponents(String groupName, String artifactName) {
+        var loadedComponents = new TreeSet<>(Comparator.comparing(Component::getVersion));
+        for (var repository : loadedRepositories.values()) {
+            var loadedComponentsFromRepo = repository.getLoadedComponents(groupName, artifactName);
+            if (loadedComponentsFromRepo != null && !loadedComponentsFromRepo.isEmpty())
+                loadedComponents.addAll(repository.getLoadedComponents(groupName, artifactName));
+        }
+        return loadedComponents;
     }
 
     @Override
@@ -78,9 +89,9 @@ public enum MavenRepositoryType implements RepositoryType {
 
     // ------------ REPOSITORY LOADING ------------ //
 
-    private static final HashMap<MavenRepositoryType, MavenComponentRepository> loadedRepositories = new HashMap<>();
+    private static final HashMap<MavenComponentRepositoryType, MavenComponentRepository> loadedRepositories = new HashMap<>();
 
-    public static MavenComponentRepository of(MavenRepositoryType repository) {
+    public static MavenComponentRepository of(MavenComponentRepositoryType repository) {
         if (!loadedRepositories.containsKey(repository)) {
             loadedRepositories.put(repository, new MavenComponentRepository(repository));
         }
@@ -88,6 +99,6 @@ public enum MavenRepositoryType implements RepositoryType {
     }
 
     public MavenComponentRepository getRepository() {
-        return MavenRepositoryType.of(this);
+        return MavenComponentRepositoryType.of(this);
     }
 }
