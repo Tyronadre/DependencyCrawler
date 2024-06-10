@@ -1,4 +1,4 @@
-package data.dataImpl;
+package data.readData;
 
 import cyclonedx.sbom.Bom16;
 import data.Component;
@@ -7,13 +7,13 @@ import data.Version;
 
 import java.util.Objects;
 
-public class ReadDependency implements Dependency {
+public class ReadSBomDependency implements Dependency {
     Component component;
     Component parent;
     String ref;
     Bom16.Dependency dependency;
 
-    public ReadDependency(Bom16.Dependency dependency, Component component, Component parent) {
+    public ReadSBomDependency(Bom16.Dependency dependency, Component component, Component parent) {
         this.dependency = dependency;
         this.parent = parent;
         if (component == null)
@@ -99,7 +99,7 @@ public class ReadDependency implements Dependency {
     @Override
     public final boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof ReadDependency that)) return false;
+        if (!(o instanceof ReadSBomDependency that)) return false;
 
         return Objects.equals(this.getQualifiedName(), that.getQualifiedName());
     }

@@ -1,4 +1,4 @@
-package data.dataImpl;
+package data.readData;
 
 import cyclonedx.sbom.Bom16;
 import data.*;
@@ -8,6 +8,7 @@ import org.apache.maven.api.model.Model;
 import repository.ComponentRepository;
 import repository.LicenseRepository;
 import repository.repositoryImpl.MavenComponentRepositoryType;
+import repository.repositoryImpl.ReadVulnerabilityRepository;
 import service.converter.BomToInternalMavenConverter;
 
 import java.util.*;
@@ -16,7 +17,7 @@ import java.util.stream.Stream;
 
 import static service.converter.BomToInternalMavenConverter.*;
 
-public class ReadComponent implements Component {
+public class ReadSBomComponent implements Component {
     private final Bom16.Component bomComponent;
     private final List<Dependency> dependencies;
     private final List<Property> properties;
@@ -27,7 +28,7 @@ public class ReadComponent implements Component {
     private final List<LicenseChoice> licenseChoices;
 
     private static final Logger logger = Logger.of("ReadComponent");
-    private static final HashMap<String, ReadComponent> components = new HashMap<>();
+    private static final HashMap<String, ReadSBomComponent> components = new HashMap<>();
     private boolean isRoot = false;
     private boolean isLoaded = false;
 
@@ -41,16 +42,16 @@ public class ReadComponent implements Component {
      * @param bomComponent the Bom16.Component object
      * @return the ReadComponent object
      */
-    public static ReadComponent of(Bom16.Component bomComponent) {
+    public static ReadSBomComponent of(Bom16.Component bomComponent) {
         if (components.containsKey(bomComponent.getGroup() + ":" + bomComponent.getName() + ":" + bomComponent.getVersion())) {
             return components.get(bomComponent.getGroup() + ":" + bomComponent.getName() + ":" + bomComponent.getVersion());
         }
-        ReadComponent component = new ReadComponent(bomComponent);
+        ReadSBomComponent component = new ReadSBomComponent(bomComponent);
         components.put(bomComponent.getGroup() + ":" + bomComponent.getName() + ":" + bomComponent.getVersion(), component);
         return component;
     }
 
-    private ReadComponent(Bom16.Component bomComponent) {
+    private ReadSBomComponent(Bom16.Component bomComponent) {
         this.bomComponent = bomComponent;
         this.dependencies = new ArrayList<>();
         this.properties = buildAllProperties(bomComponent.getPropertiesList());
@@ -59,6 +60,10 @@ public class ReadComponent implements Component {
         this.licenseChoices = buildAllLicenseChoices(this.bomComponent.getLicensesList());
     }
 
+
+    /**
+     * Updates the read component
+     */
     @Override
     public void loadComponent() {
         if (this.isLoaded)
@@ -104,6 +109,9 @@ public class ReadComponent implements Component {
             logger.info("removing licenses: " + licenseChoices + " from " + this.getQualifiedName());
             licenseChoices.forEach(licenseChoice -> this.licenseChoices.removeIf(licenseChoice1 -> licenseChoice1.getLicense().getName().equals(licenseChoice)));
         }
+
+        // VULNERABILITIES
+        ReadVulnerabilityRepository.getInstance().updateReadVulnerabilities(this);
 
         isLoaded = true;
         logger.success("Loaded component: " + this.getQualifiedName() + " (" + (System.currentTimeMillis() - start) + "ms)");
@@ -288,7 +296,7 @@ public class ReadComponent implements Component {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", ReadComponent.class.getSimpleName() + "[", "]")
+        return new StringJoiner(", ", ReadSBomComponent.class.getSimpleName() + "[", "]")
                 .add("bomComponent=" + bomComponent)
                 .add("dependencies=" + dependencies)
                 .add("properties=" + properties)
@@ -301,5 +309,15 @@ public class ReadComponent implements Component {
 
     public Bom16.Component getBomComponent() {
         return bomComponent;
+    }
+
+    @Override
+    public void removeVulnerability(Vulnerability newVul) {
+        this.vulnerabilities.add(newVul);
+    }
+
+    @Override
+    public void addVulnerability(Vulnerability newVul) {
+        this.vulnerabilities.add(newVul);
     }
 }

@@ -1,11 +1,10 @@
-package data.dataImpl;
+package data.internalData;
 
 import com.google.gson.JsonObject;
 import data.License;
 import data.Licensing;
 import data.Property;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class SPDXLicense implements License {

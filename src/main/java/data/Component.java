@@ -1,5 +1,6 @@
 package data;
 
+import data.readData.ReadSBomVulnerability;
 import repository.ComponentRepository;
 
 import java.util.List;
@@ -147,5 +148,9 @@ public interface Component {
     <T> void setData(String key, T value);
 
     void removeDependency(Dependency dependency);
+
+    void removeVulnerability(Vulnerability vulnerability);
+
+    void addVulnerability(Vulnerability vulnerability);
 }
 

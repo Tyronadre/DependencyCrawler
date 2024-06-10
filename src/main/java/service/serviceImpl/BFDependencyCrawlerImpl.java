@@ -138,9 +138,7 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
                 var treeParent = dependency.getTreeParent();
                 if (treeParent != null) {
                     if (treeParent.getDependenciesFiltered().stream().anyMatch(d -> d.getComponent() != null && d.getComponent().getGroup().equals(dependencyComponent.getGroup()) && d.getComponent().getName().equals(dependencyComponent.getName()))) {
-
                         treeParent.removeDependency(dependency);
-
                     }
                 }
 

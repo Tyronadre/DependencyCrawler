@@ -4,6 +4,7 @@ import cyclonedx.sbom.Bom16;
 import data.Component;
 import data.Dependency;
 import data.Version;
+import data.readData.ReadSBomComponent;
 import enums.RepositoryType;
 import repository.ComponentRepository;
 import service.VersionRangeResolver;
@@ -11,10 +12,9 @@ import service.VersionResolver;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.TreeSet;
 
 public class ReadComponentRepository implements ComponentRepository {
-    HashMap<String, Component> readComponents = new HashMap<>();
+    HashMap<String, ReadSBomComponent> readComponents = new HashMap<>();
 
     private static ReadComponentRepository instance;
 
@@ -64,11 +64,11 @@ public class ReadComponentRepository implements ComponentRepository {
         return "";
     }
 
-    public List<Component> getLoadedComponents(String groupName, String artifactName) {
+    public List<ReadSBomComponent> getLoadedComponents(String groupName, String artifactName) {
         return this.readComponents.values().stream().filter(c -> c.getGroup().equals(groupName) && c.getName().equals(artifactName)).toList();
     }
 
-    public void addReadComponent(Bom16.Component bomComponent, Component component) {
+    public void addReadComponent(Bom16.Component bomComponent, ReadSBomComponent component) {
         this.readComponents.put(bomComponent.getBomRef(), component);
     }
 
@@ -76,7 +76,7 @@ public class ReadComponentRepository implements ComponentRepository {
         return this.readComponents.get(bomComponent.getBomRef());
     }
 
-    public Component getReadComponent(String qualifier) {
+    public ReadSBomComponent getReadComponent(String qualifier) {
         return readComponents.get(qualifier);
     }
 }

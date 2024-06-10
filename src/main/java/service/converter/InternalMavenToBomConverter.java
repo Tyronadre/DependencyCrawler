@@ -19,14 +19,12 @@ import data.VulnerabilityAffectedVersion;
 import data.VulnerabilityAffects;
 import data.VulnerabilityRating;
 import data.VulnerabilityReference;
-import data.dataImpl.ReadComponent;
-import data.dataImpl.ReadVulnerability;
+import data.readData.ReadSBomComponent;
 
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 public class InternalMavenToBomConverter {
@@ -225,7 +223,7 @@ public class InternalMavenToBomConverter {
     }
 
     public static Bom16.Component buildComponent(Component component) {
-        if (component instanceof ReadComponent readComponent)
+        if (component instanceof ReadSBomComponent readComponent)
             return readComponent.getBomComponent();
 
         var builder = Bom16.Component.newBuilder();

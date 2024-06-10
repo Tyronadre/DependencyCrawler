@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public class VexBuilder implements DocumentBuilder {
+public class VexBuilder implements DocumentBuilder<Iterable<Vulnerability>> {
     private static final Logger logger = Logger.of("VexBuilder");
 
     @Override
@@ -84,10 +84,10 @@ public class VexBuilder implements DocumentBuilder {
         var builder = VexOuterClass.Vulnerability.newBuilder();
         builder.setId(vulnerability.getId());
         builder.setRef(vulnerability.getComponent().getQualifiedName());
-        vulnerability.getAllReferences().stream().filter(ref -> ref.getType().equals("WEB")).findFirst().ifPresent(ref -> builder.setSource(buildSource(ref)));
+        Optional.ofNullable(vulnerability.getAllReferences()).flatMap(refs -> refs.stream().filter(ref -> ref.getType().equals("WEB")).findFirst()).ifPresent(ref -> builder.setSource(buildSource(ref)));
         Optional.ofNullable(vulnerability.getAllRatings()).ifPresent(severities -> builder.addAllRatings(buildAllRatings(severities)));
         Optional.ofNullable(vulnerability.getAllCwes()).ifPresent(cwes -> builder.addAllCwes(buildAllCwes(cwes)));
-        builder.setDescription(vulnerability.getDetails());
+        Optional.ofNullable(vulnerability.getDescription()).ifPresent(builder::setDescription);
         Optional.ofNullable(vulnerability.getAllRecommendations()).ifPresent(builder::addAllRecommendations);
         Optional.ofNullable(vulnerability.getAllReferences().stream().filter(ref -> ref.getType().equals("ADVISORY"))).ifPresent(refs -> builder.addAllAdvisories(buildAllAdvisories(refs)));
         return builder.build();
@@ -114,8 +114,8 @@ public class VexBuilder implements DocumentBuilder {
         for (var severity : vulnerabilitySeverities) {
             var builder = VexOuterClass.Rating.newBuilder();
             builder.setScore(buildScore(severity));
-            builder.setSeverity(buildSeverity(severity));
-            builder.setMethod(buildMethod(severity));
+            Optional.ofNullable(buildSeverity(severity)).ifPresent(builder::setSeverity);
+            Optional.ofNullable(buildMethod(severity)).ifPresent(builder::setMethod);
             builder.setVector(severity.getVector());
             list.add(builder.build());
         }
@@ -123,14 +123,20 @@ public class VexBuilder implements DocumentBuilder {
     }
 
     private VexOuterClass.ScoreSource buildMethod(VulnerabilityRating severity) {
+        if (severity.getMethod() == null) {
+            return null;
+        }
         return switch (severity.getMethod()) {
-            case "3.1", "3.0" -> VexOuterClass.ScoreSource.CVSSv3;
-            case "2.0" -> VexOuterClass.ScoreSource.CVSSv2;
-            default -> VexOuterClass.ScoreSource.UNRECOGNIZED;
+            case "3.1", "3.0", "CVSSv3" -> VexOuterClass.ScoreSource.CVSSv3;
+            case "2.0", "CVSSv2" -> VexOuterClass.ScoreSource.CVSSv2;
+            default -> VexOuterClass.ScoreSource.OTHER;
         };
     }
 
     private VexOuterClass.Severity buildSeverity(VulnerabilityRating severity) {
+        if (severity.getSeverity() == null) {
+            return null;
+        }
         return switch (severity.getSeverity().toUpperCase()) {
             case "CRITICAL" -> VexOuterClass.Severity.CRITICAL;
             case "HIGH" -> VexOuterClass.Severity.HIGH;
@@ -153,5 +159,25 @@ public class VexBuilder implements DocumentBuilder {
         builder.setUrl(vulnerabilityReference.getSource().getValue());
         builder.setName(vulnerabilityReference.getType());
         return builder.build();
+    }
+
+    @Override
+    public void rebuildDocument(Iterable<Vulnerability> vulnerabilities, String path) {
+        logger.info("Writing VEX for " + path + "...");
+        var builder = VexOuterClass.Vex.newBuilder();
+
+        for (var vulnerability : vulnerabilities) {
+            builder.addVulnerabilities(buildVulnerability(vulnerability));
+        }
+
+        try {
+            var file = new File(path + ".vex.json");
+            var outputStream = new FileWriter(file);
+            outputStream.write(JsonFormat.printer().print(builder.build()));
+            outputStream.close();
+        } catch (IOException e) {
+            logger.error("Failed writing to JSON." + e.getMessage());
+        }
+        logger.success("VEX updated.");
     }
 }

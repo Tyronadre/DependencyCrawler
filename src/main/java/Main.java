@@ -1,6 +1,10 @@
 import cyclonedx.sbom.Bom16;
 import data.Component;
+import data.Vulnerability;
+import data.readData.ReadVexComponent;
+import data.readData.ReadVexVulnerability;
 import repository.LicenseRepository;
+import repository.repositoryImpl.ReadVulnerabilityRepository;
 import service.BFDependencyCrawler;
 import service.InputReader;
 import service.LicenseCollisionService;
@@ -10,10 +14,14 @@ import service.serviceImpl.MavenSBOMReader;
 import service.serviceImpl.SPDXBuilder;
 import service.serviceImpl.TreeBuilder;
 import service.serviceImpl.VexBuilder;
+import service.serviceImpl.VexReader;
 import util.Pair;
 
 import java.io.File;
 import java.net.URISyntaxException;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 public class Main {
     public static void main(String[] args) throws URISyntaxException {
@@ -59,12 +67,16 @@ public class Main {
 //        buildTreeFile(rein2.second(), "generated/output_1_rebuild", false);
 //        buildVexFile(rein2.second(), "generated/output_1_rebuild");
 
-        var rein3 = readSBOMFile("generated/output_2.sbom.json");
-        crawlComponent(rein3.second());
-        writeSBOMFile(rein3.first(), "generated/output_2_rebuild");
-        buildSPDXFile(rein3.second(), "generated/output_2_rebuild");
-        buildTreeFile(rein3.second(), "generated/output_2_rebuild", false);
-        buildVexFile(rein3.second(), "generated/output_2_rebuild");
+//        var rein3 = readSBOMFile("generated/output_2.sbom.json");
+//        crawlComponent(rein3.second());
+//        writeSBOMFile(rein3.first(), "generated/output_2_rebuild");
+//        buildSPDXFile(rein3.second(), "generated/output_2_rebuild");
+//        buildTreeFile(rein3.second(), "generated/output_2_rebuild", false);
+//        buildVexFile(rein3.second(), "generated/output_2_rebuild");
+
+        var vexComps = readVEXFile("generated/output_1.vex.json");
+        vexComps.forEach(ReadVexComponent::loadComponent);
+        writeVexFile(vexComps, "generated/output_1_rebuild");
 
     }
 
@@ -78,6 +90,11 @@ public class Main {
     private static void writeSBOMFile(Bom16.Bom bom, String path) {
         MavenSBOMBuilder sbomBuilder = new MavenSBOMBuilder();
         sbomBuilder.rebuildDocument(bom, path);
+    }
+
+    private static void writeVexFile(List<ReadVexComponent> components, String path) {
+        VexBuilder vexBuilder = new VexBuilder();
+        vexBuilder.rebuildDocument(components.stream().map(Component::getAllVulnerabilities).flatMap(Collection::stream).toList(), path);
     }
 
     private static void buildSBOMFile(Component component, String path) {
@@ -109,6 +126,11 @@ public class Main {
     private static Pair<Bom16.Bom, Component> readSBOMFile(String fileName) {
         MavenSBOMReader sbomReader = new MavenSBOMReader();
         return sbomReader.readDocument(fileName);
+    }
+
+    private static List<ReadVexComponent> readVEXFile(String fileName) {
+        VexReader vexReader = new VexReader();
+        return vexReader.readDocument(fileName);
     }
 
 }

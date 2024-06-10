@@ -15,7 +15,7 @@ import java.nio.file.Files;
 
 import static service.converter.BomToInternalMavenConverter.*;
 
-public class MavenSBOMReader implements DocumentReader<Bom16.Bom> {
+public class MavenSBOMReader implements DocumentReader<Pair<Bom16.Bom, Component>> {
     private static final Logger logger = Logger.of("MavenSBOMReader");
 
     private static final LicenseRepository licenseRepository = LicenseRepository.getInstance();

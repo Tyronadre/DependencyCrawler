@@ -2,9 +2,9 @@ package service.serviceImpl;
 
 import data.Dependency;
 import data.Version;
-import data.dataImpl.MavenDependency;
-import data.dataImpl.MavenVersion;
-import data.dataImpl.MavenVersionRange;
+import data.internalData.MavenDependency;
+import data.internalData.MavenVersion;
+import data.internalData.MavenVersionRange;
 import exceptions.VersionRangeResolutionException;
 import repository.repositoryImpl.MavenComponentRepository;
 import service.VersionRangeResolver;

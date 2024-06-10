@@ -15,21 +15,18 @@ import data.Person;
 import data.Property;
 import data.Timestamp;
 import data.Version;
-import data.Vulnerability;
 import data.VulnerabilityAffectedVersion;
 import data.VulnerabilityAffects;
 import data.VulnerabilityRating;
 import data.VulnerabilityReference;
-import data.dataImpl.OSVVulnerability;
-import data.dataImpl.ReadComponent;
-import data.dataImpl.ReadDependency;
+import data.readData.ReadSBomComponent;
+import data.readData.ReadSBomDependency;
+import data.readData.ReadSBomVulnerability;
 import repository.repositoryImpl.ReadComponentRepository;
 import repository.repositoryImpl.ReadVulnerabilityRepository;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 public class BomToInternalMavenConverter {
     private static final ReadComponentRepository componentRepository = ReadComponentRepository.getInstance();
@@ -39,7 +36,7 @@ public class BomToInternalMavenConverter {
         var componentFromRepository = componentRepository.getReadComponent(bomComponent);
         if (componentFromRepository != null) return componentFromRepository;
 
-        var newComponent = ReadComponent.of(bomComponent);
+        var newComponent = ReadSBomComponent.of(bomComponent);
         componentRepository.addReadComponent(bomComponent, newComponent);
         return newComponent;
     }
@@ -54,102 +51,18 @@ public class BomToInternalMavenConverter {
         var component = componentRepository.getReadComponent(dependency.getRef());
 
         if (parent != null) {
-            Dependency newDependency = new ReadDependency(dependency, component, parent);
+            Dependency newDependency = new ReadSBomDependency(dependency, component, parent);
             parent.addDependency(newDependency);
         }
 
         dependency.getDependenciesList().forEach(dep -> buildAllDependenciesRecursively(dep, component));
     }
 
-    /**
-     * Builds and saves the vulnerabilities in the components.
-     *
-     * @param bomVulnerabilities the vulnerabilities from the SBOM
-     */
     public static void buildAllVulnerabilities(List<Bom16.Vulnerability> bomVulnerabilities) {
         for (var bomVulnerability : bomVulnerabilities) {
-            var newVul = new Vulnerability() {
-                @Override
-                public Component getComponent() {
-                    return null;
-                }
-
-                @Override
-                public String getId() {
-                    return bomVulnerability.hasId() ? bomVulnerability.getId() : null;
-                }
-
-                @Override
-                public String getDescription() {
-                    return bomVulnerability.hasDescription() ? bomVulnerability.getDescription() : null;
-                }
-
-                @Override
-                public String getDetails() {
-                    return bomVulnerability.hasDetail() ? bomVulnerability.getDetail() : null;
-                }
-
-                @Override
-                public List<Property> getAllProperties() {
-                    return buildAllProperties(bomVulnerability.getPropertiesList());
-                }
-
-                @Override
-                public Timestamp getModified() {
-                    return bomVulnerability.hasUpdated() ? buildTimestamp(bomVulnerability.getUpdated()) : null;
-                }
-
-                @Override
-                public Timestamp getPublished() {
-                    return bomVulnerability.hasPublished() ? buildTimestamp(bomVulnerability.getPublished()) : null;
-                }
-
-                @Override
-                public List<VulnerabilityRating> getAllRatings() {
-                    return buildVulnerabilitySeverities(bomVulnerability.getRatingsList());
-                }
-
-                @Override
-                public List<VulnerabilityReference> getAllReferences() {
-                    return buildVulnerabilityReferences(bomVulnerability.getReferencesList());
-                }
-
-                @Override
-                public List<VulnerabilityAffects> getAllAffects() {
-                    return buildVulnerabilityAffects(bomVulnerability.getAffectsList());
-                }
-
-                @Override
-                public List<Integer> getAllCwes() {
-                    return bomVulnerability.getCwesList();
-                }
-
-                @Override
-                public List<String> getAllRecommendations() {
-                    return bomVulnerability.hasRecommendation() ? Arrays.stream(bomVulnerability.getRecommendation().split("\n")).toList() : null;
-                }
-
-                @Override
-                public Property getSource() {
-                    return bomVulnerability.hasSource() ? buildSource(bomVulnerability.getSource()) : null;
-                }
-
-                @Override
-                public boolean equals(Object o) {
-                    if (this == o) return true;
-                    if (!(o instanceof OSVVulnerability that)) return false;
-
-                    return Objects.equals(getId(), that.getId());
-                }
-
-                @Override
-                public int hashCode() {
-                    return Objects.hashCode(getId());
-                }
-
-
-            };
-
+            var component = componentRepository.getReadComponent(bomVulnerability.getBomRef());
+            var newVul = new ReadSBomVulnerability(bomVulnerability, component);
+            component.addVulnerability(newVul);
 
             vulnerabilityRepository.addReadVulnerability(newVul);
         }
@@ -221,7 +134,7 @@ public class BomToInternalMavenConverter {
         return references;
     }
 
-    public static List<VulnerabilityRating> buildVulnerabilitySeverities(List<Bom16.VulnerabilityRating> bomVulnerabilityRatings) {
+    public static List<VulnerabilityRating> buildVulnerabilityRatings(List<Bom16.VulnerabilityRating> bomVulnerabilityRatings) {
         var severities = new ArrayList<VulnerabilityRating>();
         for (var bomRating : bomVulnerabilityRatings) {
             severities.add(new VulnerabilityRating() {

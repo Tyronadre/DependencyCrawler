@@ -1,4 +1,4 @@
-package data.dataImpl;
+package data.internalData;
 
 import data.*;
 import logger.Logger;
@@ -308,6 +308,16 @@ public class MavenComponent implements Component {
     @Override
     public void removeDependency(Dependency dependency) {
         this.dependencies.remove(dependency);
+    }
+
+    @Override
+    public void removeVulnerability(Vulnerability vulnerability) {
+        this.vulnerabilities.remove(vulnerability);
+    }
+
+    @Override
+    public void addVulnerability(Vulnerability vulnerability) {
+        this.vulnerabilities.add(vulnerability);
     }
 
     @Override

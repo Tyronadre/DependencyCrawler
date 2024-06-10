@@ -1,8 +1,8 @@
 package service.serviceImpl;
 
-import data.dataImpl.MavenComponent;
-import data.dataImpl.MavenDependency;
-import data.dataImpl.MavenVersion;
+import data.internalData.MavenComponent;
+import data.internalData.MavenDependency;
+import data.internalData.MavenVersion;
 import dependencyCrawler.DependencyCrawlerInput;
 import logger.Logger;
 import repository.repositoryImpl.MavenComponentRepositoryType;

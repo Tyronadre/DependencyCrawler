@@ -1,4 +1,4 @@
-package data.dataImpl;
+package data.internalData;
 
 import data.Dependency;
 import data.Version;

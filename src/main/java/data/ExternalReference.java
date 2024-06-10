@@ -1,8 +1,5 @@
 package data;
 
-import cyclonedx.sbom.Bom16;
-import data.dataImpl.ExternalReferenceImpl;
-
 import java.util.List;
 
 public interface ExternalReference {
