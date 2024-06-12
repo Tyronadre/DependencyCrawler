@@ -31,12 +31,12 @@ public class Main {
         LicenseRepository.getInstance(); //preload license repository
 
 
-//        var in1 = readInputFile("input_0.json");
-//        crawlComponent(in1);
-//        buildSBOMFile(in1, "generated/output_0");
-//        buildSPDXFile(in1, "generated/output_0");
-//        buildTreeFile(in1, "generated/output_0", false);
-//        buildVexFile(in1, "generated/output_0");
+        var in1 = readInputFile("input_0.json");
+        crawlComponent(in1);
+        buildSBOMFile(in1, "generated/output_0");
+        buildSPDXFile(in1, "generated/output_0");
+        buildTreeFile(in1, "generated/output_0", false);
+        buildVexFile(in1, "generated/output_0");
 //
 //        var in2 = readInputFile("input_1.json");
 //        crawlComponent(in2);
@@ -73,10 +73,10 @@ public class Main {
 //        buildSPDXFile(rein3.second(), "generated/output_2_rebuild");
 //        buildTreeFile(rein3.second(), "generated/output_2_rebuild", false);
 //        buildVexFile(rein3.second(), "generated/output_2_rebuild");
-
-        var vexComps = readVEXFile("generated/output_1.vex.json");
-        vexComps.forEach(ReadVexComponent::loadComponent);
-        writeVexFile(vexComps, "generated/output_1_rebuild");
+//
+//        var vexComps = readVEXFile("generated/output_1.vex.json");
+//        vexComps.forEach(ReadVexComponent::loadComponent);
+//        writeVexFile(vexComps, "generated/output_1_rebuild");
 
     }
 
