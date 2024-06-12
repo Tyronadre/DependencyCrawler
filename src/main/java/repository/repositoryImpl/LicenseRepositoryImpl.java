@@ -15,7 +15,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -35,15 +37,25 @@ public class LicenseRepositoryImpl implements LicenseRepository {
         return instance;
     }
 
+
+
     private LicenseRepositoryImpl() {
         logger.appendInfo("Loading license list... ");
         this.nameToLicense = new HashMap<>();
         this.idToLicense = new HashMap<>();
 
-        var licenseListFile = new File("licenses.json");
+
+
+        var licenseListFile = new File("generated/data/licenses.json");
+        try {
+            Files.createDirectories(licenseListFile.getParentFile().toPath());
+        } catch (IOException e) {
+            logger.error("Could not create license list file. No licenses will be loaded. " + e.getMessage());
+            return;
+        }
         JsonObject licenseListNet = null;
         try {
-            licenseListNet = JsonParser.parseReader(new InputStreamReader(new URL("https://raw.githubusercontent.com/spdx/license-list-data/main/json/licenses.json").openStream())).getAsJsonObject();
+            licenseListNet = JsonParser.parseReader(new InputStreamReader(URI.create("https://raw.githubusercontent.com/spdx/license-list-data/main/json/licenses.json").toURL().openStream())).getAsJsonObject();
         } catch (IOException e) {
             logger.error("Could not load license list from net. " + e.getMessage());
         }
@@ -121,8 +133,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
     private void readLicensesFromNet(File file, JsonObject json) {
         logger.info("Loading license list from net... ");
         JsonArray fileLicenses = new JsonArray();
-        try {
-            ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(10);
+        try (ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(10)) {
 
             for (var license : json.get("licenses").getAsJsonArray()) {
                 var licenseObject = license.getAsJsonObject();
@@ -131,7 +142,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
                     try {
                         var startTime = System.currentTimeMillis();
                         var data = license.getAsJsonObject();
-                        var details = JsonParser.parseReader(new InputStreamReader(new URL(licenseObject.get("detailsUrl").getAsString()).openStream())).getAsJsonObject();
+                        var details = JsonParser.parseReader(new InputStreamReader(URI.create(licenseObject.get("detailsUrl").getAsString()).toURL().openStream())).getAsJsonObject();
                         var licenseJson = new JsonObject();
                         licenseJson.add("data", data);
                         licenseJson.add("details", details);
@@ -142,7 +153,6 @@ public class LicenseRepositoryImpl implements LicenseRepository {
                         logger.success("Loaded " + licenseObject.get("name") + " (" + (System.currentTimeMillis() - startTime) + "ms)");
                     } catch (IOException e) {
                         logger.error("Could not load " + license + ". " + e.getMessage());
-                        return;
                     }
                 });
             }
