@@ -1,6 +1,15 @@
 package data.internalData;
 
-import data.*;
+import data.Component;
+import data.Dependency;
+import data.ExternalReference;
+import data.Hash;
+import data.LicenseChoice;
+import data.Organization;
+import data.Person;
+import data.Property;
+import data.Version;
+import data.Vulnerability;
 import logger.Logger;
 import org.apache.maven.api.model.DependencyManagement;
 import org.apache.maven.api.model.Model;
@@ -8,7 +17,10 @@ import repository.ComponentRepository;
 import repository.LicenseRepository;
 import repository.repositoryImpl.MavenComponentRepositoryType;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -163,6 +175,7 @@ public class MavenComponent implements Component {
         // LICENSES
         var licenseRepository = LicenseRepository.getInstance();
         if (this.model.getLicenses() != null && !this.model.getLicenses().isEmpty()) {
+            //load from this component
             this.licenseChoices = new ArrayList<>();
             for (var license : this.model.getLicenses()) {
                 if (license.getName() == null) continue;
@@ -172,6 +185,15 @@ public class MavenComponent implements Component {
                     continue;
                 }
                 this.licenseChoices.add(new MavenLicenseChoice(newLicense));
+            }
+        } else {
+            //load from maven parent
+            if (this.parent == null) return;
+            if (!this.parent.isLoaded()) {
+                this.parent.loadComponent();
+                if (!this.parent.isLoaded()) return;
+                if (this.parent.getAllLicenses() == null) return;
+                this.licenseChoices = new ArrayList<>(this.parent.getAllLicenses());
             }
         }
 

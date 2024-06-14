@@ -1,6 +1,9 @@
 package service.serviceImpl;
 
-import data.*;
+import data.Component;
+import data.ExternalReference;
+import data.Hash;
+import data.LicenseChoice;
 import exceptions.SPDXBuilderException;
 import logger.Logger;
 import org.spdx.jacksonstore.MultiFormatStore;
@@ -25,7 +28,6 @@ import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -184,7 +186,7 @@ public class SPDXBuilder implements DocumentBuilder {
         for (LicenseChoice licenseChoice : allLicenses) {
             try {
                 var license = LicenseInfoFactory.parseSPDXLicenseString(licenseChoice.getLicense().getId(), store, uri, copyManager);
-                spdxPackage.getLicenseInfoFromFiles().add(license);
+                spdxPackage.setLicenseDeclared(license);
             } catch (InvalidSPDXAnalysisException e) {
                 logger.info("Could not build license  " + licenseChoice.getLicense() + ". " + e.getMessage());
             }
