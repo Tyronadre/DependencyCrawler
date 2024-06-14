@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.UUID;
 
 
-public class SPDXBuilder implements DocumentBuilder {
+public class SPDXBuilder implements DocumentBuilder<Component> {
     private static final Logger logger = Logger.of("SPDXBuilder");
 
     MultiFormatStore store;

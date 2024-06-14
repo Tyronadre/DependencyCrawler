@@ -8,7 +8,7 @@ public interface DocumentBuilder <T> {
 
     void buildDocument(Component root, String outputFileName);
 
-    default void rebuildDocument(T bom, String path){
+    default void rebuildDocument(T object, String path){
         throw new UnsupportedOperationException("Not implemented");
     }
 }

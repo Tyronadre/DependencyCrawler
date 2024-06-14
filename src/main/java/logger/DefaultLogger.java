@@ -42,7 +42,7 @@ public class DefaultLogger extends Logger {
         if (disabled) {
             return;
         }
-        if (!verbose && level == LogLevel.INFO) {
+        if (!verbose && level != LogLevel.NORMAL) {
             return;
         }
 

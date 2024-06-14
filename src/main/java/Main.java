@@ -4,29 +4,96 @@ import data.readData.ReadVexComponent;
 import logger.Logger;
 import repository.LicenseRepository;
 import service.BFDependencyCrawler;
+import service.DocumentBuilder;
 import service.LicenseCollisionService;
 import service.serviceImpl.*;
 import util.Pair;
 
-import java.io.File;
-import java.net.URISyntaxException;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 public class Main {
-    public static void main(String[] args) throws URISyntaxException {
+    private static final Logger logger = Logger.of("Main");
 
-//        Logger.setDisabled(true);
-        Logger.setVerbose(true);
-        LicenseRepository.getInstance(); //preload license repository
+    public static void main(String[] args) {
+        logger.normal("Starting with args: " + Arrays.toString(args));
+
+        HashMap<String, String> argMap = new HashMap<>();
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].startsWith("--")) {
+                argMap.put(args[i].substring(2), args[i + 1]);
+            }
+        }
+
+        if (argMap.containsKey("help") || argMap.isEmpty()) {
+            printHelp();
+            return;
+        }
+
+        if (!argMap.containsKey("no-log")) {
+            Logger.setDisabled(true);
+        }
+
+        if (argMap.containsKey("verbose")) {
+            Logger.setVerbose(true);
+        }
+
+        if (!argMap.containsKey("input")) {
+            logger.error("No input file specified. Use --input <input file> to specify an input file.");
+            return;
+        }
+
+        var inputFile = argMap.get("input");
+        String inputType = null;
+        if (argMap.containsKey("inputType")) {
+            inputType = argMap.get("inputType");
+        }
+
+        var outputFile = argMap.getOrDefault("output", "output");
+        var outputTypes = new ArrayList<String>();
+        if (argMap.containsKey("outputType")) {
+            outputTypes.addAll(Arrays.asList(argMap.get("outputType").split(" ")));
+        }
+
+        if (!Objects.equals(inputType, "vex")) {
+            logger.info("Loading license repository...");
+            LicenseRepository.getInstance(); //preload license repository
+        }
+
+        if (outputTypes.isEmpty()) {
+            if (inputType == null || inputType.equals("default")) {
+                outputTypes.add("sbom");
+                outputTypes.add("spdx");
+                outputTypes.add("vex");
+            } else {
+                outputTypes.add(inputType);
+            }
+        }
+
+        switch (inputType) {
+            case "default" -> readFromDefault(inputFile, outputFile, outputTypes);
+            case null -> readFromDefault(inputFile, outputFile, outputTypes);
+            case "sbom" -> readFromSBOM(inputFile, outputFile, outputTypes);
+            case "spdx" -> readFromSPDX(inputFile, outputFile, outputTypes);
+            case "vex" -> {
+                if (outputTypes.stream().anyMatch(it -> !it.equals("vex"))){
+                    logger.error("Can only generate VEX Files from a read VEX file");
+                    throw new IllegalArgumentException("Can only generate VEX Files from a read VEX file");
+                }
+                readFromVex(inputFile, outputFile);
+            }
+            default -> {
+                logger.error(inputType + " is not a valid inputFormat");
+                throw new IllegalArgumentException(inputType + " is not a valid inputFormat");
+            }
+        }
 
 
-        var in1 = readInputFile("src/main/resources/input_0.json");
-        crawlComponent(in1);
-        buildSBOMFile(in1, "generated/output_0");
-        buildSPDXFile(in1, "generated/output_0");
-        buildTreeFile(in1, "generated/output_0", false);
-        buildVexFile(in1, "generated/output_0");
+//        var in1 = readInputFile("src/main/resources/input_0.json");
+//        crawlComponent(in1);
+//        buildSBOMFile(in1, "generated/output_0");
+//        buildSPDXFile(in1, "generated/output_0");
+//        buildTreeFile(in1, "generated/output_0", false);
+//        buildVexFile(in1, "generated/output_0");
 //
 //        var in2 = readInputFile("input_1.json");
 //        crawlComponent(in2);
@@ -70,6 +137,58 @@ public class Main {
 
     }
 
+    private static void readFromDefault(String inputFile, String outputFile, ArrayList<String> outputTypes) {
+        var reader = new DefaultInputReader();
+        var rootComponent = reader.readDocument(inputFile);
+        crawlComponent(rootComponent);
+        outputTypes.stream().map(Main::getDocumentBuilder).forEach(builder -> builder.buildDocument(rootComponent, outputFile));
+    }
+
+    private static void readFromSBOM(String inputFile, String outputFile, ArrayList<String> outputTypes) {
+        var reader = new MavenSBOMReader();
+        var res = reader.readDocument(inputFile);
+        var rootComponent = res.second();
+        crawlComponent(rootComponent);
+        for (var outputType: outputTypes){
+            if (Objects.equals(outputType, "sbom")){
+                new MavenSBOMBuilder().rebuildDocument(res.first(), outputFile);
+            } else {
+                getDocumentBuilder(outputType).buildDocument(rootComponent, outputFile);
+            }
+        }
+    }
+
+    private static void readFromSPDX(String inputFile, String outputFile, ArrayList<String> outputTypes){
+        var rootComponent = new SPDXReader().readDocument(inputFile);
+        crawlComponent(rootComponent);
+        for (var outputType: outputTypes){
+            if (Objects.equals(outputType, "spdx")){
+                new SPDXBuilder().rebuildDocument(rootComponent, outputFile);
+            } else {
+                getDocumentBuilder(outputType).buildDocument(rootComponent, outputFile);
+            }
+        }
+    }
+
+    private static void readFromVex(String inputFile, String outputFile) {
+        var res = new VexReader().readDocument(inputFile);
+        res.forEach(ReadVexComponent::loadComponent);
+        new VexBuilder().rebuildDocument(res.stream().map(Component::getAllVulnerabilities).flatMap(Collection::stream).toList(), outputFile);
+    }
+
+
+    private static DocumentBuilder<?> getDocumentBuilder(String outputType) {
+        return switch (outputType) {
+            case "sbom" -> new MavenSBOMBuilder();
+            case "spdx" -> new SPDXBuilder();
+            case "vex" -> new VexBuilder();
+            default -> {
+                logger.error(outputType + " is not a valid outputFormat");
+                throw new IllegalArgumentException(outputType + " is not a valid outputFormat");
+            }
+        };
+    }
+
     private static void crawlComponent(Component component) {
         BFDependencyCrawler bfDependencyCrawler = new BFDependencyCrawlerImpl();
         LicenseCollisionService licenseCollisionService = LicenseCollisionService.getInstance();
@@ -107,7 +226,7 @@ public class Main {
         vexBuilder.buildDocument(component, path);
     }
 
-    private static Component readInputFile(String fileName)  {
+    private static Component readInputFile(String fileName) {
         DefaultInputReader inputReader = new DefaultInputReader();
         return inputReader.readDocument(fileName);
     }
@@ -126,6 +245,28 @@ public class Main {
     private static Component readSPDXFile(String fileName) {
         SPDXReader spdxReader = new SPDXReader();
         return spdxReader.readDocument(fileName);
+    }
+
+    private static void printHelp() {
+        logger.normal("""
+                                
+                Reads a specified input file and outputs it in the specified format(s).
+                                
+                Per default, reads a JSON file in the custom input format and outputs a SBOM file.
+                The default input file format is specified in the ReadMe.md of the GitRepository.
+
+                If an input-type is specified, the input file is read in the specified format and then updated.
+                If the input-type is vex, this program will be able to output a VEX file.
+                                
+                Usage:
+                --input <file> :                        input file in JSON format
+                --output <file name> :                  output file name
+                --input-type <type> :                   type of the input file. Supported types: sbom, spdx, vex
+                --output-type <type1> [<type2> ...] :   one or multiple output types. Supported types: sbom, spdx, tree, vex
+                --help :                                print this help message
+                --verbose :                             print verbose output
+                --no-log :                              disable logging
+                """);
     }
 
 }
