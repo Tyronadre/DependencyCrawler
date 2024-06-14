@@ -9,6 +9,7 @@ import service.serviceImpl.BFDependencyCrawlerImpl;
 import service.serviceImpl.MavenSBOMBuilder;
 import service.serviceImpl.MavenSBOMReader;
 import service.serviceImpl.SPDXBuilder;
+import service.serviceImpl.SPDXReader;
 import service.serviceImpl.TreeBuilder;
 import service.serviceImpl.VexBuilder;
 import service.serviceImpl.VexReader;
@@ -27,19 +28,19 @@ public class Main {
         LicenseRepository.getInstance(); //preload license repository
 
 
-//        var in1 = readInputFile("input_0.json");
-//        crawlComponent(in1);
-//        buildSBOMFile(in1, "generated/output_0");
-//        buildSPDXFile(in1, "generated/output_0");
-//        buildTreeFile(in1, "generated/output_0", false);
-//        buildVexFile(in1, "generated/output_0");
+        var in1 = readInputFile("input_0.json");
+        crawlComponent(in1);
+        buildSBOMFile(in1, "generated/output_0");
+        buildSPDXFile(in1, "generated/output_0");
+        buildTreeFile(in1, "generated/output_0", false);
+        buildVexFile(in1, "generated/output_0");
 //
-        var in2 = readInputFile("input_1.json");
-        crawlComponent(in2);
-        buildSBOMFile(in2, "generated/output_1");
-        buildSPDXFile(in2, "generated/output_1");
-        buildTreeFile(in2, "generated/output_1", false);
-        buildVexFile(in2, "generated/output_1");
+//        var in2 = readInputFile("input_1.json");
+//        crawlComponent(in2);
+//        buildSBOMFile(in2, "generated/output_1");
+//        buildSPDXFile(in2, "generated/output_1");
+//        buildTreeFile(in2, "generated/output_1", false);
+//        buildVexFile(in2, "generated/output_1");
 //
 //        var in3 = readInputFile("input_2.json");
 //        crawlComponent(in3);
@@ -127,6 +128,11 @@ public class Main {
     private static List<ReadVexComponent> readVEXFile(String fileName) {
         VexReader vexReader = new VexReader();
         return vexReader.readDocument(fileName);
+    }
+
+    private static Component readSPDXFile(String fileName) {
+        SPDXReader spdxReader = new SPDXReader();
+        return spdxReader.readDocument(fileName);
     }
 
 }

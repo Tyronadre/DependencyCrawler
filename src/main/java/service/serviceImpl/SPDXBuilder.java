@@ -62,7 +62,7 @@ public class SPDXBuilder implements DocumentBuilder {
         try (var out = new FileOutputStream(outputFileName + ".spdx.json")) {
 
             store = new MultiFormatStore(new InMemSpdxStore(), MultiFormatStore.Format.JSON_PRETTY, MultiFormatStore.Verbose.COMPACT);
-            uri = "http://spdx.org/spdxdocs/spdx-example2-444504E0-4F89-41D3-9A0C-0305E82CCCCC";
+            uri = "spdx-document/" + UUID.randomUUID();
             copyManager = new ModelCopyManager();
             spdxDocument = new SpdxDocument(store, uri, copyManager, true);
             buildDocument();

@@ -1,10 +1,10 @@
 package service.serviceImpl;
 
 import data.Component;
+import data.License;
 import data.LicenseChoice;
 import data.LicenseCollision;
 import logger.Logger;
-import org.spdx.rdfparser.license.License;
 import service.LicenseCollisionService;
 
 import java.util.List;
@@ -29,13 +29,13 @@ public class LicenseCollisionServiceImpl implements LicenseCollisionService {
         // In reality, you would use a comprehensive compatibility matrix or library.
         // For demonstration purposes, assuming MIT and Apache-2.0 are compatible with anything,
         // and GPL-2.0-only is incompatible with everything else.
-        if ("MIT".equals(license1.getLicenseId()) || "MIT".equals(license2.getLicenseId())) {
+        if ("MIT".equals(license1.getId()) || "MIT".equals(license2.getId())) {
             return true;
         }
-        if ("Apache-2.0".equals(license1.getLicenseId()) || "Apache-2.0".equals(license2.getLicenseId())) {
+        if ("Apache-2.0".equals(license1.getId()) || "Apache-2.0".equals(license2.getId())) {
             return true;
         }
-        return license1.getLicenseId().equals(license2.getLicenseId());
+        return license1.getId().equals(license2.getId());
     }
 
     @Override
