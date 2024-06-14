@@ -6,10 +6,23 @@ import repository.LicenseRepository;
 import service.BFDependencyCrawler;
 import service.DocumentBuilder;
 import service.LicenseCollisionService;
-import service.serviceImpl.*;
+import service.serviceImpl.BFDependencyCrawlerImpl;
+import service.serviceImpl.DefaultInputReader;
+import service.serviceImpl.MavenSBOMBuilder;
+import service.serviceImpl.MavenSBOMReader;
+import service.serviceImpl.SPDXBuilder;
+import service.serviceImpl.SPDXReader;
+import service.serviceImpl.TreeBuilder;
+import service.serviceImpl.VexBuilder;
+import service.serviceImpl.VexReader;
 import util.Pair;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
 
 public class Main {
     private static final Logger logger = Logger.of("Main");
@@ -18,9 +31,16 @@ public class Main {
         logger.normal("Starting with args: " + Arrays.toString(args));
 
         HashMap<String, String> argMap = new HashMap<>();
-        for (int i = 0; i < args.length; i++) {
-            if (args[i].startsWith("--")) {
-                argMap.put(args[i].substring(2), args[i + 1]);
+        var lastKey = "";
+        for (String arg : args) {
+            if (arg.startsWith("--")) {
+                argMap.put(arg.substring(2), "");
+                lastKey = arg.substring(2);
+            } else {
+                if (argMap.get(lastKey).isEmpty())
+                    argMap.put(lastKey, arg);
+                else
+                    argMap.put(lastKey, argMap.get(lastKey) + ";" + arg);
             }
         }
 
@@ -29,7 +49,7 @@ public class Main {
             return;
         }
 
-        if (!argMap.containsKey("no-log")) {
+        if (argMap.containsKey("no-log")) {
             Logger.setDisabled(true);
         }
 
@@ -51,7 +71,7 @@ public class Main {
         var outputFile = argMap.getOrDefault("output", "output");
         var outputTypes = new ArrayList<String>();
         if (argMap.containsKey("outputType")) {
-            outputTypes.addAll(Arrays.asList(argMap.get("outputType").split(" ")));
+            outputTypes.addAll(Arrays.asList(argMap.get("outputType").split(";")));
         }
 
         if (!Objects.equals(inputType, "vex")) {
@@ -75,7 +95,7 @@ public class Main {
             case "sbom" -> readFromSBOM(inputFile, outputFile, outputTypes);
             case "spdx" -> readFromSPDX(inputFile, outputFile, outputTypes);
             case "vex" -> {
-                if (outputTypes.stream().anyMatch(it -> !it.equals("vex"))){
+                if (outputTypes.stream().anyMatch(it -> !it.equals("vex"))) {
                     logger.error("Can only generate VEX Files from a read VEX file");
                     throw new IllegalArgumentException("Can only generate VEX Files from a read VEX file");
                 }
@@ -138,42 +158,58 @@ public class Main {
     }
 
     private static void readFromDefault(String inputFile, String outputFile, ArrayList<String> outputTypes) {
-        var reader = new DefaultInputReader();
-        var rootComponent = reader.readDocument(inputFile);
-        crawlComponent(rootComponent);
-        outputTypes.stream().map(Main::getDocumentBuilder).forEach(builder -> builder.buildDocument(rootComponent, outputFile));
-    }
-
-    private static void readFromSBOM(String inputFile, String outputFile, ArrayList<String> outputTypes) {
-        var reader = new MavenSBOMReader();
-        var res = reader.readDocument(inputFile);
-        var rootComponent = res.second();
-        crawlComponent(rootComponent);
-        for (var outputType: outputTypes){
-            if (Objects.equals(outputType, "sbom")){
-                new MavenSBOMBuilder().rebuildDocument(res.first(), outputFile);
-            } else {
-                getDocumentBuilder(outputType).buildDocument(rootComponent, outputFile);
-            }
+        try {
+            var rootComponent = new DefaultInputReader().readDocument(inputFile);
+            crawlComponent(rootComponent);
+            outputTypes.stream().map(Main::getDocumentBuilder).forEach(
+                    builder -> builder.buildDocument(rootComponent, outputFile)
+            );
+        } catch (Exception e) {
+            logger.error("Error reading input file: " + e.getMessage());
         }
     }
 
-    private static void readFromSPDX(String inputFile, String outputFile, ArrayList<String> outputTypes){
-        var rootComponent = new SPDXReader().readDocument(inputFile);
-        crawlComponent(rootComponent);
-        for (var outputType: outputTypes){
-            if (Objects.equals(outputType, "spdx")){
-                new SPDXBuilder().rebuildDocument(rootComponent, outputFile);
-            } else {
-                getDocumentBuilder(outputType).buildDocument(rootComponent, outputFile);
+    private static void readFromSBOM(String inputFile, String outputFile, ArrayList<String> outputTypes) {
+        try {
+            var res = new MavenSBOMReader().readDocument(inputFile);
+            var rootComponent = res.second();
+            crawlComponent(rootComponent);
+            for (var outputType : outputTypes) {
+                if (Objects.equals(outputType, "sbom")) {
+                    new MavenSBOMBuilder().rebuildDocument(res.first(), outputFile);
+                } else {
+                    getDocumentBuilder(outputType).buildDocument(rootComponent, outputFile);
+                }
             }
+        } catch (Exception e) {
+            logger.error("Error reading SBOM file: " + e.getMessage());
+        }
+    }
+
+    private static void readFromSPDX(String inputFile, String outputFile, ArrayList<String> outputTypes) {
+        try {
+            var rootComponent = new SPDXReader().readDocument(inputFile);
+            crawlComponent(rootComponent);
+            for (var outputType : outputTypes) {
+                if (Objects.equals(outputType, "spdx")) {
+                    new SPDXBuilder().rebuildDocument(rootComponent, outputFile);
+                } else {
+                    getDocumentBuilder(outputType).buildDocument(rootComponent, outputFile);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error reading SPDX file: " + e.getMessage());
         }
     }
 
     private static void readFromVex(String inputFile, String outputFile) {
-        var res = new VexReader().readDocument(inputFile);
-        res.forEach(ReadVexComponent::loadComponent);
-        new VexBuilder().rebuildDocument(res.stream().map(Component::getAllVulnerabilities).flatMap(Collection::stream).toList(), outputFile);
+        try {
+            var res = new VexReader().readDocument(inputFile);
+            res.forEach(ReadVexComponent::loadComponent);
+            new VexBuilder().rebuildDocument(res.stream().map(Component::getAllVulnerabilities).flatMap(Collection::stream).toList(), outputFile);
+        } catch (Exception e) {
+            logger.error("Error reading VEX file: " + e.getMessage());
+        }
     }
 
 

@@ -4,8 +4,8 @@ import com.google.protobuf.util.JsonFormat;
 import cyclonedx.vex.VexOuterClass;
 import data.Component;
 import data.Vulnerability;
-import data.VulnerabilityReference;
 import data.VulnerabilityRating;
+import data.VulnerabilityReference;
 import logger.Logger;
 import service.DocumentBuilder;
 
@@ -31,7 +31,7 @@ public class VexBuilder implements DocumentBuilder<Iterable<Vulnerability>> {
         var vex = buildVex(root);
 
         if (vex.getVulnerabilitiesCount() == 0) {
-            logger.info("No vulnerabilities found.");
+            logger.success("No vulnerabilities found. No VEX will be created.");
             return;
         }
 

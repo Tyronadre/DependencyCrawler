@@ -13,7 +13,9 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
-import static service.converter.BomToInternalMavenConverter.*;
+import static service.converter.BomToInternalMavenConverter.buildAllDependenciesRecursively;
+import static service.converter.BomToInternalMavenConverter.buildAllVulnerabilities;
+import static service.converter.BomToInternalMavenConverter.buildComponent;
 
 public class MavenSBOMReader implements DocumentReader<Pair<Bom16.Bom, Component>> {
     private static final Logger logger = Logger.of("MavenSBOMReader");
@@ -31,7 +33,8 @@ public class MavenSBOMReader implements DocumentReader<Pair<Bom16.Bom, Component
         try {
             JsonFormat.parser().ignoringUnknownFields().merge(Files.readString(file.toPath(), StandardCharsets.UTF_8), builder);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Could not read from file: " + file.getAbsolutePath() + ". Cause: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            throw new RuntimeException(e);
         }
         var bom = builder.build();
 

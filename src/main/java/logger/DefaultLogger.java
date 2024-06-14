@@ -34,15 +34,14 @@ public class DefaultLogger extends Logger {
             case INFO -> "    ";
             case ERROR -> "   ";
             case SUCCESS -> " ";
-            case NORMAL -> "  ";
-        } + (level != LogLevel.NORMAL ? level + " --- " : "");
+        } + level + " --- ";
     }
 
     private void log(LogLevel level, String msg) {
         if (disabled) {
             return;
         }
-        if (!verbose && level != LogLevel.NORMAL) {
+        if (!verbose && level == LogLevel.INFO) {
             return;
         }
 
@@ -91,7 +90,7 @@ public class DefaultLogger extends Logger {
 
     @Override
     public void normal(String s) {
-        log(LogLevel.NORMAL, s);
+        System.out.println(LogLevel.colorReset + s);
     }
 
     @Override

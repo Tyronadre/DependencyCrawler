@@ -95,11 +95,10 @@ public class AppendingLogger extends Logger{
         }
 
         private void addFirstMessage(LogLevel LogLevel, String message) {
-            this.messages.add(0, colorMap.get(LogLevel) + switch (LogLevel) {
+            this.messages.addFirst(colorMap.get(LogLevel) + switch (LogLevel) {
                 case INFO -> "    ";
                 case ERROR -> "   ";
                 case SUCCESS -> " ";
-                case NORMAL -> "";
             } + LogLevel + " --- " + message);
         }
 

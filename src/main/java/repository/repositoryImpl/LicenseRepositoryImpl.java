@@ -16,7 +16,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
@@ -44,9 +43,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
         this.nameToLicense = new HashMap<>();
         this.idToLicense = new HashMap<>();
 
-
-
-        var licenseListFile = new File("generated/data/licenses.json");
+        var licenseListFile = new File("data/licenses.json");
         try {
             Files.createDirectories(licenseListFile.getParentFile().toPath());
         } catch (IOException e) {

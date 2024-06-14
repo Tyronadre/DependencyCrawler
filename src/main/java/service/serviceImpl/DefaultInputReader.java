@@ -31,7 +31,7 @@ public class DefaultInputReader implements DocumentReader<Component> {
             dependencyCrawlerInput = builder.build();
             logger.success("Input read successfully from " + file.getAbsolutePath());
         } catch (IOException e) {
-            logger.error("Error reading input file  " + file.getAbsolutePath() + " type " + e.getMessage());
+            logger.error("Error reading input file  " + file.getAbsolutePath() + " cause " + e.getClass().getSimpleName());
             throw new RuntimeException(e);
         }
 

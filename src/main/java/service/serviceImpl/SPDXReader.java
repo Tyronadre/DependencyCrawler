@@ -3,7 +3,6 @@ package service.serviceImpl;
 import data.Component;
 import logger.Logger;
 import org.spdx.jacksonstore.MultiFormatStore;
-import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.ISerializableModelStore;
 import org.spdx.storage.simple.InMemSpdxStore;
@@ -20,8 +19,8 @@ public class SPDXReader implements DocumentReader<Component> {
     public Component readDocument(String inputFileName) {
         logger.info("Reading document as SPDX: " + inputFileName);
 
+        var file = new File(inputFileName);
         try (IModelStore modelStore = new InMemSpdxStore()) {
-            var file = new File(inputFileName);
 
             // Create a Jackson store
             ISerializableModelStore jacksonStore = new MultiFormatStore(modelStore, MultiFormatStore.Format.JSON);
@@ -33,11 +32,10 @@ public class SPDXReader implements DocumentReader<Component> {
             System.out.println("SPDX Document Name: " + jacksonStore.getDocumentUris());
 
         } catch (IOException e) {
-            System.err.println("Error reading the SPDX file: " + e.getMessage());
-        } catch (
-                InvalidSPDXAnalysisException e) {
-            System.err.println("Error parsing the SPDX document: " + e.getMessage());
+            logger.error("Could not read from file: " + file.getAbsolutePath() + ". Cause: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            throw new RuntimeException(e);
         } catch (Exception e) {
+            logger.error("Could not parse from file: " + file.getAbsolutePath() + ". Cause: " + e.getClass().getSimpleName() + ": " + e.getMessage());
             throw new RuntimeException(e);
         }
         return null;

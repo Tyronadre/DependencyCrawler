@@ -25,16 +25,16 @@ public class VexReader implements DocumentReader<List<ReadVexComponent>> {
 
         //read from file
         var file = new File(inputFileName);
-        JsonObject json = null;
+        JsonObject json;
         try {
             json = JsonParser.parseReader(new InputStreamReader(new FileInputStream(file))).getAsJsonObject();
         } catch (Exception e) {
-            logger.error("Error reading file: " + e.getMessage());
-            return null;
+            logger.error("Could not read from file: " + file.getAbsolutePath() + ". Cause: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            throw new RuntimeException(e);
         }
         if (json == null || json.isJsonNull() || json.get("vulnerabilities") == null || json.get("vulnerabilities").isJsonNull() || json.get("vulnerabilities").getAsJsonArray().isEmpty()) {
             logger.error("Error reading file: File is empty");
-            return null;
+            throw new RuntimeException("Error reading file: File is empty");
         }
 
         logger.info("Read from file. Parsing... ");
