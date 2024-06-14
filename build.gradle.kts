@@ -13,6 +13,35 @@ tasks.assemble {
     dependsOn("ProtoParser:parseProto")
 }
 
+// Configure the jar task to include dependencies and source files
+tasks.jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest {
+        attributes(
+            "Implementation-Title" to "Gradle",
+            "Implementation-Version" to archiveVersion,
+            "Main-Class" to "Main"
+        )
+    }
+
+    // Include compiled class files
+    from(sourceSets.main.get().output)
+
+    // Include source files
+    from(sourceSets.main.get().allSource) {
+        into("src")
+    }
+
+    // Include dependencies
+    dependsOn(configurations.runtimeClasspath)
+    from({
+        configurations.runtimeClasspath.get().filter { it.exists() }.map { zipTree(it) }
+    })
+}
+
+
+
 dependencies {
     implementation("com.google.protobuf:protobuf-java:4.27.0-RC1")
     implementation("com.google.protobuf:protobuf-java-util:4.27.0-RC1")

@@ -133,7 +133,8 @@ public class LicenseRepositoryImpl implements LicenseRepository {
     private void readLicensesFromNet(File file, JsonObject json) {
         logger.info("Loading license list from net... ");
         JsonArray fileLicenses = new JsonArray();
-        try (ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(10)) {
+        try {
+            ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(10);
 
             for (var license : json.get("licenses").getAsJsonArray()) {
                 var licenseObject = license.getAsJsonObject();

@@ -1,18 +1,11 @@
 import cyclonedx.sbom.Bom16;
 import data.Component;
 import data.readData.ReadVexComponent;
+import logger.Logger;
 import repository.LicenseRepository;
 import service.BFDependencyCrawler;
-import service.InputReader;
 import service.LicenseCollisionService;
-import service.serviceImpl.BFDependencyCrawlerImpl;
-import service.serviceImpl.MavenSBOMBuilder;
-import service.serviceImpl.MavenSBOMReader;
-import service.serviceImpl.SPDXBuilder;
-import service.serviceImpl.SPDXReader;
-import service.serviceImpl.TreeBuilder;
-import service.serviceImpl.VexBuilder;
-import service.serviceImpl.VexReader;
+import service.serviceImpl.*;
 import util.Pair;
 
 import java.io.File;
@@ -24,11 +17,11 @@ public class Main {
     public static void main(String[] args) throws URISyntaxException {
 
 //        Logger.setDisabled(true);
-//        Logger.setVerbose(false);
+        Logger.setVerbose(true);
         LicenseRepository.getInstance(); //preload license repository
 
 
-        var in1 = readInputFile("input_0.json");
+        var in1 = readInputFile("src/main/resources/input_0.json");
         crawlComponent(in1);
         buildSBOMFile(in1, "generated/output_0");
         buildSPDXFile(in1, "generated/output_0");
@@ -114,9 +107,9 @@ public class Main {
         vexBuilder.buildDocument(component, path);
     }
 
-    private static Component readInputFile(String fileName) throws URISyntaxException {
-        InputReader inputReader = InputReader.of(new File(Main.class.getClassLoader().getResource(fileName).toURI()));
-        return inputReader.loadRootComponent();
+    private static Component readInputFile(String fileName)  {
+        DefaultInputReader inputReader = new DefaultInputReader();
+        return inputReader.readDocument(fileName);
     }
 
 

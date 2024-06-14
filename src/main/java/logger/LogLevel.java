@@ -6,7 +6,7 @@ public enum LogLevel {
     INFO("\u001B[90m"),
     ERROR("\u001B[31m"),
     SUCCESS("\u001B[32m"),
-    ;
+    NORMAL("\u001B[0m");
 
     private final String color;
     LogLevel(String color) {

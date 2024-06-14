@@ -34,7 +34,8 @@ public class DefaultLogger extends Logger {
             case INFO -> "    ";
             case ERROR -> "   ";
             case SUCCESS -> " ";
-        } + level + " --- ";
+            case NORMAL -> "  ";
+        } + (level != LogLevel.NORMAL ? level + " --- " : "");
     }
 
     private void log(LogLevel level, String msg) {
@@ -86,6 +87,11 @@ public class DefaultLogger extends Logger {
     @Override
     public void success(String msg) {
         log(LogLevel.SUCCESS, msg);
+    }
+
+    @Override
+    public void normal(String s) {
+        log(LogLevel.NORMAL, s);
     }
 
     @Override

@@ -74,6 +74,11 @@ public class AppendingLogger extends Logger{
         logLine();
     }
 
+    @Override
+    public void normal(String s) {
+        
+    }
+
     public void errorOverwriteLine(String msg, int index) {
         currentLog.overwrite(LogLevel.ERROR, msg, index);
         logLine();
@@ -94,6 +99,7 @@ public class AppendingLogger extends Logger{
                 case INFO -> "    ";
                 case ERROR -> "   ";
                 case SUCCESS -> " ";
+                case NORMAL -> "";
             } + LogLevel + " --- " + message);
         }
 

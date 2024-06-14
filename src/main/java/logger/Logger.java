@@ -5,7 +5,7 @@ import java.util.Map;
 
 public abstract class Logger {
     protected static boolean disabled = false;
-    protected static boolean verbose = true;
+    protected static boolean verbose = false;
 
     private static final Map<String, Logger> loggers = new HashMap<>();
 
@@ -30,6 +30,8 @@ public abstract class Logger {
     public abstract void error(String msg);
 
     public abstract void success(String msg);
+
+    public abstract void normal(String s);
 
     public abstract void errorOverwriteLine(String msg, int index);
 
