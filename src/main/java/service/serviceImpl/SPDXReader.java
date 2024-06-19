@@ -3,9 +3,11 @@ package service.serviceImpl;
 import data.Component;
 import logger.Logger;
 import org.spdx.jacksonstore.MultiFormatStore;
+import org.spdx.library.SpdxConstants;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.ISerializableModelStore;
 import org.spdx.storage.simple.InMemSpdxStore;
+import org.spdx.storage.simple.StoredTypedItem;
 import service.DocumentReader;
 
 import java.io.File;
@@ -26,10 +28,11 @@ public class SPDXReader implements DocumentReader<Component> {
             ISerializableModelStore jacksonStore = new MultiFormatStore(modelStore, MultiFormatStore.Format.JSON);
 
             // Parse the SPDX document content
-            jacksonStore.deSerialize(new FileInputStream(file), true);
+            var documentURI = jacksonStore.deSerialize(new FileInputStream(file), true);
 
             // Use the SPDX document (for example, print the document name)
-            System.out.println("SPDX Document Name: " + jacksonStore.getDocumentUris());
+            StoredTypedItem
+            System.out.println("SPDX Document Name: " + jacksonStore.getAllItems(documentURI, "SpdxDocument").findFirst().get());
 
         } catch (IOException e) {
             logger.error("Could not read from file: " + file.getAbsolutePath() + ". Cause: " + e.getClass().getSimpleName() + ": " + e.getMessage());

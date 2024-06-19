@@ -28,8 +28,8 @@ public class Main {
     private static final Logger logger = Logger.of("Main");
 
     public static void main(String[] args) {
-        args = new String[]{"--input", "generated/output_1.sbom.json", "--input-type", "sbom", "--output", "generated/output_1_renew", "--output-type", "sbom", "spdx", "vex", "tree", "--verbose"};
-//        args = new String[]{"--input", "src/main/resources/input_1.json", "--output", "generated/output_1", "--output-type", "sbom", "spdx", "vex", "tree", "--verbose"};
+        args = new String[]{"--input", "generated/output_0.spdx.json", "--input-type", "spdx", "--output", "generated/output_0_renewFromSPDX", "--output-type", "sbom", "spdx", "vex", "tree", "--verbose"};
+ //       args = new String[]{"--input", "src/main/resources/input_0.json", "--output", "generated/output_0", "--output-type", "sbom", "spdx", "vex", "tree", "--verbose"};
 
         HashMap<String, String> argMap = new HashMap<>();
         String lastKey = null;
@@ -170,7 +170,7 @@ public class Main {
                     builder -> builder.buildDocument(rootComponent, outputFile)
             );
         } catch (Exception e) {
-            logger.error("Error reading input file: " + e.getMessage());
+            logger.error("Error reading input file: ", e);
         }
     }
 
@@ -187,7 +187,7 @@ public class Main {
                 }
             }
         } catch (Exception e) {
-            logger.error("Error reading SBOM file: " + e.getMessage());
+            logger.error("Error reading SBOM file: ", e);
         }
     }
 
@@ -203,7 +203,7 @@ public class Main {
                 }
             }
         } catch (Exception e) {
-            logger.error("Error reading SPDX file: " + e.getMessage());
+            logger.error("Error reading SPDX file: ", e);
         }
     }
 
@@ -213,7 +213,7 @@ public class Main {
             res.forEach(ReadVexComponent::loadComponent);
             new VexBuilder().rebuildDocument(res.stream().map(Component::getAllVulnerabilities).flatMap(Collection::stream).toList(), outputFile);
         } catch (Exception e) {
-            logger.error("Error reading VEX file: " + e.getMessage());
+            logger.error("Error reading VEX file: ", e);
         }
     }
 

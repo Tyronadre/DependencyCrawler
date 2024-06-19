@@ -11,14 +11,11 @@ import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
 import org.spdx.library.SpdxConstants;
 import org.spdx.library.Version;
-import org.spdx.library.model.ReferenceType;
-import org.spdx.library.model.SpdxCreatorInformation;
-import org.spdx.library.model.SpdxDocument;
-import org.spdx.library.model.SpdxElement;
-import org.spdx.library.model.SpdxPackage;
+import org.spdx.library.model.*;
 import org.spdx.library.model.enumerations.ChecksumAlgorithm;
 import org.spdx.library.model.enumerations.Purpose;
 import org.spdx.library.model.enumerations.ReferenceCategory;
+import org.spdx.library.model.enumerations.RelationshipType;
 import org.spdx.library.model.license.LicenseInfoFactory;
 import org.spdx.storage.simple.InMemSpdxStore;
 import service.DocumentBuilder;
@@ -26,11 +23,7 @@ import service.DocumentBuilder;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 
 public class SPDXBuilder implements DocumentBuilder<Component> {
@@ -99,7 +92,7 @@ public class SPDXBuilder implements DocumentBuilder<Component> {
 
         for (Component component : root.getDependencyComponentsFlatFiltered()) {
             try {
-                list.add(getSpdxElement(component));
+                list.add(buildSPDXElement(component));
             } catch (SPDXBuilderException e) {
                 logger.error("Error building SPDX document" + e.getMessage());
                 e.printStackTrace();
@@ -124,7 +117,13 @@ public class SPDXBuilder implements DocumentBuilder<Component> {
         return null;
     }
 
-    private SpdxElement getSpdxElement(Component component) throws SPDXBuilderException {
+    HashMap<Component, SpdxElement> buildSPDXElements = new HashMap<>();
+
+    private SpdxElement buildSPDXElement(Component component) throws SPDXBuilderException {
+        if (buildSPDXElements.containsKey(component)) {
+            return buildSPDXElements.get(component);
+        }
+
         try {
             var spdxPackage = new SpdxPackage(store, uri, SpdxConstants.SPDX_ELEMENT_REF_PRENUM + component.getQualifiedName(), copyManager, true);
             if (component.getAllHashes() != null) {
@@ -149,7 +148,7 @@ public class SPDXBuilder implements DocumentBuilder<Component> {
             }
 
 //            spdxPackage.setBuiltDate();
-            spdxPackage.setDescription(component.getDescription());
+            spdxPackage.setName(component.getGroup().replace('.', ' ') + " " + component.getName());
             var supplier = component.getSupplier();
             if (supplier != null) {
                 spdxPackage.setSupplier("Organization: " + supplier.getName());
@@ -174,12 +173,31 @@ public class SPDXBuilder implements DocumentBuilder<Component> {
 //            spdxPackage.setSourceInfo();
 //            spdxPackage.setSummary();
 //            spdxPackage.setValidUntilDate();
+            spdxPackage.setRelationships(buildAllDependencies(component));
             spdxPackage.setVersionInfo(component.getVersion().getVersion());
 //            spdxPackage.getFiles();
+
+            buildSPDXElements.put(component, spdxPackage);
             return spdxPackage;
         } catch (InvalidSPDXAnalysisException e) {
             throw new SPDXBuilderException(e.getMessage() + Arrays.toString(e.getStackTrace()));
         }
+    }
+
+    private Collection<Relationship> buildAllDependencies(Component component) {
+        var list = new ArrayList<Relationship>();
+
+        for (var dependecy : component.getDependenciesFiltered()) {
+            try {
+                list.add(new Relationship(store, uri, UUID.randomUUID().toString(), copyManager, true).setRelationshipType(RelationshipType.DEPENDS_ON).setRelatedSpdxElement(buildSPDXElement(dependecy.getComponent())));
+            } catch (InvalidSPDXAnalysisException | SPDXBuilderException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return list;
+
+
     }
 
     private void buildAllLicenses(List<LicenseChoice> allLicenses, SpdxPackage spdxPackage) {
