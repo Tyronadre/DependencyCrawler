@@ -23,6 +23,11 @@ public class DefaultLogger extends Logger {
         }
     }
 
+    @Override
+    public String getName() {
+        return name;
+    }
+
     protected DefaultLogger(String name) {
         this.name = name;
     }
@@ -86,11 +91,6 @@ public class DefaultLogger extends Logger {
     @Override
     public void success(String msg) {
         log(LogLevel.SUCCESS, msg);
-    }
-
-    @Override
-    public void normal(String s) {
-        System.out.println(LogLevel.colorReset + s);
     }
 
     @Override

@@ -6,6 +6,8 @@ public interface License {
 
     String getId();
     String getName();
+
+    String getNameOrId();
     String getText();
     String getUrl();
     Licensing getLicensing();

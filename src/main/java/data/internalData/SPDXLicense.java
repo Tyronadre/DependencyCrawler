@@ -34,6 +34,12 @@ public class SPDXLicense implements License {
     }
 
     @Override
+    public String getNameOrId() {
+        if (getId().isEmpty() || getId().isBlank()) return getName();
+        return getId();
+    }
+
+    @Override
     public String getText() {
         return details.get("licenseText").getAsString();
     }

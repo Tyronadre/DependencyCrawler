@@ -45,7 +45,7 @@ public class ReadComponentRepository implements ComponentRepository {
     }
 
     @Override
-    public boolean loadComponent(Component component) {
+    public int loadComponent(Component component) {
         throw new UnsupportedOperationException();
     }
 

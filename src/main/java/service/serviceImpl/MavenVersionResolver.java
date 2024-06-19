@@ -6,10 +6,13 @@ import data.internalData.MavenDependency;
 import data.internalData.MavenVersion;
 import exceptions.VersionRangeResolutionException;
 import exceptions.VersionResolveException;
+import logger.Logger;
 import repository.repositoryImpl.MavenComponentRepository;
 import service.VersionResolver;
 
 public class MavenVersionResolver implements VersionResolver {
+    private static final Logger logger = Logger.of("MavenVersionResolver");
+
     private final MavenComponentRepository repository;
 
     public MavenVersionResolver(MavenComponentRepository repository) {
@@ -21,8 +24,11 @@ public class MavenVersionResolver implements VersionResolver {
         var version = resolveVersion(dependency.getVersionConstraints(), dependency, (MavenComponent) dependency.getTreeParent());
         if (version != null) {
             dependency.setVersion(version);
+        } else if (dependency.getTreeParent().getGroup().equals(((MavenDependency) dependency).getGroupId())) {
+            logger.error("Could not resolve version of " + dependency.getQualifiedName() + ". Fallback to parent Version.");
+            dependency.setVersion(dependency.getTreeParent().getVersion());
         } else {
-            throw new VersionResolveException(dependency, "Could not resolve version.");
+            throw new VersionResolveException(dependency, " Could not resolve version.");
         }
     }
 
@@ -40,6 +46,27 @@ public class MavenVersionResolver implements VersionResolver {
                         .findFirst().orElse(null);
                 if (managedDependency != null) {
                     return resolveVersion(managedDependency.getVersion(), dependency, parent);
+                }
+                //in very few cases the dependencyManagement references another pom file. We need to download this pom file and check the dependencyManagement there
+                else {
+                    var pomDependencies = dependencyManagement.getDependencies().stream()
+                            .filter(d -> d.getType().equals("pom")).toList();
+                    for (var pomDependency : pomDependencies) {
+                        var version = resolveVersion(pomDependency.getVersion(), dependency, parent);
+                        var pomComponent = parent.getRepository().getComponent(pomDependency.getGroupId(), pomDependency.getArtifactId(), version);
+                        pomComponent.loadComponent();
+                        var pomComponentDependencyManagement = ((MavenComponent) pomComponent).getDependencyManagement();
+                        if (pomComponentDependencyManagement != null) {
+                            var pomComponentManagedDependencies = pomComponentDependencyManagement.getDependencies().stream().filter(d ->
+                                            (d.getGroupId().equals(mavenDependency.getGroupId()) || d.getGroupId().equals("${project.groupId}") || d.getGroupId().equals("${pom.groupId}"))
+                                                    && d.getArtifactId().equals(mavenDependency.getArtifactId()))
+                                    .findFirst().orElse(null);
+                            if (pomComponentManagedDependencies != null) {
+                                return resolveVersion(pomComponentManagedDependencies.getVersion(), dependency, parent);
+                            }
+                        }
+                        System.out.println(pomComponent);
+                    }
                 }
             }
             //check parent pom

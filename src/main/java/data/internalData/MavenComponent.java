@@ -148,7 +148,10 @@ public class MavenComponent implements Component {
         var start = System.currentTimeMillis();
         logger.info("Loading component: " + this.getQualifiedName());
 
-        if (this.repository != null) this.repository.loadComponent(this);
+
+        if (this.repository != null)
+            if (this.repository.loadComponent(this) == 2)
+                return;
         //if we dont have a model we try other repositories
         if (model == null) MavenComponentRepositoryType.tryLoadComponent(this);
         //if we still dont have the model, we cant load the component
@@ -168,9 +171,11 @@ public class MavenComponent implements Component {
         }
 
         // PARENT
-        if (this.model.getParent() != null)
+        if (this.model.getParent() != null) {
             this.parent = this.repository.getComponent(this.model.getParent().getGroupId(), this.model.getParent().getArtifactId(), new MavenVersion(this.model.getParent().getVersion()));
-        else this.parent = null;
+        } else {
+            this.parent = null;
+        }
 
         // LICENSES
         var licenseRepository = LicenseRepository.getInstance();

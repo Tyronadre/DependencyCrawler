@@ -37,7 +37,6 @@ public enum MavenComponentRepositoryType implements RepositoryType {
     Clojars("https://clojars.org/repo/"),
     ROOT("ROOT"), // root of the application
     FILE("FILE"); // load from file
-    ;
 
     private final String url;
 
@@ -59,7 +58,7 @@ public enum MavenComponentRepositoryType implements RepositoryType {
         }
         for (var repository : MavenComponentRepositoryType.values()) {
             if (repository == ROOT || repository == FILE) continue;
-            if (of(repository).loadComponent(mavenComponent)) {
+            if (of(repository).loadComponent(mavenComponent) == 0) {
                 mavenComponent.setData("repository", repository.getRepository());
                 return;
             }

@@ -27,6 +27,7 @@ import repository.repositoryImpl.ReadVulnerabilityRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class BomToInternalMavenConverter {
     private static final ReadComponentRepository componentRepository = ReadComponentRepository.getInstance();
@@ -233,7 +234,7 @@ public class BomToInternalMavenConverter {
     }
 
     public static List<LicenseChoice> buildAllLicenseChoices(List<Bom16.LicenseChoice> bomLicenses) {
-        return bomLicenses.stream().map(BomToInternalMavenConverter::buildLicenseChoice).toList();
+        return bomLicenses.stream().map(BomToInternalMavenConverter::buildLicenseChoice).collect(Collectors.toList());
     }
 
     public static LicenseChoice buildLicenseChoice(Bom16.LicenseChoice licenseChoice) {
@@ -266,6 +267,12 @@ public class BomToInternalMavenConverter {
             @Override
             public String getName() {
                 return bomLicense.hasName() ? bomLicense.getName() : null;
+            }
+
+            @Override
+            public String getNameOrId() {
+                if (getId() != null) return getId();
+                return getName();
             }
 
             @Override

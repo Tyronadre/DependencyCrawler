@@ -1,21 +1,39 @@
 package data.readData;
 
 import cyclonedx.sbom.Bom16;
-import data.*;
+import data.Component;
+import data.Dependency;
+import data.ExternalReference;
+import data.Hash;
+import data.LicenseChoice;
+import data.Organization;
+import data.Person;
+import data.Property;
+import data.Version;
+import data.Vulnerability;
 import enums.ComponentType;
 import logger.Logger;
 import org.apache.maven.api.model.Model;
 import repository.ComponentRepository;
-import repository.LicenseRepository;
 import repository.repositoryImpl.MavenComponentRepositoryType;
 import repository.repositoryImpl.ReadVulnerabilityRepository;
 import service.converter.BomToInternalMavenConverter;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static service.converter.BomToInternalMavenConverter.*;
+import static service.converter.BomToInternalMavenConverter.buildAllExternalReferences;
+import static service.converter.BomToInternalMavenConverter.buildAllLicenseChoices;
+import static service.converter.BomToInternalMavenConverter.buildAllPersons;
+import static service.converter.BomToInternalMavenConverter.buildAllProperties;
+import static service.converter.BomToInternalMavenConverter.buildHashes;
+import static service.converter.BomToInternalMavenConverter.buildOrganization;
 
 public class ReadSBomComponent implements Component {
     private final Bom16.Component bomComponent;
@@ -33,7 +51,7 @@ public class ReadSBomComponent implements Component {
     private boolean isLoaded = false;
 
     private ComponentRepository repository;
-    private ComponentType type = ComponentType.MAVEN;
+    private final ComponentType type = ComponentType.MAVEN;
 
     /**
      * Returns a ReadComponent object of the given Bom16.Component object.
@@ -84,31 +102,31 @@ public class ReadSBomComponent implements Component {
             default -> throw new UnsupportedOperationException("Cannot load read component of type " + type);
         }
 
-        // LICENSES
-        var licenseRepository = LicenseRepository.getInstance();
-        var licenseChoices = new ArrayList<>(this.licenseChoices.stream().map(LicenseChoice::getLicense).map(License::getName).toList());
-        if (this.model.getLicenses() != null) {
-            var licenses = new ArrayList<>();
-            for (var license : this.model.getLicenses()) {
-                if (license.getName() == null) continue;
-                var newLicense = licenseRepository.getLicense(license.getName(), license.getUrl());
-                if (newLicense == null) {
-                    logger.error("Could not resolve license for " + this.getQualifiedName() + ": " + license.getName());
-                    continue;
-                }
-
-                if (licenseChoices.contains(newLicense.getName())) {
-                    licenseChoices.remove(newLicense.getName());
-                    continue;
-                }
-                logger.info("Adding new License " + newLicense + " to " + this.getQualifiedName());
-                licenses.add(newLicense);
-            }
-        }
-        if (!licenseChoices.isEmpty()) {
-            logger.info("removing licenses: " + licenseChoices + " from " + this.getQualifiedName());
-            licenseChoices.forEach(licenseChoice -> this.licenseChoices.removeIf(licenseChoice1 -> licenseChoice1.getLicense().getName().equals(licenseChoice)));
-        }
+        //ToDo ignore licences for now
+//        // LICENSES
+//        var licenseRepository = LicenseRepository.getInstance();
+//        var licenseChoices = this.licenseChoices.stream().map(LicenseChoice::getLicense).map(License::getNameOrId).collect(Collectors.toList());
+//        if (this.model.getLicenses() != null) {
+//            for (var license : this.model.getLicenses()) {
+//                if (license.getName() == null) continue;
+//                var newLicense = licenseRepository.getLicense(license.getName(), license.getUrl());
+//                if (newLicense == null) {
+//                    logger.error("Could not resolve license for " + this.getQualifiedName() + ": " + license.getName());
+//                    continue;
+//                }
+//
+//                if (licenseChoices.stream().anyMatch(l -> l.equals(newLicense.getNameOrId()))) {
+//                    licenseChoices.removeIf(l -> l.equals(newLicense.getNameOrId()));
+//                    continue;
+//                }
+//                logger.info("Adding new License " + newLicense + " to " + this.getQualifiedName());
+//                this.licenseChoices.add(new MavenLicenseChoice(newLicense));
+//            }
+//        }
+//        if (!licenseChoices.isEmpty()) {
+//            logger.info("removing licenses: " + licenseChoices + " from " + this.getQualifiedName());
+//            licenseChoices.forEach(licenseChoice -> this.licenseChoices.removeIf(licenseChoice1 -> licenseChoice1.getLicense().getNameOrId().equals(licenseChoice)));
+//        }
 
         // VULNERABILITIES
         ReadVulnerabilityRepository.getInstance().updateReadVulnerabilities(this);

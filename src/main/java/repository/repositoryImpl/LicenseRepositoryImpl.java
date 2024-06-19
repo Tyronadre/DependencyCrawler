@@ -223,12 +223,17 @@ public class LicenseRepositoryImpl implements LicenseRepository {
             default -> new License() {
                 @Override
                 public String getId() {
-                    return name;
+                    return null;
                 }
 
                 @Override
                 public String getName() {
                     return name;
+                }
+
+                @Override
+                public String getNameOrId() {
+                    return getName();
                 }
 
                 @Override

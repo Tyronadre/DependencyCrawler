@@ -13,6 +13,7 @@ import exceptions.ArtifactBuilderException;
 import logger.Logger;
 import org.apache.maven.api.model.Model;
 import org.apache.maven.model.v4.MavenStaxReader;
+import org.slf4j.LoggerFactory;
 import repository.ComponentRepository;
 import repository.VulnerabilityRepository;
 import service.VersionRangeResolver;
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
  * Example BaseURL: <a href="https://repo1.maven.org/maven2/">Maven Central</a>
  */
 public class MavenComponentRepository implements ComponentRepository {
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(MavenComponentRepository.class);
     private final RepositoryType repositoryType;
     private final String baseUrl;
     private final HashMap<String, TreeSet<Component>> components;
@@ -112,28 +114,38 @@ public class MavenComponentRepository implements ComponentRepository {
         return versionResolver;
     }
 
+    HashMap<String, Integer> loadStatus = new HashMap<>();
     @Override
-    public boolean loadComponent(Component component) {
+    public int loadComponent(Component component) {
+        if (loadStatus.containsKey(component.getQualifiedName()) && loadStatus.get(component.getQualifiedName()) != 0) {
+            return loadStatus.get(component.getQualifiedName());
+        }
         if (this.repositoryType == MavenComponentRepositoryType.ROOT) {
-            return false;
+            loadStatus.put(component.getQualifiedName(), 1);
+            return 1;
         }
         try {
             component.setData("model", loadModel(URI.create(getDownloadLocation(component) + ".pom").toURL()));
             component.setData("hashes", loadHashes(getDownloadLocation(component) + ".jar"));
             component.setData("vulnerabilities", loadVulnerabilities(component));
-            return true;
+            loadStatus.put(component.getQualifiedName(), 0);
+            return 0;
         } catch (MalformedURLException | ArtifactBuilderException ignored) {
-
+            loadStatus.put(component.getQualifiedName(), 1);
+            return 1;
+        } catch (XMLStreamException e) {
+            logger.error("Could not parse POM file of component. " + e.getMessage());
+            loadStatus.put(component.getQualifiedName(), 2);
+            return 2;
         }
-        return false;
     }
 
-    private Model loadModel(URL url) throws ArtifactBuilderException {
+    private Model loadModel(URL url) throws ArtifactBuilderException, XMLStreamException {
         MavenStaxReader reader = new MavenStaxReader();
         Model model;
         try (InputStream inputStream = url.openStream()) {
             model = reader.read(inputStream);
-        } catch (IOException | XMLStreamException e) {
+        } catch (IOException e) {
             throw new ArtifactBuilderException("Could not load model from " + url + ". " + e);
         }
         return model;

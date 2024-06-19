@@ -46,9 +46,9 @@ public interface ComponentRepository {
      * Loads all data for a component.
      *
      * @param component the component request
-     * @return true if the component was loaded successfully, false otherwise
+     * @return 0 if the component was loaded successfully, 1 if the component was not found in the repository, 2 if the model could not be parsed
      */
-    boolean loadComponent(Component component);
+    int loadComponent(Component component);
 
     /**
      * Returns a component from the repository if it exists. Otherwise, returns null.

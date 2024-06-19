@@ -48,15 +48,16 @@ cron job ob neue vulerabilitys auf vex / cyclondx
 
 ## Bugs
 
-- [DONE] wie werden hier die versionen
+- [x] wie werden hier die versionen
   resolved https://repo1.maven.org/maven2/com/google/firebase/firebase-admin/8.1.0/firebase-admin-8.1.0.pom -> wird
   ignoriert da ich nicht weiß wie
 - [ ] SBOM ref muss scope mit drin haben.
-- [DONE] Es werden sachen doppel geladen im multithreading
+- [x] Es werden sachen doppel geladen im multithreading
+- [ ] main app ist als component drin
 
 ## Performance
 
-[DONE] multithreading
+- [x] multithreading
 
 ## TODOS
 
@@ -74,6 +75,7 @@ cron job ob neue vulerabilitys auf vex / cyclondx
 - [x] SPDX Lizenzen laden
 - [x] Wenn Component in mehreren Versionen, dann höchste Version nehmen
 - [x] Im input kann eine Component mehrfach vorkommen, hier höchste benutzte Version nehmen.
+- [ ] use data from maven parent when empty
 
 ## References
 
@@ -83,6 +85,12 @@ cron job ob neue vulerabilitys auf vex / cyclondx
 - (license analysis) https://www.mend.io
 - (license analysis) https://www.blackducksoftware.com
 - (license analysis) https://github.com/jk1/Gradle-License-Report
+
+## FRAGEN
+
+- https://cyclonedx.org/use-cases/#dependency-graph und spec stimmen bei dependecies nicht überein
+- (see above) steht dass man dependencies am besten nur eine ebene tief hinschreiben soll wegen cycle. wir können aber
+  in unserem fall keine cycle haben. soll ich das ändern?
 
 ## ARBEIT
 

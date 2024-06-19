@@ -1,9 +1,11 @@
 package logger;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ResourceBundle;
 
-public abstract class Logger {
+public abstract class Logger implements System.Logger {
     protected static boolean disabled = false;
     protected static boolean verbose = false;
 
@@ -29,9 +31,19 @@ public abstract class Logger {
 
     public abstract void error(String msg);
 
+    public void error(String msg, Exception e) {
+        if (verbose) {
+            error(msg + "\n" + Arrays.toString(e.getStackTrace()));
+        } else {
+            error(msg + " " + e);
+        }
+    }
+
     public abstract void success(String msg);
 
-    public abstract void normal(String s);
+    public void normal(String s) {
+        System.out.println(LogLevel.colorReset + s);
+    }
 
     public abstract void errorOverwriteLine(String msg, int index);
 
@@ -41,5 +53,35 @@ public abstract class Logger {
 
     public static void setDisabled(boolean disabled) {
         Logger.disabled = disabled;
+    }
+
+    // ------ Classes from LOGGER ------ //
+
+
+    @Override
+    public boolean isLoggable(Level level) {
+        return true;
+    }
+
+    @Override
+    public void log(Level level, ResourceBundle bundle, String msg, Throwable thrown) {
+        switch (level) {
+            case ALL -> normal(msg + thrown.getMessage());
+            case TRACE, DEBUG, INFO -> info(msg + thrown.getMessage());
+            case WARNING, ERROR -> error(msg + thrown.getMessage());
+            case OFF -> {
+            }
+        }
+    }
+
+    @Override
+    public void log(Level level, ResourceBundle bundle, String format, Object... params) {
+        switch (level) {
+            case ALL -> normal(Arrays.toString(params));
+            case TRACE, DEBUG, INFO -> info(Arrays.toString(params));
+            case WARNING, ERROR -> error(Arrays.toString(params));
+            case OFF -> {
+            }
+        }
     }
 }

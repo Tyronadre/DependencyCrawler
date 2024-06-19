@@ -28,20 +28,30 @@ public class Main {
     private static final Logger logger = Logger.of("Main");
 
     public static void main(String[] args) {
-        logger.normal("Starting with args: " + Arrays.toString(args));
+        args = new String[]{"--input", "generated/output_1.sbom.json", "--input-type", "sbom", "--output", "generated/output_1_renew", "--output-type", "sbom", "spdx", "vex", "tree", "--verbose"};
+//        args = new String[]{"--input", "src/main/resources/input_1.json", "--output", "generated/output_1", "--output-type", "sbom", "spdx", "vex", "tree", "--verbose"};
 
         HashMap<String, String> argMap = new HashMap<>();
-        var lastKey = "";
+        String lastKey = null;
         for (String arg : args) {
             if (arg.startsWith("--")) {
                 argMap.put(arg.substring(2), "");
                 lastKey = arg.substring(2);
             } else {
+                if (lastKey == null) {
+                    logger.error("Invalid argument: " + arg);
+                    return;
+                }
                 if (argMap.get(lastKey).isEmpty())
                     argMap.put(lastKey, arg);
                 else
                     argMap.put(lastKey, argMap.get(lastKey) + ";" + arg);
             }
+        }
+        var illegalArgs = argMap.keySet().stream().filter(s -> !(s.equals("input") || s.equals("output") || s.equals("input-type") || s.equals("output-type") || s.equals("help") || s.equals("verbose") || s.equals("no-log"))).toList();
+        if (!illegalArgs.isEmpty()) {
+            logger.error("Illegal Arguments: " + illegalArgs);
+            return;
         }
 
         if (argMap.containsKey("help") || argMap.isEmpty()) {
@@ -64,19 +74,14 @@ public class Main {
 
         var inputFile = argMap.get("input");
         String inputType = null;
-        if (argMap.containsKey("inputType")) {
-            inputType = argMap.get("inputType");
+        if (argMap.containsKey("input-type")) {
+            inputType = argMap.get("input-type");
         }
 
         var outputFile = argMap.getOrDefault("output", "output");
         var outputTypes = new ArrayList<String>();
-        if (argMap.containsKey("outputType")) {
-            outputTypes.addAll(Arrays.asList(argMap.get("outputType").split(";")));
-        }
-
-        if (!Objects.equals(inputType, "vex")) {
-            logger.info("Loading license repository...");
-            LicenseRepository.getInstance(); //preload license repository
+        if (argMap.containsKey("output-type")) {
+            outputTypes.addAll(Arrays.asList(argMap.get("output-type").split(";")));
         }
 
         if (outputTypes.isEmpty()) {
@@ -87,6 +92,11 @@ public class Main {
             } else {
                 outputTypes.add(inputType);
             }
+        }
+
+        if (!Objects.equals(inputType, "vex")) {
+            logger.info("Loading license repository...");
+            LicenseRepository.getInstance(); //preload license repository
         }
 
         switch (inputType) {
@@ -108,12 +118,7 @@ public class Main {
         }
 
 
-//        var in1 = readInputFile("src/main/resources/input_0.json");
-//        crawlComponent(in1);
-//        buildSBOMFile(in1, "generated/output_0");
-//        buildSPDXFile(in1, "generated/output_0");
-//        buildTreeFile(in1, "generated/output_0", false);
-//        buildVexFile(in1, "generated/output_0");
+
 //
 //        var in2 = readInputFile("input_1.json");
 //        crawlComponent(in2);
@@ -218,6 +223,8 @@ public class Main {
             case "sbom" -> new MavenSBOMBuilder();
             case "spdx" -> new SPDXBuilder();
             case "vex" -> new VexBuilder();
+            case "tree-all" -> new TreeBuilder(true);
+            case "tree" -> new TreeBuilder(false);
             default -> {
                 logger.error(outputType + " is not a valid outputFormat");
                 throw new IllegalArgumentException(outputType + " is not a valid outputFormat");

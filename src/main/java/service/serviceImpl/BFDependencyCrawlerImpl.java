@@ -29,6 +29,7 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
 
         double timeTaken = (System.currentTimeMillis() - time) / 1000.0;
         var format = new DecimalFormat("0.##");
+
         logger.success("Crawling finished in " + timeTaken + "s. (" + format.format(timeTaken / numberOfComponents) + "s per component)");
     }
 
@@ -38,7 +39,7 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
 
         AtomicInteger loadCount = new AtomicInteger();
         AtomicInteger failCount = new AtomicInteger();
-        ExecutorService executorService = Executors.newFixedThreadPool(10);
+        ExecutorService executorService = Executors.newFixedThreadPool(20);
         CompletionService<Void> completionService = new ExecutorCompletionService<>(executorService);
         var queue = new ConcurrentLinkedDeque<>(parentComponent.getDependenciesFiltered());
         AtomicInteger activeTasks = new AtomicInteger(0);
@@ -80,7 +81,7 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
                             }
 
                     } catch (Exception e) {
-                        logger.error("Failed to resolve dependency " + dependency + ": " + e.getMessage());
+                        logger.error("Failed to resolve dependency " + dependency, e);
                         failCount.getAndIncrement();
                     } finally {
                         activeTasks.decrementAndGet();
@@ -125,6 +126,10 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
         logger.info("Applying overwritten versions...");
         updateDependenciesToNewestVersion(parentComponent);
 
+        logger.success("Loaded " + loadCount.get() + " components.");
+        if (failCount.get() > 0) {
+            logger.error("Failed to load " + failCount.get() + " components.");
+        }
         return loadCount.get() + failCount.get();
     }
 
