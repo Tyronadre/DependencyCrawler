@@ -1,6 +1,7 @@
 package service.serviceImpl;
 
 import data.Component;
+import data.Dependency;
 import data.ExternalReference;
 import data.Hash;
 import data.LicenseChoice;
@@ -11,7 +12,12 @@ import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
 import org.spdx.library.SpdxConstants;
 import org.spdx.library.Version;
-import org.spdx.library.model.*;
+import org.spdx.library.model.ReferenceType;
+import org.spdx.library.model.Relationship;
+import org.spdx.library.model.SpdxCreatorInformation;
+import org.spdx.library.model.SpdxDocument;
+import org.spdx.library.model.SpdxElement;
+import org.spdx.library.model.SpdxPackage;
 import org.spdx.library.model.enumerations.ChecksumAlgorithm;
 import org.spdx.library.model.enumerations.Purpose;
 import org.spdx.library.model.enumerations.ReferenceCategory;
@@ -23,7 +29,14 @@ import service.DocumentBuilder;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 
 public class SPDXBuilder implements DocumentBuilder<Component> {
@@ -120,6 +133,9 @@ public class SPDXBuilder implements DocumentBuilder<Component> {
     HashMap<Component, SpdxElement> buildSPDXElements = new HashMap<>();
 
     private SpdxElement buildSPDXElement(Component component) throws SPDXBuilderException {
+        if (component == null)
+            System.out.println("COMPONENT IS NULL");
+
         if (buildSPDXElements.containsKey(component)) {
             return buildSPDXElements.get(component);
         }
@@ -187,9 +203,9 @@ public class SPDXBuilder implements DocumentBuilder<Component> {
     private Collection<Relationship> buildAllDependencies(Component component) {
         var list = new ArrayList<Relationship>();
 
-        for (var dependecy : component.getDependenciesFiltered()) {
+        for (var dependencyComponent : component.getDependenciesFiltered().stream().map(Dependency::getComponent).filter(Objects::nonNull).toList()) {
             try {
-                list.add(new Relationship(store, uri, UUID.randomUUID().toString(), copyManager, true).setRelationshipType(RelationshipType.DEPENDS_ON).setRelatedSpdxElement(buildSPDXElement(dependecy.getComponent())));
+                list.add(new Relationship(store, uri, UUID.randomUUID().toString(), copyManager, true).setRelationshipType(RelationshipType.DEPENDS_ON).setRelatedSpdxElement(buildSPDXElement(dependencyComponent)));
             } catch (InvalidSPDXAnalysisException | SPDXBuilderException e) {
                 throw new RuntimeException(e);
             }

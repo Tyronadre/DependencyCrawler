@@ -70,11 +70,6 @@ public class MavenDependency implements Dependency {
         if (component != null) name = component.getQualifiedName();
         else if (version != null)  name = groupId + ":" + artifactId + ":" + version;
         else name = groupId + ":" + artifactId + ":" + versionConstraints;
-
-//        if (scope != null && !scope.isEmpty()) {
-//            name += "_" + scope;
-//        }
-
         return name;
     }
 
@@ -131,12 +126,12 @@ public class MavenDependency implements Dependency {
 
     @Override
     public void setVersion(Version version) {
-        this.version = (MavenVersion) version;
+        this.version = version;
     }
 
     @Override
     public void setComponent(Component component) {
-        this.component = (MavenComponent) component;
+        this.component = component;
         this.version = component.getVersion();
     }
 

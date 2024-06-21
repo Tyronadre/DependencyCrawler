@@ -2,19 +2,7 @@
 
 ## SPDX
 
-- Json format
-    - "SPDXID" : id?
-    - "spdxVersion" : "SPDX-2.3"
-    - "creationInfo" : {}
-        - "comment" : ?
-        - created: ?
-        - creators: []
-            - "Tool: ?", "Organization: ?", "Person: ?"
-        - licenseListVersion: ?
-    - name: ?
-    - dataLicense: ?
-    - comment: ?
-    - externalDocumentRefs: []
+SPDX als eigenes proto file schreiben?
 
 ## NATIVE LIBRARY
 
@@ -51,31 +39,34 @@ cron job ob neue vulerabilitys auf vex / cyclondx
 - [x] wie werden hier die versionen
   resolved https://repo1.maven.org/maven2/com/google/firebase/firebase-admin/8.1.0/firebase-admin-8.1.0.pom -> wird
   ignoriert da ich nicht weiß wie
-- [ ] SBOM ref muss scope mit drin haben.
 - [x] Es werden sachen doppel geladen im multithreading
-- [ ] main app ist als component drin
+- [ ] main app ist als component in sbom drin
 
 ## Performance
 
 - [x] multithreading
+- [] better reading from data?
 
 ## TODOS
 
-- [ ] https://jitpack.io als source?
+- [ ] https://jitpack.io als source. (zip runterladen)
 - [x] vex files output
 - [ ] read spdx file
 - [x] update loaded spdx file
 - [x] read sbom file
-- [ ] conan repo link dependency (native)
-- [ ] android native dependency
-- [ ] license collision
+- [ ] conan repo link dependency (native). iwi api link rausfinden und parsen.
+- [ ] android native dependency. version is tag
+- [ ] license collision. von allen (auch dependencies)
 - [x] read & update vex file
-- [ ] read and update vulnerabilitys in spdx file
 - [x] better gradlew script
 - [x] SPDX Lizenzen laden
 - [x] Wenn Component in mehreren Versionen, dann höchste Version nehmen
 - [x] Im input kann eine Component mehrfach vorkommen, hier höchste benutzte Version nehmen.
-- [ ] use data from maven parent when empty
+- [x] use data from maven parent when empty
+- [ ] version resolver recursive
+- [ ] dependency tree sbom nur tiefe 1
+- [ ] user möglichkeit geben pom files zu spezifizieren, für repos die nicht geladen werden konnten im zweiten durchgang
+- [ ] 
 
 ## References
 
@@ -88,15 +79,24 @@ cron job ob neue vulerabilitys auf vex / cyclondx
 
 ## FRAGEN
 
-- https://cyclonedx.org/use-cases/#dependency-graph und spec stimmen bei dependecies nicht überein
+- https://cyclonedx.org/use-cases/#dependency-graph und spec stimmen bei dependecies nicht überein **spec**
 - (see above) steht dass man dependencies am besten nur eine ebene tief hinschreiben soll wegen cycle. wir können aber
-  in unserem fall keine cycle haben. soll ich das ändern?
+  in unserem fall keine cycle haben. soll ich das ändern? **ja**
+- Android native libraries, version in tag? **version ist tag**
+- License collision in den dependencies, oder nur auf top level? **auf allen leveln** **nur große lizenzen**
+- bei conan repos, das python file aus dem git parsen? (gibt es ne api? ich habe keine gefunden) **nach api version
+  suchen via web**
+- jitpack als source? **ja, zip runterladen, entpacken, LICENCE file, POM file usw analysiren**
+- in welcher sprache schreiben **english**
 
 ## ARBEIT
 
 ~ 30 Seiten zusätzlich bilder u.ä
+~ englisch!
 
 ### INTRODUCTION
+
+einführung für person die sich nicht auskennt
 
 ### BACKGROUND
 
