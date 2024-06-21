@@ -61,12 +61,6 @@ public interface ComponentRepository {
      */
     Component getComponent(String groupId, String artifactId, Version version);
 
-    /**
-     * @return the type of the repository
-     */
-    RepositoryType getType();
-
-
     String getDownloadLocation(Component component);
 
     static TreeSet<Component> getLoadedComponents(String groupName, String artifactName){

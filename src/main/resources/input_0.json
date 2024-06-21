@@ -3,13 +3,18 @@
     "name": "app_0",
     "version": "1.0.0",
     "groupId": "de.henrik",
-    "type": "JAVA",
+    "type": "MAVEN",
     "dependencies": [
-
       {
         "groupId": "ch.qos.logback",
         "name": "logback-classic",
-        "version": "1.4.11"
+        "version": "1.4.11",
+        "type": "MAVEN"
+      },
+      {
+        "name": "mfast",
+        "version": "1.2.2",
+        "type": "CONAN"
       }
     ]
   },

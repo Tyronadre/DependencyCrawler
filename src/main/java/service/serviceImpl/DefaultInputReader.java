@@ -2,6 +2,8 @@ package service.serviceImpl;
 
 import com.google.protobuf.util.JsonFormat;
 import data.Component;
+import data.Version;
+import data.internalData.ConanDependency;
 import data.internalData.MavenComponent;
 import data.internalData.MavenDependency;
 import data.internalData.MavenVersion;
@@ -38,7 +40,7 @@ public class DefaultInputReader implements DocumentReader<Component> {
         logger.info("Reading file...");
         //check if the input application is a java application
         var application = dependencyCrawlerInput.getApplication();
-        if (application.getType() != DependencyCrawlerInput.Type.JAVA) {
+        if (application.getType() != DependencyCrawlerInput.Type.MAVEN) {
             logger.error("The input application is not a java application.");
             throw new IllegalArgumentException("The input application is not a java application.");
         }
@@ -49,8 +51,28 @@ public class DefaultInputReader implements DocumentReader<Component> {
 
         //read the dependencies
         for (var dependency : application.getDependenciesList()) {
-            var mavenDependency = new MavenDependency(dependency.getGroupId(), dependency.getName(), new MavenVersion(dependency.getVersion()), parentArtifact);
-            parentArtifact.addDependency(mavenDependency);
+            parentArtifact.addDependency(switch (dependency.getType()) {
+                case OTHER -> {
+                    logger.error("dependency type is specified as 'OTHER'. Skipping not supported" + dependency.getGroupId() + ":" + dependency.getName() + ":" + dependency.getVersion());
+                    yield null;
+                }
+                case MAVEN ->
+                        new MavenDependency(dependency.getGroupId(), dependency.getName(), new MavenVersion(dependency.getVersion()), parentArtifact);
+                case CONAN ->
+                        new ConanDependency(dependency.getName(), Version.of(dependency.getVersion()), parentArtifact);
+                case ANDROID_NATIVE -> {
+                    logger.error("dependency type android native not supported. Skipping not supported " + dependency.getGroupId() + ":" + dependency.getName() + ":" + dependency.getVersion());
+                    yield null;
+                }
+                case JITPACK -> {
+                    logger.error("dependency type jitpack not supported. Skipping not supported " + dependency.getGroupId() + ":" + dependency.getName() + ":" + dependency.getVersion());
+                    yield null;
+                }
+                case UNRECOGNIZED -> {
+                    logger.error("dependency type not recognized (" + dependency.getType() + "). Skipping not supported " + dependency.getGroupId() + ":" + dependency.getName() + ":" + dependency.getVersion());
+                    yield null;
+                }
+            });
         }
 
         return parentArtifact;

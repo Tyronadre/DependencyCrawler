@@ -198,11 +198,6 @@ public class MavenComponentRepository implements ComponentRepository {
     }
 
     @Override
-    public RepositoryType getType() {
-        return this.repositoryType;
-    }
-
-    @Override
     public String toString() {
         return new StringJoiner(", ", MavenComponentRepository.class.getSimpleName() + "[", "]").add("'" + baseUrl + "'").toString();
     }

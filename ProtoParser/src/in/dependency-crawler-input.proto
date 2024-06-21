@@ -9,11 +9,13 @@ message Dependency {
   Type type = 4; // The type of the dependency
 }
 
-// The type of the dependency
+// The type of the dependency or application
 enum Type {
   OTHER = 0; // Default value, or if the type is unknown
-  JAVA = 1; // The dependency is a Java dependency
-  C = 2; // The dependency is a C/C++/C# dependency
+  MAVEN = 1; // The dependency is a Java dependency
+  CONAN = 2; // The dependency is a C/C++/C# dependency
+  ANDROID_NATIVE = 3; // The dependency is an Android native dependency
+  JITPACK = 4;
 }
 
 // The application to analyze
@@ -33,6 +35,7 @@ message Input {
 }
 
 // A parameter to pass to the analysis
+// Supported Paramters: additional POM files: key: "POM_FILE:groupId:artifactId:version" value: "path/to/pom.pom". The path needs to end with .pom
 message Parameter {
   string key = 1; // The key of the parameter
   string value = 2; // The value of the parameter

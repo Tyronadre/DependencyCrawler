@@ -29,7 +29,7 @@ public class Main {
 
     public static void main(String[] args) {
 //        args = new String[]{"--input", "generated/output_1.spdx.json", "--input-type", "spdx", "--output", "generated/output_1_renewFromSPDX", "--output-type", "sbom", "spdx", "vex", "tree", "--verbose"};
-        args = new String[]{"--input", "src/main/resources/input_2.json", "--output", "generated/output_2", "--output-type", "sbom", "spdx", "vex", "tree", "--verbose"};
+        args = new String[]{"--input", "src/main/resources/input_0.json", "--output", "generated/output_0", "--output-type", "sbom", "spdx", "vex", "tree", "--verbose"};
 
         HashMap<String, String> argMap = new HashMap<>();
         String lastKey = null;

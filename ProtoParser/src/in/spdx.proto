@@ -1,0 +1,99 @@
+syntax = "proto3";
+package spdx.sbom;
+import "google/protobuf/timestamp.proto";
+
+//An SPDX document is a collection of information about software components, a SBOM
+message SPDX {
+  //the SPDX ID of the document
+  string SPDXID = 1;
+  //the SPDX version of the document
+  string spdxVersion = 2;
+  //the creation information of the document
+  CreationInfo creationInfo = 3;
+  //the name of the document
+  string name = 4;
+  //the namespace of the document, unique for each different document.
+  string documentNamespace = 5;
+  //the data license of the document
+  string dataLicense = 6;
+  //the packages in the document
+  repeated Package pacakges = 7;
+  //the relationships between the packages in the document
+  repeated Relationship relationships = 8;
+}
+
+//information about the document
+message CreationInfo {
+  google.protobuf.Timestamp created = 1;
+  //the creators of the document
+  repeated string creators = 2;
+  //what spdx license list was used
+  string licenseListVersion = 3;
+  //the spdx ids of the components that this document describes
+  repeated string documentDescribes = 4;
+  optional string comment = 5;
+}
+
+//a software package
+message Package {
+  //the SPDX ID of the package
+  string SPDXID = 1;
+  //the name of the package
+  string name = 2;
+  //the version of the package
+  string versionInfo = 3;
+  //the download location of the package
+  string downloadLocation = 4;
+  //the originator of the package, e.g. maven
+  string originator = 5;
+  //the spdx id of the license declared by the package
+  string licenseDeclared = 6;
+  //the checksums of the package
+  repeated Checksum checksums = 7;
+  //the external references of the package
+  repeated ExternalReference externalRefs = 8;
+  PrimaryPackagePurposeType primaryPackagePurpose = 9;
+}
+
+message Checksum {
+  //the algorithm used to generate the checksum
+  string algorithm = 1;
+  //the value of the checksum
+  string checksumValue = 2;
+}
+
+message ExternalReference {
+  //the category of the external reference
+  ReferenceCategory referenceCategory = 1;
+  //the type of the external reference
+  string referenceType = 2;
+  //the location of the external reference, e.g. a url
+  string referenceLocator = 3;
+}
+
+enum ReferenceCategory {
+  OTHER_REFERENCE_CATEGORY = 0;
+  PACKAGE_MANAGER = 1;
+  VERSION_CONTROL_SYSTEM = 2;
+  ISSUE_TRACKER = 3;
+  WEBSITE = 4 ;
+}
+
+enum PrimaryPackagePurposeType{
+  OTHER_PACKAGE_PURPOSE = 0;
+  LIBRARY = 1;
+  APPLICATION = 2;
+}
+
+// a relationship between two packages
+message Relationship {
+  string spdxElementId = 1;
+  RelationshipType relationship = 2;
+  string relatedSpdxElement = 3;
+}
+
+// the type of relationship between two packages
+enum RelationshipType {
+  DESCRIBES = 0;
+  DEPENDS_ON = 1;
+}

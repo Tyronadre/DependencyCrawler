@@ -55,11 +55,6 @@ public class ReadComponentRepository implements ComponentRepository {
     }
 
     @Override
-    public RepositoryType getType() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public String getDownloadLocation(Component component) {
         return "";
     }
