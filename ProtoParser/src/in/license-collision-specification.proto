@@ -8,10 +8,14 @@ message LicenseCollisionSpecification {
 
 // A License Collision
 message LicenseCollision {
-  // The spdx id of the parent component
+  // The spdx id of the parent component or "ANY" if collides with any license
   string spdxIDParent = 1;
   // The spdx id of the child component
   string spdxIDChild = 2;
+  // If this collision is also true for if the parent is an application.
+  bool forApplication = 3;
   // The cause of the license collision
-  optional string cause = 3;
+  optional string cause = 4;
+  // Only if the parent is an exclusion, the parent exclusion
+  optional string parentExclusion = 5;
 }

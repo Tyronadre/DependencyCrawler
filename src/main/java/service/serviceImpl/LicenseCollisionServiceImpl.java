@@ -1,5 +1,6 @@
 package service.serviceImpl;
 
+import com.google.gson.JsonParser;
 import com.google.protobuf.util.JsonFormat;
 import data.Component;
 import data.License;
@@ -11,6 +12,7 @@ import service.LicenseCollisionService;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -122,6 +124,40 @@ public class LicenseCollisionServiceImpl implements LicenseCollisionService {
 
     private void createLicenseCollisions(File file) {
         // TODO: Implement this method
+        var dir = new File("data");
+        if (!dir.exists()) {
+            dir.mkdir();
+        }
+
+        var builder = LicenseCollisionSpecificationOuterClass.LicenseCollisionSpecification.newBuilder();
+
+        for (var coll : this.getPredefinedLicenseCollisions()) {
+            this.collisions.put(coll.spdxIdChild(), coll);
+            builder.addLicenseCollisions(LicenseCollisionSpecificationOuterClass.LicenseCollision.newBuilder()
+                    .setSpdxIDParent(coll.spdxIdParent())
+                    .setSpdxIDChild(coll.spdxIdChild())
+                    .setCause(coll.cause())
+            );
+        }
+
+        try {
+            JsonFormat.printer().appendTo(builder.build(), new FileWriter(file));
+        } catch (Exception e) {
+            logger.error("Could not create license collisions file.", e);
+        }
+    }
+
+    private List<Collision> getPredefinedLicenseCollisions() {
+        return List.of(
+                new Collision("ANY", "GPL-1.0-only", true,  "Incompatible: MIT is not compatible with GPL-1.0-only as GPL-1.0-only is a copyleft license"),
+                new Collision("ANY", "GPL-1.0-or-later",  true, "Incompatible: MIT is not compatible with GPL-1.0-or-later as GPL-1.0-or-later is a copyleft license"),
+                new Collision("ANY", "GPL-2.0-only",  true, "Incompatible: MIT is not compatible with GPL-2.0-only as GPL-2.0-only is a copyleft license"),
+                new Collision("ANY", "GPL-2.0-or-later",  true, "Incompatible: MIT is not compatible with GPL-2.0-or-later as GPL-2.0-or-later is a copyleft license"),
+                new Collision("ANY", "GPL-3.0-only",  true, "Incompatible: MIT is not compatible with GPL-3.0-only as GPL-3.0-only is a copyleft license"),
+                new Collision("ANY", "GPL-3.0-or-later",  true, "Incompatible: MIT is not compatible with GPL-3.0-or-later as GPL-3.0-or-later is a copyleft license"),
+                new Collision("ANY", "LGPL-2.0-only",  false, "Incompatible: MIT is not compatible with LGPL-2.0-only as LGPL-2.0-only is a weak copyleft license"),
+                new Collision("ANY", "LGPL-2.1-only",  false, "Incompatible: MIT is not compatible with LGPL-2.1-only as LGPL-2.1-only is a weak copyleft license"),
+        )
     }
 
     public String areLicensesCompatible(License parentLicense, License childLicense, boolean isParentApplication) {
@@ -247,6 +283,6 @@ public class LicenseCollisionServiceImpl implements LicenseCollisionService {
 
     }
 
-    record Collision(String spdxIdParent, String spdxIdChild, String cause) {
+    record Collision(String spdxIdParent, String spdxIdChild, Boolean forApplication, String cause) {
     }
 }
