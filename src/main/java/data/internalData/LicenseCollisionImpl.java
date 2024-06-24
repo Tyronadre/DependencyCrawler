@@ -4,43 +4,56 @@ import data.Component;
 import data.License;
 import data.LicenseCollision;
 
+import java.util.StringJoiner;
+
 public class LicenseCollisionImpl implements LicenseCollision {
-    License license1;
-    Component component1;
-    License license2;
-    Component component2;
+    License parentLicense;
+    Component parentComponent;
+    License childLicense;
+    Component childComponent;
     String cause;
 
-    public LicenseCollisionImpl(License license1, Component component1, License license2, Component component2, String cause) {
-        this.license1 = license1;
-        this.component1 = component1;
-        this.license2 = license2;
-        this.component2 = component2;
+    public LicenseCollisionImpl(License parentLicense, Component parentComponent, License childLicense, Component childComponent, String cause) {
+        this.parentLicense = parentLicense;
+        this.parentComponent = parentComponent;
+        this.childLicense = childLicense;
+        this.childComponent = childComponent;
         this.cause = cause;
     }
 
     @Override
-    public License getLicense1() {
-        return license1;
+    public License getParentLicense() {
+        return parentLicense;
     }
 
     @Override
-    public Component getComponent1() {
-        return component1;
+    public Component getParent() {
+        return parentComponent;
     }
 
     @Override
-    public License getLicense2() {
-        return license2;
+    public License getChildLicense() {
+        return childLicense;
     }
 
     @Override
-    public Component getComponent2() {
-        return component2;
+    public Component getChild() {
+        return childComponent;
     }
 
     @Override
     public String getCause() {
         return cause;
+    }
+
+    @Override
+    public String toString() {
+        return new StringJoiner(", ", LicenseCollisionImpl.class.getSimpleName() + "[", "]")
+                .add("parentLicense=" + parentLicense.getNameOrId())
+                .add("parentComponent=" + parentComponent.getQualifiedName())
+                .add("childLicense=" + childLicense.getNameOrId())
+                .add("childComponent=" + childComponent.getQualifiedName())
+                .add("cause='" + cause + "'")
+                .toString();
     }
 }

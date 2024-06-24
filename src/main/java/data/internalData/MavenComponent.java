@@ -15,14 +15,14 @@ import org.apache.maven.api.model.DependencyManagement;
 import org.apache.maven.api.model.Model;
 import repository.ComponentRepository;
 import repository.LicenseRepository;
-import repository.repositoryImpl.MavenComponentRepositoryType;
+import repository.VulnerabilityRepository;
+import repository.repositoryImpl.MavenComponentRepository;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * An artifact in a Maven repository.
@@ -34,21 +34,20 @@ public class MavenComponent implements Component {
     String artifactId;
     Version version;
     List<Dependency> dependencies = new ArrayList<>();
-    ComponentRepository repository;
+    ComponentRepository repository = MavenComponentRepository.getInstance();
     Model model;
     Component parent;
     List<Hash> hashes = new ArrayList<>();
     boolean loaded = false;
     boolean isRoot = false;
     private List<Vulnerability> vulnerabilities;
-    private List<LicenseChoice> licenseChoices;
+    private List<LicenseChoice> licenseChoices = new ArrayList<>();
     private List<Person> authors;
 
-    public MavenComponent(String groupId, String artifactId, Version version, ComponentRepository repository) {
+    public MavenComponent(String groupId, String artifactId, Version version) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
-        this.repository = repository;
     }
 
     @Override
@@ -68,7 +67,7 @@ public class MavenComponent implements Component {
 
     @Override
     public String getQualifiedName() {
-        return groupId.replace(",", ":") + ":" + artifactId + ":" + version.getVersion();
+        return groupId.replace(",", ":") + ":" + artifactId + ":" + version.version();
     }
 
     @Override
@@ -112,7 +111,7 @@ public class MavenComponent implements Component {
 
     @Override
     public String getPurl() {
-        return "pkg:maven/" + groupId + "/" + artifactId + "@" + version.getVersion();
+        return "pkg:maven/" + groupId + "/" + artifactId + "@" + version.version();
     }
 
     @Override
@@ -146,19 +145,9 @@ public class MavenComponent implements Component {
         }
 
         var start = System.currentTimeMillis();
-        logger.info("Loading component: " + this.getQualifiedName());
 
-
-        if (this.repository != null)
-            if (this.repository.loadComponent(this) == 2)
-                return;
-        //if we dont have a model we try other repositories
-        if (model == null) MavenComponentRepositoryType.tryLoadComponent(this);
-        //if we still dont have the model, we cant load the component
-        if (model == null) {
-            logger.error("Could not load component: " + this.getQualifiedName() + " [no model] (" + (System.currentTimeMillis() - start) + "ms)");
-            return;
-        }
+        var loadingState = MavenComponentRepository.getInstance().loadComponent(this);
+        if (loadingState != 0) return;
 
 
         // DEPENDENCIES
@@ -172,7 +161,7 @@ public class MavenComponent implements Component {
 
         // PARENT
         if (this.model.getParent() != null) {
-            this.parent = this.repository.getComponent(this.model.getParent().getGroupId(), this.model.getParent().getArtifactId(), new MavenVersion(this.model.getParent().getVersion()));
+            this.parent = this.repository.getComponent(this.model.getParent().getGroupId(), this.model.getParent().getArtifactId(), new VersionImpl(this.model.getParent().getVersion()), null);
         } else {
             this.parent = null;
         }
@@ -207,8 +196,12 @@ public class MavenComponent implements Component {
             this.properties.add(Property.of(entry.getKey(), entry.getValue()));
         }
 
+        //VULNERABILITIES
+        this.vulnerabilities = VulnerabilityRepository.getInstance().getVulnerabilities(this);
+
+
         loaded = true;
-        logger.success("Loaded component: " + this.getQualifiedName() + " (" + (System.currentTimeMillis() - start) + "ms)");
+        logger.success("Parsed component: " + this.getQualifiedName() + " (" + (System.currentTimeMillis() - start) + "ms)");
 
     }
 
@@ -223,7 +216,7 @@ public class MavenComponent implements Component {
     }
 
     @Override
-    public String getName() {
+    public String getArtifactId() {
         return this.artifactId;
     }
 
@@ -285,30 +278,6 @@ public class MavenComponent implements Component {
         return this.repository.getDownloadLocation(this);
     }
 
-    @Override
-    public List<Dependency> getDependenciesFlatFiltered() {
-        return this.dependencies.stream()
-                .filter(Dependency::shouldResolveByScope)
-                .filter(Dependency::isNotOptional)
-                .flatMap(dependency -> Stream.concat(
-                        Stream.of(dependency),
-                        dependency.getComponent() != null && dependency.getComponent().isLoaded()
-                                ? dependency.getComponent().getDependenciesFlatFiltered().stream()
-                                : Stream.empty()
-                ))
-                .sorted(Comparator.comparing(Dependency::getQualifiedName))
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<Component> getDependencyComponentsFlatFiltered() {
-        return this.getDependenciesFlatFiltered().stream()
-                .distinct()
-                .map(Dependency::getComponent)
-                .filter(Objects::nonNull)
-                .sorted(Comparator.comparing(Component::getQualifiedName))
-                .toList();
-    }
 
     @Override
     public String getPublisher() {
@@ -348,6 +317,7 @@ public class MavenComponent implements Component {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void setData(String key, Object value) {
         switch (key) {
             case "model" -> setModel((Model) value);
@@ -360,7 +330,7 @@ public class MavenComponent implements Component {
             }
             case "removeDependencyIfOtherVersionPresent" -> {
                 var dependency = (Dependency) value;
-                if (this.dependencies.stream().anyMatch(d -> d.getComponent().getGroup().equals(dependency.getComponent().getGroup()) && d.getComponent().getName().equals(dependency.getComponent().getName()) && !d.getComponent().getVersion().equals(dependency.getComponent().getVersion()))) {
+                if (this.dependencies.stream().anyMatch(d -> d.getComponent().getGroup().equals(dependency.getComponent().getGroup()) && d.getComponent().getArtifactId().equals(dependency.getComponent().getArtifactId()) && !d.getComponent().getVersion().equals(dependency.getComponent().getVersion()))) {
                     this.dependencies.remove(dependency);
                     logger.info("Removed dependency " + dependency + " from " + this.getQualifiedName() + " because newer version is present.");
                 }
@@ -395,9 +365,6 @@ public class MavenComponent implements Component {
 
     @Override
     public int hashCode() {
-        int result = Objects.hashCode(groupId);
-        result = 31 * result + Objects.hashCode(artifactId);
-        result = 31 * result + Objects.hashCode(version);
-        return result;
+        return Objects.hash(groupId, artifactId, version);
     }
 }

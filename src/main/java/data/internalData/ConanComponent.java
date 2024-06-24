@@ -1,17 +1,30 @@
 package data.internalData;
 
-import data.*;
+import com.google.gson.JsonObject;
+import data.Component;
+import data.Dependency;
+import data.ExternalReference;
+import data.Hash;
+import data.LicenseChoice;
+import data.Organization;
+import data.Person;
+import data.Property;
+import data.Version;
+import data.Vulnerability;
 import repository.ComponentRepository;
-import repository.repositoryImpl.ConanRepository;
+import repository.LicenseRepository;
+import repository.repositoryImpl.ConanComponentRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ConanComponent implements Component {
-    String name ;
+    String name;
     Version version;
     boolean loaded = false;
-    List<Dependency> dependencies;
-    List<LicenseChoice> licenseChoices;
+    List<Dependency> dependencies = new ArrayList<>();
+    List<LicenseChoice> licenseChoices = new ArrayList<>();
+    JsonObject jsonData = null;
 
     public ConanComponent(String name, Version version) {
         this.name = name;
@@ -20,8 +33,23 @@ public class ConanComponent implements Component {
 
     @Override
     public void loadComponent() {
-        if (!loaded && ConanRepository.getInstance().loadComponent(this) == 0) {
+        if (!loaded && ConanComponentRepository.getInstance().loadComponent(this) == 0) {
+
+
+            //DEPENDENCIES
+            for (var dependencyO : this.jsonData.get("use_it").getAsJsonObject().get("requires").getAsJsonArray()) {
+                var dSplit = dependencyO.getAsString().split("/");
+                this.dependencies.add(new ConanDependency(dSplit[0], Version.of(dSplit[1]), this));
+            }
+
+            //LICENSE
+            for (var licenseES : this.jsonData.get("licenses").getAsJsonObject().entrySet()) {
+                var licenseName = licenseES.getKey();
+                this.licenseChoices.add(LicenseChoice.of(LicenseRepository.getInstance().getLicense(licenseName, null), null, null));
+            }
+
             this.loaded = true;
+
         }
     }
 
@@ -32,32 +60,32 @@ public class ConanComponent implements Component {
 
     @Override
     public List<Dependency> getDependencies() {
-        return List.of();
+        return dependencies;
     }
 
     @Override
     public List<Dependency> getDependenciesFiltered() {
-        return List.of();
+        return dependencies;
     }
 
     @Override
     public String getQualifiedName() {
-        return "";
+        return name + ":" + version.version();
     }
 
     @Override
     public String getGroup() {
-        return "";
+        return null;
     }
 
     @Override
-    public String getName() {
-        return "";
+    public String getArtifactId() {
+        return name;
     }
 
     @Override
     public Version getVersion() {
-        return null;
+        return version;
     }
 
     @Override
@@ -72,27 +100,27 @@ public class ConanComponent implements Component {
 
     @Override
     public List<Person> getContributors() {
-        return List.of();
-    }
-
-    @Override
-    public String getDescription() {
-        return "";
-    }
-
-    @Override
-    public ComponentRepository getRepository() {
         return null;
     }
 
     @Override
+    public String getDescription() {
+        return jsonData == null ? null : jsonData.get("description").getAsString();
+    }
+
+    @Override
+    public ComponentRepository getRepository() {
+        return ConanComponentRepository.getInstance();
+    }
+
+    @Override
     public String getPurl() {
-        return "";
+        return "pkg:conan/" + this.getArtifactId() + "@" + this.getVersion().version();
     }
 
     @Override
     public String getProperty(String key) {
-        return "";
+        return null;
     }
 
     @Override
@@ -102,22 +130,22 @@ public class ConanComponent implements Component {
 
     @Override
     public void addDependency(Dependency dependency) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void setRoot() {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public List<ExternalReference> getAllExternalReferences() {
-        return List.of();
+        return List.of(ExternalReference.of("EXTERNAL_REFERENCE_TYPE_WEBSITE", jsonData.get("homepage").getAsString(), null, null));
     }
 
     @Override
     public List<Hash> getAllHashes() {
-        return List.of();
+        return null;
     }
 
     @Override
@@ -127,56 +155,53 @@ public class ConanComponent implements Component {
 
     @Override
     public String getDownloadLocation() {
-        return "";
-    }
-
-    @Override
-    public List<Dependency> getDependenciesFlatFiltered() {
-        return List.of();
-    }
-
-    @Override
-    public List<Component> getDependencyComponentsFlatFiltered() {
-        return List.of();
+        return jsonData.get("homepage").getAsString();
     }
 
     @Override
     public String getPublisher() {
-        return "";
+        return null;
     }
 
     @Override
     public List<LicenseChoice> getAllLicenses() {
-        return List.of();
+        return licenseChoices;
     }
 
     @Override
     public List<Property> getAllProperties() {
-        return List.of();
+        return null;
     }
 
     @Override
     public List<Person> getAllAuthors() {
-        return List.of();
+        return null;
     }
 
     @Override
     public <T> void setData(String key, T value) {
-
+        if (key.equals("jsonData")) {
+            this.jsonData = (JsonObject) value;
+        }
     }
 
     @Override
     public void removeDependency(Dependency dependency) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void removeVulnerability(Vulnerability vulnerability) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void addVulnerability(Vulnerability vulnerability) {
+        throw new UnsupportedOperationException();
+    }
 
+    @Override
+    public String toString() {
+        return this.getPurl();
     }
 }

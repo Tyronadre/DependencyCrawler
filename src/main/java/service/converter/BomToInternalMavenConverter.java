@@ -212,6 +212,11 @@ public class BomToInternalMavenConverter {
     public static ExternalReference buildExternalReference(Bom16.ExternalReference externalReference) {
         return new ExternalReference() {
             @Override
+            public String getCategory() {
+                return null;
+            }
+
+            @Override
             public String getType() {
                 return externalReference.getType().toString();
             }

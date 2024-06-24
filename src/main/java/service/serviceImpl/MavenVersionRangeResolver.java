@@ -3,8 +3,8 @@ package service.serviceImpl;
 import data.Dependency;
 import data.Version;
 import data.internalData.MavenDependency;
-import data.internalData.MavenVersion;
 import data.internalData.MavenVersionRange;
+import data.internalData.VersionImpl;
 import exceptions.VersionRangeResolutionException;
 import repository.repositoryImpl.MavenComponentRepository;
 import service.VersionRangeResolver;
@@ -20,10 +20,14 @@ import static java.util.Objects.requireNonNull;
 
 public class MavenVersionRangeResolver implements VersionRangeResolver {
 
-    private final MavenComponentRepository repository;
 
-    public MavenVersionRangeResolver(MavenComponentRepository repository) {
-        this.repository = repository;
+    private static final MavenVersionRangeResolver instance = new MavenVersionRangeResolver();
+
+    private MavenVersionRangeResolver() {
+    }
+
+    public static MavenVersionRangeResolver getInstance() {
+        return instance;
     }
 
     @Override
@@ -43,7 +47,7 @@ public class MavenVersionRangeResolver implements VersionRangeResolver {
                 throw new VersionRangeResolutionException(dependency, "Unbounded version range");
             }
 
-            versionBounds.add(new VersionBound(versionRangeConstraints.substring(0, index + 1), repository.getVersionResolver()));
+            versionBounds.add(new VersionBound(versionRangeConstraints.substring(0, index + 1), MavenVersionResolver.getInstance()));
 
             versionRangeConstraints = versionRangeConstraints.substring(index + 1).trim();
             if (versionRangeConstraints.startsWith(",")) {
@@ -77,8 +81,8 @@ public class MavenVersionRangeResolver implements VersionRangeResolver {
      * @param dependency   the dependency
      * @return the versions that satisfy the version bound
      */
-    private List<MavenVersion> getVersions(VersionBound versionBound, MavenDependency dependency) {
-        var versions = repository.getVersions(dependency);
+    private List<VersionImpl> getVersions(VersionBound versionBound, MavenDependency dependency) {
+        var versions = MavenComponentRepository.getInstance().getVersions(dependency);
         if (versionBound.lowerBound == null && versionBound.upperBound == null) {
             return versions;
         } else {

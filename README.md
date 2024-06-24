@@ -49,13 +49,13 @@ cron job ob neue vulerabilitys auf vex / cyclondx
 
 ## TODOS
 
-- [ ] https://jitpack.io als source. (zip runterladen)
+- [X] https://jitpack.io als source. (zip runterladen)
 - [x] vex files output
-- [ ] read spdx file
+- [x] read spdx file
 - [x] update loaded spdx file
 - [x] read sbom file
-- [ ] conan repo link dependency (native). iwi api link rausfinden und parsen.
-- [ ] android native dependency. version is tag
+- [x] conan repo link dependency (native). iwi api link rausfinden und parsen.
+- [x] android native dependency. version is tag
 - [ ] license collision. von allen (auch dependencies)
 - [x] read & update vex file
 - [x] better gradlew script
@@ -64,9 +64,8 @@ cron job ob neue vulerabilitys auf vex / cyclondx
 - [x] Im input kann eine Component mehrfach vorkommen, hier höchste benutzte Version nehmen.
 - [x] use data from maven parent when empty
 - [ ] version resolver recursive
-- [ ] dependency tree sbom nur tiefe 1
+- [x] dependency tree sbom nur tiefe 1
 - [ ] user möglichkeit geben pom files zu spezifizieren, für repos die nicht geladen werden konnten im zweiten durchgang
-- [ ] 
 
 ## References
 

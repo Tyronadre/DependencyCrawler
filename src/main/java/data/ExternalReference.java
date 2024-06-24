@@ -7,6 +7,11 @@ public interface ExternalReference {
     static ExternalReference of(String type, String url, String comment, List<Hash> hashes) {
         return new ExternalReference() {
             @Override
+            public String getCategory() {
+                return null;
+            }
+
+            @Override
             public String getType() {
                 return type;
             }
@@ -28,6 +33,7 @@ public interface ExternalReference {
         };
     }
 
+    String getCategory();
     String getType();
     String getUrl();
     String getComment();

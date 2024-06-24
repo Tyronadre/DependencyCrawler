@@ -3,7 +3,9 @@ package data.internalData;
 import data.Component;
 import data.Dependency;
 import data.Version;
-import repository.repositoryImpl.ConanRepository;
+import repository.repositoryImpl.ConanComponentRepository;
+
+import java.util.StringJoiner;
 
 public class ConanDependency implements Dependency {
     String name;
@@ -36,7 +38,7 @@ public class ConanDependency implements Dependency {
     @Override
     public Component getComponent() {
         if (component == null) {
-            ConanRepository.getInstance().getComponent(null, name, version);
+            component = ConanComponentRepository.getInstance().getComponent(null, name, version, null);
         }
         return component;
     }
@@ -63,7 +65,7 @@ public class ConanDependency implements Dependency {
 
     @Override
     public void setVersion(Version version) {
-        throw new UnsupportedOperationException();
+        this.version = version;
     }
 
     @Override
@@ -79,5 +81,13 @@ public class ConanDependency implements Dependency {
     @Override
     public void setScope(String scope) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String toString() {
+        return new StringJoiner(", ", ConanDependency.class.getSimpleName() + "[", "]")
+                .add("version=" + version)
+                .add("name='" + name + "'")
+                .toString();
     }
 }

@@ -4,26 +4,21 @@ import data.Component;
 import data.Dependency;
 import data.Hash;
 import data.Version;
-import data.Vulnerability;
 import data.internalData.MavenComponent;
 import data.internalData.MavenDependency;
-import data.internalData.MavenVersion;
-import enums.RepositoryType;
-import exceptions.ArtifactBuilderException;
+import data.internalData.VersionImpl;
+import enums.MavenComponentRepositoryType;
 import logger.Logger;
 import org.apache.maven.api.model.Model;
 import org.apache.maven.model.v4.MavenStaxReader;
-import org.slf4j.LoggerFactory;
 import repository.ComponentRepository;
-import repository.VulnerabilityRepository;
-import service.VersionRangeResolver;
 import service.VersionResolver;
-import service.serviceImpl.MavenVersionRangeResolver;
 import service.serviceImpl.MavenVersionResolver;
 
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -33,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -43,26 +37,27 @@ import java.util.stream.Collectors;
  * Example BaseURL: <a href="https://repo1.maven.org/maven2/">Maven Central</a>
  */
 public class MavenComponentRepository implements ComponentRepository {
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(MavenComponentRepository.class);
-    private final RepositoryType repositoryType;
-    private final String baseUrl;
-    private final HashMap<String, TreeSet<Component>> components;
-    private final MavenVersionRangeResolver versionRangeResolver = new MavenVersionRangeResolver(this);
-    private final MavenVersionResolver versionResolver = new MavenVersionResolver(this);
-
     private static final Logger logger = Logger.of("MavenRepository");
+    private static final MavenComponentRepository instance = new MavenComponentRepository();
 
-    MavenComponentRepository(MavenComponentRepositoryType repositoryType) {
-        this.repositoryType = repositoryType;
-        this.baseUrl = repositoryType.getUrl();
-        components = new HashMap<>();
+    private final HashMap<String, TreeSet<Component>> components = new HashMap<>();
+    private final HashMap<Component, MavenComponentRepositoryType> types = new HashMap<>();
+
+    private MavenComponentRepository() {
+    }
+
+    public static MavenComponentRepository getInstance() {
+        return instance;
     }
 
     @Override
-    public List<MavenVersion> getVersions(Dependency dependency) {
+    public List<VersionImpl> getVersions(Dependency dependency) {
+        logger.info("Getting all possible versions for " + dependency.getQualifiedName());
+
         var mavenDependency = (MavenDependency) dependency;
+
         try {
-            var urlString = baseUrl + mavenDependency.getGroupId().replace(".", "/") + "/" + mavenDependency.getArtifactId() + "/maven-metadata.xml";
+            var urlString = getRepositoryType(dependency.getTreeParent()).getUrl() + mavenDependency.getGroupId().replace(".", "/") + "/" + mavenDependency.getArtifactId() + "/maven-metadata.xml";
             return this.getVersions(URI.create(urlString).toURL());
         } catch (MalformedURLException e) {
             logger.error("Failed to get versions. " + e.getMessage());
@@ -71,12 +66,20 @@ public class MavenComponentRepository implements ComponentRepository {
     }
 
     /**
+     * @param component the key
+     * @return the type
+     */
+    public MavenComponentRepositoryType getRepositoryType(Component component) {
+        return this.types.get(component);
+    }
+
+    /**
      * Returns the versions of the given URL as Strings
      *
      * @param url The URL to get the versions from
      * @return The versions as Strings
      */
-    private List<MavenVersion> getVersions(URL url) {
+    private List<VersionImpl> getVersions(URL url) {
         List<String> versions = null;
 
         var factory = XMLInputFactory.newInstance();
@@ -106,47 +109,82 @@ public class MavenComponentRepository implements ComponentRepository {
         if (versions == null) {
             return List.of();
         }
-        return versions.stream().map(MavenVersion::new).collect(Collectors.toList());
+        return versions.stream().map(VersionImpl::new).collect(Collectors.toList());
     }
 
     @Override
     public VersionResolver getVersionResolver() {
-        return versionResolver;
+        return MavenVersionResolver.getInstance();
     }
 
     HashMap<String, Integer> loadStatus = new HashMap<>();
+
     @Override
     public int loadComponent(Component component) {
-        if (loadStatus.containsKey(component.getQualifiedName()) && loadStatus.get(component.getQualifiedName()) != 0) {
+        var start = System.currentTimeMillis();
+        logger.info("Loading component " + component.getQualifiedName());
+
+        if (loadStatus.containsKey(component.getQualifiedName())) {
+            logger.info("component was loaded already with status " + loadStatus.get(component.getQualifiedName()));
             return loadStatus.get(component.getQualifiedName());
         }
-        if (this.repositoryType == MavenComponentRepositoryType.ROOT) {
-            loadStatus.put(component.getQualifiedName(), 1);
+
+        //try to load from set type
+        int componentLoadStatus = 1;
+        if (getRepositoryType(component) != null) {
+            componentLoadStatus = loadComponent(component, getRepositoryType(component));
+        }
+
+        if (componentLoadStatus != 0) {
+            for (var type : MavenComponentRepositoryType.values()) {
+                if (type == getRepositoryType(component)) continue;
+                componentLoadStatus = loadComponent(component, type);
+                if (componentLoadStatus == 0) {
+                    types.put(component, type);
+                    break;
+                }
+
+            }
+        }
+
+        switch (componentLoadStatus) {
+            case 0 ->
+                    logger.success("Loaded data for component " + component.getQualifiedName() + ". (" + (System.currentTimeMillis() - start) + "ms)");
+            case 1 ->
+                    logger.error("Could not load component: " + component.getQualifiedName() + ". [not found in repository] (" + (System.currentTimeMillis() - start) + "ms)");
+            case 2 ->
+                    logger.error("Could not load component " + component.getQualifiedName() + ". [error parsing model] (" + (System.currentTimeMillis() - start) + "ms)");
+        }
+
+        loadStatus.put(component.getQualifiedName(), componentLoadStatus);
+        return componentLoadStatus;
+    }
+
+    private int loadComponent(Component component, MavenComponentRepositoryType type) {
+        logger.info("Loading for " + component.getQualifiedName() + " from repository type " + type);
+        if (type == MavenComponentRepositoryType.ROOT) {
             return 1;
         }
         try {
-            component.setData("model", loadModel(URI.create(getDownloadLocation(component) + ".pom").toURL()));
-            component.setData("hashes", loadHashes(getDownloadLocation(component) + ".jar"));
-            component.setData("vulnerabilities", loadVulnerabilities(component));
+            var downloadLocation = getDownloadLocation(component, type);
+            component.setData("model", loadModel(downloadLocation + ".pom"));
+            component.setData("hashes", loadHashes(downloadLocation + ".jar"));
             loadStatus.put(component.getQualifiedName(), 0);
             return 0;
-        } catch (MalformedURLException | ArtifactBuilderException ignored) {
-            loadStatus.put(component.getQualifiedName(), 1);
+        } catch (FileNotFoundException e) {
             return 1;
-        } catch (XMLStreamException e) {
-            logger.error("Could not parse POM file of component. " + e.getMessage());
+        } catch (XMLStreamException | IOException e) {
+            logger.error("Could not parse POM file of component: " + component.getQualifiedName(), e);
             loadStatus.put(component.getQualifiedName(), 2);
             return 2;
         }
     }
 
-    private Model loadModel(URL url) throws ArtifactBuilderException, XMLStreamException {
+    private Model loadModel(String url) throws XMLStreamException, IOException {
         MavenStaxReader reader = new MavenStaxReader();
         Model model;
-        try (InputStream inputStream = url.openStream()) {
+        try (InputStream inputStream = URI.create(url).toURL().openStream()) {
             model = reader.read(inputStream);
-        } catch (IOException e) {
-            throw new ArtifactBuilderException("Could not load model from " + url + ". " + e);
         }
         return model;
     }
@@ -156,7 +194,9 @@ public class MavenComponentRepository implements ComponentRepository {
         for (var algorithm : new String[]{"md5", "sha1", "sha256", "sha512"}) {
             try {
                 hashes.add(loadHash(baseUrl, algorithm));
-            } catch (IOException ignored) {
+            } catch (FileNotFoundException ignored) {
+            } catch (IOException e) {
+                logger.error("Error getting hash", e);
             }
         }
         return hashes;
@@ -164,51 +204,47 @@ public class MavenComponentRepository implements ComponentRepository {
 
     private Hash loadHash(String baseUrl, String algorithm) throws IOException {
         try (InputStream inputStream = URI.create(baseUrl + "." + algorithm).toURL().openStream()) {
-
             var value = new String(inputStream.readAllBytes());
             // some files have some spaces and a - at the end. we dont want that
-            if (value.contains(" "))
-                value = value.substring(0, value.indexOf(" "));
+            if (value.contains(" ")) value = value.substring(0, value.indexOf(" "));
             return Hash.of(algorithm, value);
         }
     }
 
-    private List<Vulnerability> loadVulnerabilities(Component mavenComponent) {
-        return VulnerabilityRepository.getInstance().getVulnerabilities(mavenComponent);
-    }
-
     @Override
-    public synchronized Component getComponent(String groupId, String artifactId, Version version) {
-        if (!components.containsKey(groupId + ":" + artifactId)) {
-            components.put(groupId + ":" + artifactId, new TreeSet<>(Comparator.comparing(Component::getVersion)));
+    public synchronized Component getComponent(String groupId, String artifactId, Version version, Component parent) {
+        var key = groupId + ":" + artifactId;
+
+        if (components.containsKey(key)) {
+            var available = components.get(key).stream().filter(it -> it.getVersion().equals(version)).findFirst();
+            if (available.isPresent())
+                return available.get();
         }
-        var set = components.get(groupId + ":" + artifactId);
-        var newComponent = new MavenComponent(groupId, artifactId, version, this);
-        var component = set.floor(newComponent);
-        if (component == null || !component.getVersion().equals(version)) {
-            components.get(groupId + ":" + artifactId).add(newComponent);
-            return newComponent;
+
+        var newComponent = new MavenComponent(groupId, artifactId, version);
+        if (getRepositoryType(parent) != null) types.put(newComponent, getRepositoryType(parent));
+        else types.put(newComponent, MavenComponentRepositoryType.Central);
+
+
+        components.computeIfAbsent(key, k -> new TreeSet<>(Comparator.comparing(Component::getVersion))).add(newComponent);
+        return newComponent;
+    }
+
+    @Override
+    public String getDownloadLocation(Component component) {
+        return getDownloadLocation(component, getRepositoryType(component));
+    }
+
+    private String getDownloadLocation(Component component, MavenComponentRepositoryType type) {
+        return type.getUrl() + component.getGroup().replace(".", "/") + "/" + component.getArtifactId() + "/" + component.getVersion().version() + "/" + component.getArtifactId() + "-" + component.getVersion().version();
+    }
+
+    @Override
+    public List<Component> getLoadedComponents(String groupName, String artifactName) {
+        if (components.get(groupName + ":" + artifactName) == null) {
+            return List.of();
         }
-        return component;
-    }
-
-    @Override
-    public VersionRangeResolver getVersionRangeResolver() {
-        return versionRangeResolver;
-    }
-
-    @Override
-    public String toString() {
-        return new StringJoiner(", ", MavenComponentRepository.class.getSimpleName() + "[", "]").add("'" + baseUrl + "'").toString();
-    }
-
-    @Override
-    public String getDownloadLocation(Component mavenComponent) {
-        return baseUrl + mavenComponent.getGroup().replace(".", "/") + "/" + mavenComponent.getName() + "/" + mavenComponent.getVersion().getVersion() + "/" + mavenComponent.getName() + "-" + mavenComponent.getVersion().getVersion();
-    }
-
-    public TreeSet<Component> getLoadedComponents(String groupName, String artifactName) {
-        return components.get(groupName + ":" + artifactName);
+        return new ArrayList<>(components.get(groupName + ":" + artifactName));
     }
 
 }

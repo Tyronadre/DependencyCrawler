@@ -2,12 +2,13 @@ import cyclonedx.sbom.Bom16;
 import data.Component;
 import data.readData.ReadVexComponent;
 import logger.Logger;
+import org.spdx.library.model.SpdxDocument;
 import repository.LicenseRepository;
-import service.BFDependencyCrawler;
 import service.DocumentBuilder;
-import service.LicenseCollisionService;
 import service.serviceImpl.BFDependencyCrawlerImpl;
 import service.serviceImpl.DefaultInputReader;
+import service.serviceImpl.LicenseCollisionBuilder;
+import service.serviceImpl.LicenseCollisionServiceImpl;
 import service.serviceImpl.MavenSBOMBuilder;
 import service.serviceImpl.MavenSBOMReader;
 import service.serviceImpl.SPDXBuilder;
@@ -21,15 +22,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Objects;
 
 public class Main {
     private static final Logger logger = Logger.of("Main");
 
     public static void main(String[] args) {
-//        args = new String[]{"--input", "generated/output_1.spdx.json", "--input-type", "spdx", "--output", "generated/output_1_renewFromSPDX", "--output-type", "sbom", "spdx", "vex", "tree", "--verbose"};
-        args = new String[]{"--input", "src/main/resources/input_0.json", "--output", "generated/output_0", "--output-type", "sbom", "spdx", "vex", "tree", "--verbose"};
+        args = new String[]{"--input", "generated/output_1.spdx.json", "--input-type", "spdx", "--output", "generated/output_1_renewFromSPDX", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
+        args = new String[]{"--input", "src/main/resources/input_1.json", "--output", "generated/output_1", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
 
         HashMap<String, String> argMap = new HashMap<>();
         String lastKey = null;
@@ -54,7 +54,7 @@ public class Main {
             return;
         }
 
-        if (argMap.containsKey("help") || argMap.isEmpty()) {
+        if (argMap.isEmpty() || argMap.containsKey("help")) {
             printHelp();
             return;
         }
@@ -116,94 +116,89 @@ public class Main {
                 throw new IllegalArgumentException(inputType + " is not a valid inputFormat");
             }
         }
-
-
-
-//
-//        var in2 = readInputFile("input_1.json");
-//        crawlComponent(in2);
-//        buildSBOMFile(in2, "generated/output_1");
-//        buildSPDXFile(in2, "generated/output_1");
-//        buildTreeFile(in2, "generated/output_1", false);
-//        buildVexFile(in2, "generated/output_1");
-//
-//        var in3 = readInputFile("input_2.json");
-//        crawlComponent(in3);
-//        buildSBOMFile(in3, "generated/output_2");
-//        buildSPDXFile(in3, "generated/output_2");
-//        buildTreeFile(in3, "generated/output_2", false);
-//        buildVexFile(in3, "generated/output_2");
-
-
-//        var rein1 = readSBOMFile("generated/output_0.sbom.json");
-//        crawlComponent(rein1.second());
-//        writeSBOMFile(rein1.first(), "generated/output_0_rebuild");
-//        buildSPDXFile(rein1.second(), "generated/output_0_rebuild");
-//        buildTreeFile(rein1.second(), "generated/output_0_rebuild", false);
-//        buildVexFile(rein1.second(), "generated/output_0_rebuild");
-
-//        var rein2 = readSBOMFile("generated/output_1.sbom.json");
-//        crawlComponent(rein2.second());
-//        writeSBOMFile(rein2.first(), "generated/output_1_rebuild");
-//        buildSPDXFile(rein2.second(), "generated/output_1_rebuild");
-//        buildTreeFile(rein2.second(), "generated/output_1_rebuild", false);
-//        buildVexFile(rein2.second(), "generated/output_1_rebuild");
-
-//        var rein3 = readSBOMFile("generated/output_2.sbom.json");
-//        crawlComponent(rein3.second());
-//        writeSBOMFile(rein3.first(), "generated/output_2_rebuild");
-//        buildSPDXFile(rein3.second(), "generated/output_2_rebuild");
-//        buildTreeFile(rein3.second(), "generated/output_2_rebuild", false);
-//        buildVexFile(rein3.second(), "generated/output_2_rebuild");
-//
-//        var vexComps = readVEXFile("generated/output_1.vex.json");
-//        vexComps.forEach(ReadVexComponent::loadComponent);
-//        writeVexFile(vexComps, "generated/output_1_rebuild");
-
     }
 
     private static void readFromDefault(String inputFile, String outputFile, ArrayList<String> outputTypes) {
+        Component rootComponent;
         try {
-            var rootComponent = new DefaultInputReader().readDocument(inputFile);
-            crawlComponent(rootComponent);
-            outputTypes.stream().map(Main::getDocumentBuilder).forEach(
-                    builder -> builder.buildDocument(rootComponent, outputFile)
-            );
+            rootComponent = new DefaultInputReader().readDocument(inputFile);
         } catch (Exception e) {
             logger.error("Error reading input file: ", e);
+            return;
+        }
+        if (rootComponent == null) return;
+
+        new BFDependencyCrawlerImpl().crawl(rootComponent);
+
+
+        for (var outputType : outputTypes) {
+            try {
+                if (Objects.equals(outputType, "license-collisions"))
+                    new LicenseCollisionBuilder().rebuildDocument(new LicenseCollisionServiceImpl().checkLicenseCollisions(rootComponent), outputFile);
+                else
+                    getDocumentBuilder(outputType).buildDocument(rootComponent, outputFile);
+            } catch (Exception e) {
+                logger.error("Error building file type: " + outputType, e);
+            }
         }
     }
 
     private static void readFromSBOM(String inputFile, String outputFile, ArrayList<String> outputTypes) {
+        Pair<Bom16.Bom, Component> data;
         try {
-            var res = new MavenSBOMReader().readDocument(inputFile);
-            var rootComponent = res.second();
-            crawlComponent(rootComponent);
-            for (var outputType : outputTypes) {
-                if (Objects.equals(outputType, "sbom")) {
-                    new MavenSBOMBuilder().rebuildDocument(res.first(), outputFile);
-                } else {
-                    getDocumentBuilder(outputType).buildDocument(rootComponent, outputFile);
-                }
-            }
+            data = new MavenSBOMReader().readDocument(inputFile);
         } catch (Exception e) {
             logger.error("Error reading SBOM file: ", e);
+            return;
+        }
+        if (data == null) return;
+
+        crawlComponent(data.second());
+
+        for (var outputType : outputTypes) {
+            try {
+                if (Objects.equals(outputType, "sbom")) {
+                    new MavenSBOMBuilder().rebuildDocument(data.first(), outputFile);
+                } else if (Objects.equals(outputType, "license-collisions")) {
+                    new LicenseCollisionBuilder().rebuildDocument(new LicenseCollisionServiceImpl().checkLicenseCollisions(data.second()), outputFile);
+                } else {
+                    getDocumentBuilder(outputType).buildDocument(data.second(), outputFile);
+                }
+            } catch (Exception e) {
+                logger.error("Error reading SBOM file: ", e);
+            }
         }
     }
 
     private static void readFromSPDX(String inputFile, String outputFile, ArrayList<String> outputTypes) {
+        Pair<SpdxDocument, Component> data;
         try {
-            var rootComponent = new SPDXReader().readDocument(inputFile);
-            crawlComponent(rootComponent);
-            for (var outputType : outputTypes) {
-                if (Objects.equals(outputType, "spdx")) {
-                    new SPDXBuilder().rebuildDocument(rootComponent, outputFile);
-                } else {
-                    getDocumentBuilder(outputType).buildDocument(rootComponent, outputFile);
-                }
-            }
+            data = new SPDXReader().readDocument(inputFile);
         } catch (Exception e) {
             logger.error("Error reading SPDX file: ", e);
+            return;
+        }
+        if (data == null) return;
+
+        crawlComponent(data.second());
+
+        for (var outputType : outputTypes) {
+            try {
+                if (Objects.equals(outputType, "spdx")) {
+                    new SPDXBuilder().rebuildDocument(data, outputFile);
+                } else if (Objects.equals(outputType, "license-collisions")) {
+                    new LicenseCollisionBuilder().rebuildDocument(new LicenseCollisionServiceImpl().checkLicenseCollisions(data.second()), outputFile);
+                } else {
+                    getDocumentBuilder(outputType).buildDocument(data.second(), outputFile);
+                }
+            } catch (Exception e) {
+                logger.error("Error reading SPDX file: ", e);
+            }
+            if (Objects.equals(outputType, "spdx")) {
+                new SPDXBuilder().rebuildDocument(data, outputFile);
+            } else {
+                getDocumentBuilder(outputType).buildDocument(data.second(), outputFile);
+            }
         }
     }
 
@@ -233,61 +228,6 @@ public class Main {
     }
 
     private static void crawlComponent(Component component) {
-        BFDependencyCrawler bfDependencyCrawler = new BFDependencyCrawlerImpl();
-        LicenseCollisionService licenseCollisionService = LicenseCollisionService.getInstance();
-        bfDependencyCrawler.crawl(component);
-        licenseCollisionService.checkLicenseCollisions(component);
-    }
-
-    private static void writeSBOMFile(Bom16.Bom bom, String path) {
-        MavenSBOMBuilder sbomBuilder = new MavenSBOMBuilder();
-        sbomBuilder.rebuildDocument(bom, path);
-    }
-
-    private static void writeVexFile(List<ReadVexComponent> components, String path) {
-        VexBuilder vexBuilder = new VexBuilder();
-        vexBuilder.rebuildDocument(components.stream().map(Component::getAllVulnerabilities).flatMap(Collection::stream).toList(), path);
-    }
-
-    private static void buildSBOMFile(Component component, String path) {
-        MavenSBOMBuilder sbomBuilder = new MavenSBOMBuilder();
-        sbomBuilder.buildDocument(component, path);
-    }
-
-    private static void buildSPDXFile(Component component, String path) {
-        SPDXBuilder spdxBuilder = new SPDXBuilder();
-        spdxBuilder.buildDocument(component, path);
-    }
-
-    private static void buildTreeFile(Component component, String path, boolean showUnresolved) {
-        TreeBuilder treeBuilder = new TreeBuilder(showUnresolved);
-        treeBuilder.buildDocument(component, path);
-    }
-
-    private static void buildVexFile(Component component, String path) {
-        VexBuilder vexBuilder = new VexBuilder();
-        vexBuilder.buildDocument(component, path);
-    }
-
-    private static Component readInputFile(String fileName) {
-        DefaultInputReader inputReader = new DefaultInputReader();
-        return inputReader.readDocument(fileName);
-    }
-
-
-    private static Pair<Bom16.Bom, Component> readSBOMFile(String fileName) {
-        MavenSBOMReader sbomReader = new MavenSBOMReader();
-        return sbomReader.readDocument(fileName);
-    }
-
-    private static List<ReadVexComponent> readVEXFile(String fileName) {
-        VexReader vexReader = new VexReader();
-        return vexReader.readDocument(fileName);
-    }
-
-    private static Component readSPDXFile(String fileName) {
-        SPDXReader spdxReader = new SPDXReader();
-        return spdxReader.readDocument(fileName);
     }
 
     private static void printHelp() {
@@ -299,13 +239,13 @@ public class Main {
                 The default input file format is specified in the ReadMe.md of the GitRepository.
 
                 If an input-type is specified, the input file is read in the specified format and then updated.
-                If the input-type is vex, this program will be able to output a VEX file.
+                If the input-type is vex, the only possible output type is vex.
                                 
                 Usage:
                 --input <file> :                        input file in JSON format
                 --output <file name> :                  output file name
                 --input-type <type> :                   type of the input file. Supported types: sbom, spdx, vex
-                --output-type <type1> [<type2> ...] :   one or multiple output types. Supported types: sbom, spdx, tree, vex
+                --output-type <type1> [<type2> ...] :   one or multiple output types. Supported types: sbom, spdx, vex, tree, tree-all
                 --help :                                print this help message
                 --verbose :                             print verbose output
                 --no-log :                              disable logging

@@ -6,15 +6,23 @@
     "type": "MAVEN",
     "dependencies": [
       {
-        "groupId": "ch.qos.logback",
-        "name": "logback-classic",
-        "version": "1.4.11",
-        "type": "MAVEN"
+        "groupId": "platform.external",
+        "name": "bzip2",
+        "version": "main",
+        "type": "ANDROID_NATIVE"
       },
       {
-        "name": "mfast",
-        "version": "1.2.2",
-        "type": "CONAN"
+        "groupId": "markusfisch",
+        "name": "ShaderEditor",
+        "version": "2.34.1",
+        "type": "JITPACK"
+      },
+      {
+        "groupId": "Tyronadre",
+        "name": "DependencyCrawler",
+        "version": "Default",
+        "type": "JITPACK"
+
       }
     ]
   },

@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.regex.Pattern;
 
 public class LicenseRepositoryImpl implements LicenseRepository {
     private static final Logger logger = Logger.of("LicenseRepository");
@@ -35,7 +36,6 @@ public class LicenseRepositoryImpl implements LicenseRepository {
         if (instance == null) instance = new LicenseRepositoryImpl();
         return instance;
     }
-
 
 
     private LicenseRepositoryImpl() {
@@ -194,10 +194,16 @@ public class LicenseRepositoryImpl implements LicenseRepository {
 
     @Override
     public License getLicense(String name, String url) {
+        if (name.length() > 100) {
+            return findLicenseInFile(name, url);
+        }
+
         if (idToLicense.containsKey(name))
             return idToLicense.get(name);
         if (nameToLicense.containsKey(name))
             return nameToLicense.get(name);
+
+
         return switch (name) {
             case "The Apache Software License, Version 2.0", "Apache 2.0", "Apache License, Version 2.0",
                  "The Apache License, Version 2.0", "Apache Software License - Version 2.0", "Apache License v2.0",
@@ -206,7 +212,9 @@ public class LicenseRepositoryImpl implements LicenseRepository {
             case "GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1", "LGPL, version 2.1", "LGPL 2.1" ->
                     idToLicense.get("LGPL-2.1-only");
             case "BSD Licence 3", "BSD License 3", "Eclipse Distribution License - v 1.0", "The BSD 3-Clause License",
-                 "BSD" -> idToLicense.get("BSD-3-Clause");
+                 "BSD", "EDL 1.0", "3-Clause BSD License", "Eclipse Public License - Version 1.0" ->
+                    idToLicense.get("BSD-3-Clause");
+            case "New BSD License" -> idToLicense.get("BSD-2-Clause");
             case "The JSON License" -> idToLicense.get("JSON");
             case "Eclipse Public License", "Eclipse Public License - v 1.0" -> idToLicense.get("EPL-1.0");
             case "Eclipse Public License v2.0", "Eclipse Public License - Version 2.0" -> idToLicense.get("EPL-2.0");
@@ -220,47 +228,133 @@ public class LicenseRepositoryImpl implements LicenseRepository {
             case "MPL 1.1" -> idToLicense.get("MPL-1.1");
             case "Mozilla Public License, Version 2.0" -> idToLicense.get("MPL-2.0");
 
-            default -> new License() {
-                @Override
-                public String getId() {
-                    return null;
-                }
+            default -> {
+                logger.info("Could not find spdx license " + name + ". Using default license.");
+                yield new License() {
+                    @Override
+                    public String getId() {
+                        return null;
+                    }
 
-                @Override
-                public String getName() {
-                    return name;
-                }
+                    @Override
+                    public String getName() {
+                        return name;
+                    }
 
-                @Override
-                public String getNameOrId() {
-                    return getName();
-                }
+                    @Override
+                    public String getNameOrId() {
+                        return getName();
+                    }
 
-                @Override
-                public String getText() {
-                    return null;
-                }
+                    @Override
+                    public String getText() {
+                        return null;
+                    }
 
-                @Override
-                public String getUrl() {
-                    return url;
-                }
+                    @Override
+                    public String getUrl() {
+                        return url;
+                    }
 
-                @Override
-                public Licensing getLicensing() {
-                    return null;
-                }
+                    @Override
+                    public Licensing getLicensing() {
+                        return null;
+                    }
 
-                @Override
-                public List<Property> getProperties() {
-                    return null;
-                }
+                    @Override
+                    public List<Property> getProperties() {
+                        return null;
+                    }
 
-                @Override
-                public String getAcknowledgement() {
-                    return null;
-                }
-            };
+                    @Override
+                    public String getAcknowledgement() {
+                        return null;
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "License{" +
+                                "name='" + getNameOrId() + '\'' +
+                                ", url='" + url + '\'' +
+                                '}';
+                    }
+                };
+            }
+        };
+    }
+
+    private License findLicenseInFile(String licenseData, String url) {
+        if (Pattern.compile(".*Apache License.*Version 2\\.0.*", Pattern.DOTALL).matcher(licenseData).find())
+            return idToLicense.get("Apache-2.0");
+        if (Pattern.compile(".*MIT LICENSE.*", Pattern.DOTALL | Pattern.CASE_INSENSITIVE).matcher(licenseData).find())
+            return idToLicense.get("MIT");
+        if (Pattern.compile(".*GNU LIBRARY GENERAL PUBLIC LICENSE.*Version 2.*", Pattern.DOTALL).matcher(licenseData).find())
+            return idToLicense.get("LGPL-2.0-only");
+        if (Pattern.compile(".*GNU LIBRARY GENERAL PUBLIC LICENSE.*Version 2\\.1.*", Pattern.DOTALL).matcher(licenseData).find())
+            return idToLicense.get("LGPL-2.1-only");
+        if (Pattern.compile(".*GNU LIBRARY GENERAL PUBLIC LICENSE.*Version 3.*", Pattern.DOTALL).matcher(licenseData).find())
+            return idToLicense.get("LGPL-3.0-only");
+        if (Pattern.compile(".*GNU GENERAL PUBLIC LICENSE.*Version 2.*", Pattern.DOTALL).matcher(licenseData).find())
+            return idToLicense.get("GPL-2.0-only");
+        if (Pattern.compile(".*GNU GENERAL PUBLIC LICENSE.*Version 2\\.1.*", Pattern.DOTALL).matcher(licenseData).find())
+            return idToLicense.get("GPL-2.1-only");
+        if (Pattern.compile(".*GNU GENERAL PUBLIC LICENSE.*Version 3.*", Pattern.DOTALL).matcher(licenseData).find())
+            return idToLicense.get("GPL-3.0-only");
+        if (Pattern.compile(".*Common Public License Version 1\\.0.*", Pattern.DOTALL).matcher(licenseData).find())
+            return idToLicense.get("CPL-1.0");
+        if (Pattern.compile(".*CC0 1\\.0.*", Pattern.DOTALL).matcher(licenseData).find())
+            return idToLicense.get("CC0-1.0");
+        if (Pattern.compile(".*Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:.*1\\. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer\\..*2\\. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution\\.3\\. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission\\..*", Pattern.DOTALL).matcher(licenseData).find())
+            return idToLicense.get("BSD-3-Clause");
+
+        return new License() {
+            @Override
+            public String getId() {
+                return null;
+            }
+
+            @Override
+            public String getName() {
+                return "unknown";
+            }
+
+            @Override
+            public String getNameOrId() {
+                return getName();
+            }
+
+            @Override
+            public String getText() {
+                return licenseData;
+            }
+
+            @Override
+            public String getUrl() {
+                return url;
+            }
+
+            @Override
+            public Licensing getLicensing() {
+                return null;
+            }
+
+            @Override
+            public List<Property> getProperties() {
+                return null;
+            }
+
+            @Override
+            public String getAcknowledgement() {
+                return null;
+            }
+
+            @Override
+            public String toString() {
+                return "License{" +
+                        "name='" + getNameOrId() + '\'' +
+                        ", url='" + url + '\'' +
+                        '}';
+            }
         };
     }
 }

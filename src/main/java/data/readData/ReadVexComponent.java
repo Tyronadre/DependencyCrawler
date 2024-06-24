@@ -1,6 +1,5 @@
 package data.readData;
 
-import com.ctc.wstx.shaded.msv_core.datatype.xsd.datetime.BigDateTimeValueType;
 import data.Component;
 import data.Dependency;
 import data.ExternalReference;
@@ -65,7 +64,7 @@ public class ReadVexComponent implements Component {
     }
 
     @Override
-    public String getName() {
+    public String getArtifactId() {
         return name;
     }
 
@@ -141,16 +140,6 @@ public class ReadVexComponent implements Component {
 
     @Override
     public String getDownloadLocation() {
-        return null;
-    }
-
-    @Override
-    public List<Dependency> getDependenciesFlatFiltered() {
-        return null;
-    }
-
-    @Override
-    public List<Component> getDependencyComponentsFlatFiltered() {
         return null;
     }
 

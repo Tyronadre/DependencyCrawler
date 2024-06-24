@@ -3,11 +3,13 @@ package service.serviceImpl;
 import data.Component;
 import data.Dependency;
 import data.Property;
+import data.internalData.MavenComponent;
 import logger.Logger;
-import repository.ComponentRepository;
 import service.BFDependencyCrawler;
 
 import java.text.DecimalFormat;
+import java.util.ArrayDeque;
+import java.util.Objects;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorCompletionService;
@@ -134,15 +136,23 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
     }
 
     public void updateDependenciesToNewestVersion(Component rootComponent) {
-        for (var dependency : rootComponent.getDependenciesFlatFiltered()) {
+        var queue = new ArrayDeque<>(rootComponent.getDependenciesFiltered());
+        while (!queue.isEmpty()) {
+            var dependency = queue.poll();
             var dependencyComponent = dependency.getComponent();
             if (dependencyComponent == null) continue;
-            var newestComponent = ComponentRepository.getLoadedComponents(dependencyComponent.getGroup(), dependencyComponent.getName()).last();
+            if (!(dependencyComponent instanceof MavenComponent) && !(dependency.getTreeParent() == rootComponent)) {
+                logger.info("skipping component " + dependencyComponent + " and all its dependants " + dependencyComponent.getDependencyComponentsFlatFiltered() + " since its not a maven component and not on top level.");
+                continue;
+            }
+            if (dependencyComponent.getRepository().getLoadedComponents(dependencyComponent.getGroup(), dependencyComponent.getArtifactId()).isEmpty())
+                continue;
+            var newestComponent = dependencyComponent.getRepository().getLoadedComponents(dependencyComponent.getGroup(), dependencyComponent.getArtifactId()).getLast();
             if (newestComponent.getVersion().compareTo(dependencyComponent.getVersion()) > 0) {
                 //check if we have a version in the tree parent
                 var treeParent = dependency.getTreeParent();
                 if (treeParent != null) {
-                    if (treeParent.getDependenciesFiltered().stream().anyMatch(d -> d.getComponent() != null && d.getComponent().getGroup().equals(dependencyComponent.getGroup()) && d.getComponent().getName().equals(dependencyComponent.getName()))) {
+                    if (treeParent.getDependenciesFiltered().stream().anyMatch(d -> d.getComponent() != null && Objects.equals(d.getComponent().getGroup(), dependencyComponent.getGroup()) && Objects.equals(d.getComponent().getArtifactId(), dependencyComponent.getArtifactId()))) {
                         treeParent.removeDependency(dependency);
                     }
                 }
@@ -152,6 +162,8 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
 
                 newestComponent.setData("addProperty", Property.of("overwritesDependencyVersion", dependencyComponent.getQualifiedName()));
             }
+
+            queue.addAll(dependencyComponent.getDependenciesFiltered());
         }
     }
 }

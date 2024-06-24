@@ -3,20 +3,21 @@ package service.serviceImpl;
 import data.Dependency;
 import data.internalData.MavenComponent;
 import data.internalData.MavenDependency;
-import data.internalData.MavenVersion;
+import data.internalData.VersionImpl;
 import exceptions.VersionRangeResolutionException;
 import exceptions.VersionResolveException;
 import logger.Logger;
-import repository.repositoryImpl.MavenComponentRepository;
 import service.VersionResolver;
 
 public class MavenVersionResolver implements VersionResolver {
     private static final Logger logger = Logger.of("MavenVersionResolver");
+    private static final MavenVersionResolver instance = new MavenVersionResolver();
 
-    private final MavenComponentRepository repository;
+    private MavenVersionResolver() {
+    }
 
-    public MavenVersionResolver(MavenComponentRepository repository) {
-        this.repository = repository;
+    public static MavenVersionResolver getInstance() {
+        return instance;
     }
 
     @Override
@@ -32,7 +33,7 @@ public class MavenVersionResolver implements VersionResolver {
         }
     }
 
-    private MavenVersion resolveVersion(String versionString, Dependency dependency, MavenComponent parent) {
+    private VersionImpl resolveVersion(String versionString, Dependency dependency, MavenComponent parent) {
         var mavenDependency = (MavenDependency) dependency;
 
         if (versionString == null || versionString.isBlank()) {
@@ -40,39 +41,32 @@ public class MavenVersionResolver implements VersionResolver {
             var dependencyManagement = parent.getDependencyManagement();
             if (dependencyManagement != null) {
                 //get the managed dependency
-                var managedDependency = dependencyManagement.getDependencies().stream().filter(d ->
-                        (d.getGroupId().equals(mavenDependency.getGroupId()) || d.getGroupId().equals("${project.groupId}") || d.getGroupId().equals("${pom.groupId}"))
-                                && d.getArtifactId().equals(mavenDependency.getArtifactId()))
-                        .findFirst().orElse(null);
+                var managedDependency = dependencyManagement.getDependencies().stream().filter(d -> (d.getGroupId().equals(mavenDependency.getGroupId()) || d.getGroupId().equals("${project.groupId}") || d.getGroupId().equals("${pom.groupId}")) && d.getArtifactId().equals(mavenDependency.getArtifactId())).findFirst().orElse(null);
                 if (managedDependency != null) {
                     return resolveVersion(managedDependency.getVersion(), dependency, parent);
                 }
                 //in very few cases the dependencyManagement references another pom file. We need to download this pom file and check the dependencyManagement there
                 else {
-                    var pomDependencies = dependencyManagement.getDependencies().stream()
-                            .filter(d -> d.getType().equals("pom")).toList();
+                    var pomDependencies = dependencyManagement.getDependencies().stream().filter(d -> d.getType().equals("pom")).toList();
                     for (var pomDependency : pomDependencies) {
                         var version = resolveVersion(pomDependency.getVersion(), dependency, parent);
-                        var pomComponent = parent.getRepository().getComponent(pomDependency.getGroupId(), pomDependency.getArtifactId(), version);
+                        var pomComponent = parent.getRepository().getComponent(pomDependency.getGroupId(), pomDependency.getArtifactId(), version, null);
                         pomComponent.loadComponent();
                         var pomComponentDependencyManagement = ((MavenComponent) pomComponent).getDependencyManagement();
                         if (pomComponentDependencyManagement != null) {
-                            var pomComponentManagedDependencies = pomComponentDependencyManagement.getDependencies().stream().filter(d ->
-                                            (d.getGroupId().equals(mavenDependency.getGroupId()) || d.getGroupId().equals("${project.groupId}") || d.getGroupId().equals("${pom.groupId}"))
-                                                    && d.getArtifactId().equals(mavenDependency.getArtifactId()))
-                                    .findFirst().orElse(null);
+                            var pomComponentManagedDependencies = pomComponentDependencyManagement.getDependencies().stream().filter(d -> (d.getGroupId().equals(mavenDependency.getGroupId()) || d.getGroupId().equals("${project.groupId}") || d.getGroupId().equals("${pom.groupId}")) && d.getArtifactId().equals(mavenDependency.getArtifactId())).findFirst().orElse(null);
                             if (pomComponentManagedDependencies != null) {
                                 return resolveVersion(pomComponentManagedDependencies.getVersion(), dependency, parent);
                             }
                         }
-                        System.out.println(pomComponent);
                     }
                 }
             }
             //check parent pom
             if (parent.getParent() != null) {
                 if (!parent.getParent().isLoaded()) parent.getParent().loadComponent();
-                if (parent.getParent().isLoaded()) return resolveVersion(parent.getParent().getProperty(mavenDependency.getArtifactId() + ".version"), dependency, (MavenComponent) parent.getParent());
+                if (parent.getParent().isLoaded())
+                    return resolveVersion(parent.getParent().getProperty(mavenDependency.getArtifactId() + ".version"), dependency, (MavenComponent) parent.getParent());
             }
         } else if (versionString.startsWith("[") || versionString.startsWith("(")) {
             return getVersionFromVersionRange(dependency);
@@ -84,18 +78,18 @@ public class MavenVersionResolver implements VersionResolver {
         return null;
     }
 
-    private MavenVersion getVersionFromVersionRange(Dependency dependency) {
+    private VersionImpl getVersionFromVersionRange(Dependency dependency) {
         try {
-            return (MavenVersion) repository.getVersionRangeResolver().resolveVersionRange(dependency).getRecommendedVersion();
+            return (VersionImpl) MavenVersionRangeResolver.getInstance().resolveVersionRange(dependency).getRecommendedVersion();
         } catch (VersionRangeResolutionException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private MavenVersion getVersionFromProperty(String substring, Dependency dependency, MavenComponent parent) {
+    private VersionImpl getVersionFromProperty(String substring, Dependency dependency, MavenComponent parent) {
         //project.version
         if (substring.equals("project.version") || substring.equals("pom.version") || substring.equals("parent.version")) {
-            return new MavenVersion(parent.getVersion().getVersion());
+            return new VersionImpl(parent.getVersion().version());
         }
 
         var property = parent.getProperty(substring);
@@ -111,7 +105,7 @@ public class MavenVersionResolver implements VersionResolver {
 
 
     @Override
-    public MavenVersion getVersion(String versionString) {
-        return new MavenVersion(versionString);
+    public VersionImpl getVersion(String versionString) {
+        return new VersionImpl(versionString);
     }
 }

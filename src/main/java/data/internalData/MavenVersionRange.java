@@ -66,8 +66,8 @@ public class MavenVersionRange implements VersionRange {
     }
 
     @Override
-    public String getVersion() {
-        return this.getRecommendedVersion().getVersion();
+    public String version() {
+        return this.getRecommendedVersion().version();
     }
 
     @Override

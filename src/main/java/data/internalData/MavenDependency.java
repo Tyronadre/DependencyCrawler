@@ -4,7 +4,7 @@ import data.Component;
 import data.Dependency;
 import data.Version;
 import logger.Logger;
-import repository.repositoryImpl.MavenComponentRepositoryType;
+import repository.repositoryImpl.MavenComponentRepository;
 
 import java.util.Objects;
 
@@ -29,8 +29,7 @@ public class MavenDependency implements Dependency {
      * @param treeParent the parent component
      */
     public MavenDependency(String groupId, String artifactId, Version version, MavenComponent treeParent) {
-        this.component = treeParent.getRepository().getComponent(groupId, artifactId, version);
-        this.component = new MavenComponent(groupId, artifactId, version, treeParent.getRepository());
+        this.component = treeParent.getRepository().getComponent(groupId, artifactId, version, treeParent);
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.treeParent = treeParent;
@@ -86,13 +85,13 @@ public class MavenDependency implements Dependency {
     @Override
     public synchronized Component getComponent() {
         if (component == null && version != null) {
-            this.component = treeParent.getRepository().getComponent(getGroupId(), getArtifactId(), getVersion());
+            this.component = treeParent.getRepository().getComponent(getGroupId(), getArtifactId(), getVersion(), null);
         } else if (component == null) {
-            logger.error("Can not get Component of Dependency " + this + ". Parent is: " + this.treeParent + ". [Version is not resolved].");
-            var possibleComponents = MavenComponentRepositoryType.getLoadedComponents(getGroupId(), getArtifactId());
+//            logger.error("Can not get Component of Dependency " + this + ". Parent is: " + this.treeParent + ". [Version is not resolved].");
+            var possibleComponents = MavenComponentRepository.getInstance().getLoadedComponents(getGroupId(), getArtifactId());
             if (!possibleComponents.isEmpty()) {
-                logger.info("Using " + possibleComponents.last() + " as fallback.");
-                this.component = possibleComponents.last();
+                logger.info("Can not get Component of Dependency " + this + ". Parent is: " + this.treeParent + ". [Version is not resolved]." + "Using " + possibleComponents.getLast() + " as fallback.");
+                this.component = possibleComponents.getLast();
             }
         }
         return this.component;

@@ -1,28 +1,13 @@
 package repository;
 
-import cyclonedx.sbom.Bom16;
 import data.Component;
 import data.Dependency;
 import data.Version;
-import enums.RepositoryType;
-import repository.repositoryImpl.MavenComponentRepositoryType;
-import repository.repositoryImpl.ReadComponentRepository;
-import service.VersionRangeResolver;
 import service.VersionResolver;
 
 import java.util.List;
-import java.util.TreeSet;
 
 public interface ComponentRepository {
-
-    static ComponentRepository of(RepositoryType repositoryType) {
-        return MavenComponentRepositoryType.of((MavenComponentRepositoryType) repositoryType);
-    }
-
-    static Component getReadComponent(Bom16.Property bomRef) {
-        return null;
-    }
-
     /**
      * Returns a list of all possible versions for this dependency.
      *
@@ -37,12 +22,6 @@ public interface ComponentRepository {
     VersionResolver getVersionResolver();
 
     /**
-     *
-     * @return the version range resolver for this repository
-     */
-    VersionRangeResolver getVersionRangeResolver();
-
-    /**
      * Loads all data for a component.
      *
      * @param component the component request
@@ -53,20 +32,26 @@ public interface ComponentRepository {
     /**
      * Returns a component from the repository if it exists. Otherwise, returns null.
      * Returns the component with the highest version if multiple components with group and artifact id exist.
+     * Needs to be synchronized!
      *
      * @param groupId    the group id
      * @param artifactId the artifact id
      * @param version    the version
+     * @param parent
      * @return the component or null
      */
-    Component getComponent(String groupId, String artifactId, Version version);
+    Component getComponent(String groupId, String artifactId, Version version, Component parent);
 
     String getDownloadLocation(Component component);
 
-    static TreeSet<Component> getLoadedComponents(String groupName, String artifactName){
-        var set = MavenComponentRepositoryType.getLoadedComponents(groupName, artifactName);
-        set.addAll(ReadComponentRepository.getInstance().getLoadedComponents(groupName, artifactName));
-        return set;
-    }
+    /**
+     * Returns an order list of all loaded components with the given groupName and artifactName.
+     * The list is sorted by the version, where the first element is the earliest version, and the last element is the newest version.
+     *
+     * @param groupName    the group name
+     * @param artifactName the artifact name
+     * @return the sorted list
+     */
+    List<Component> getLoadedComponents(String groupName, String artifactName);
 
 }

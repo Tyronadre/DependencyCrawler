@@ -32,6 +32,11 @@ public class ExternalReferenceImpl implements ExternalReference {
     }
 
     @Override
+    public String getCategory() {
+        return null;
+    }
+
+    @Override
     public String getType() {
         return switch (this.type) {
             case ("homepage") -> "EXTERNAL_REFERENCE_TYPE_WEBSITE";

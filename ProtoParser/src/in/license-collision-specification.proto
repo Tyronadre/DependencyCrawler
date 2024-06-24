@@ -1,0 +1,17 @@
+syntax = "proto3";
+package dependencyCrawler;
+
+message LicenseCollisionSpecification {
+  // The license collisions
+  repeated LicenseCollision licenseCollisions = 1;
+}
+
+// A License Collision
+message LicenseCollision {
+  // The spdx id of the parent component
+  string spdxIDParent = 1;
+  // The spdx id of the child component
+  string spdxIDChild = 2;
+  // The cause of the license collision
+  optional string cause = 3;
+}

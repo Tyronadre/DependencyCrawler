@@ -2,7 +2,8 @@ package service.serviceImpl;
 
 import com.google.protobuf.util.JsonFormat;
 import cyclonedx.sbom.Bom16;
-import data.*;
+import data.Component;
+import data.Timestamp;
 import repository.repositoryImpl.ReadVulnerabilityRepository;
 import service.DocumentBuilder;
 
@@ -10,10 +11,16 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static service.converter.InternalMavenToBomConverter.*;
+import static service.converter.InternalMavenToBomConverter.buildAllDependenciesAndComponentsRecursively;
+import static service.converter.InternalMavenToBomConverter.buildAllVulnerabilities;
+import static service.converter.InternalMavenToBomConverter.buildMetadata;
+import static service.converter.InternalMavenToBomConverter.buildTimestamp;
 
 public class MavenSBOMBuilder implements DocumentBuilder<Bom16.Bom> {
     private final HashMap<Component, Bom16.Component.Builder> componentToComponentBuilder = new HashMap<>();
@@ -68,14 +75,14 @@ public class MavenSBOMBuilder implements DocumentBuilder<Bom16.Bom> {
         var bomBuilder = Bom16.Bom.newBuilder();
 
         var components = new HashMap<String, Bom16.Component>();
-        var dependency = buildAllDependenciesAndComponentsRecursively(root, components);
+        var dependencies = buildAllDependenciesAndComponentsRecursively(root, components);
 
         bomBuilder.setBomFormat("CycloneDX");
         bomBuilder.setSpecVersion("1.6");
         bomBuilder.setVersion(1);
         bomBuilder.setSerialNumber(UUID.randomUUID().toString());
         bomBuilder.setMetadata(buildMetadata(root));
-        bomBuilder.addDependencies(dependency);
+        bomBuilder.addAllDependencies(dependencies);
         bomBuilder.addAllComponents(components.values().stream().sorted(Comparator.comparing(Bom16.Component::getBomRef)).toList());
         var vuls = root.getDependencyComponentsFlatFiltered().stream().map(Component::getAllVulnerabilities).flatMap(Collection::stream).collect(Collectors.toSet());
         vuls.addAll(ReadVulnerabilityRepository.getInstance().getAllVulnerabilities());

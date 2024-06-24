@@ -1,0 +1,26 @@
+syntax = "proto3";
+package dependencyCrawler;
+import "google/protobuf/timestamp.proto";
+
+message LicenseCollisionOutput {
+  // The license collisions
+  repeated LicenseCollision licenseCollisions = 1;
+  // Creation date
+  google.protobuf.Timestamp creationDate = 2;
+  // The purl of the application
+  string applicationPurl = 3;
+}
+
+// A dependency of an application
+message LicenseCollision {
+  // The purl of the parent component
+  string parentPurl = 1;
+  // The purl of the child component
+  string childPurl = 2;
+  // The license of the parent component
+  string parentLicense = 3;
+  // The license of the child component
+  string childLicense = 4;
+  // The cause
+  optional string cause = 5;
+}

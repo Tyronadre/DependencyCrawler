@@ -21,12 +21,11 @@ dependencies {
 
 tasks.register<Exec>("parseProto") {
     workingDir = file("src")
-    println(workingDir.absolutePath)
     if (!file("src/protoc/bin/protoc.exe").exists())
         throw GradleException("protoc not found. Please download the protoc parser first from https://github.com/protocolbuffers/protobuf/releases/tag/v27.0-rc1 ")
 
     try {
-        println(commandLine("bash", "-c", "./run.sh"))
+        commandLine("bash", "-c", "./run.sh")
     } catch (e: Exception) {
         throw GradleException("Error while executing protoc parser: ${e.message}")
     }

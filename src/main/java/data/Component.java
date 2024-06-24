@@ -1,10 +1,12 @@
 package data;
 
-import data.readData.ReadSBomVulnerability;
 import repository.ComponentRepository;
 
+import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A component in a repository.
@@ -45,7 +47,7 @@ public interface Component {
 
     String getGroup();
 
-    String getName();
+    String getArtifactId();
 
     /**
      * @return the version of the artifact
@@ -122,12 +124,32 @@ public interface Component {
     /**
      * @return a filtered list of dependencies, that only contains the dependencies that are resolved in alphabetical order
      */
-    List<Dependency> getDependenciesFlatFiltered();
+    default List<Dependency> getDependenciesFlatFiltered() {
+        return getDependencies().stream()
+                .filter(Dependency::shouldResolveByScope)
+                .filter(Dependency::isNotOptional)
+                .flatMap(dependency -> Stream.concat(
+                        Stream.of(dependency),
+                        dependency.getComponent() != null && dependency.getComponent().isLoaded()
+                                ? dependency.getComponent().getDependenciesFlatFiltered().stream()
+                                : Stream.empty()
+                ))
+                .distinct()
+                .sorted(Comparator.comparing(Dependency::getQualifiedName))
+                .collect(Collectors.toList());
+    }
 
     /**
      * @return a filtered list of components, that only contains the components that are resolved in alphabetical order
      */
-    List<Component> getDependencyComponentsFlatFiltered();
+    default List<Component> getDependencyComponentsFlatFiltered() {
+        return this.getDependenciesFlatFiltered().stream()
+                .distinct()
+                .map(Dependency::getComponent)
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(Component::getQualifiedName))
+                .toList();
+    }
 
     String getPublisher();
 

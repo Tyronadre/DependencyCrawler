@@ -15,18 +15,14 @@ import enums.ComponentType;
 import logger.Logger;
 import org.apache.maven.api.model.Model;
 import repository.ComponentRepository;
-import repository.repositoryImpl.MavenComponentRepositoryType;
+import repository.repositoryImpl.ReadComponentRepository;
 import repository.repositoryImpl.ReadVulnerabilityRepository;
 import service.converter.BomToInternalMavenConverter;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.StringJoiner;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static service.converter.BomToInternalMavenConverter.buildAllExternalReferences;
 import static service.converter.BomToInternalMavenConverter.buildAllLicenseChoices;
@@ -98,7 +94,8 @@ public class ReadSBomComponent implements Component {
         if (this.repository != null) this.repository.loadComponent(this);
 
         switch (this.type) {
-            case MAVEN -> MavenComponentRepositoryType.tryLoadComponent(this);
+            case MAVEN -> {
+            }
             default -> throw new UnsupportedOperationException("Cannot load read component of type " + type);
         }
 
@@ -165,7 +162,7 @@ public class ReadSBomComponent implements Component {
     }
 
     @Override
-    public String getName() {
+    public String getArtifactId() {
         return bomComponent.getName();
     }
 
@@ -196,7 +193,7 @@ public class ReadSBomComponent implements Component {
 
     @Override
     public ComponentRepository getRepository() {
-        return MavenComponentRepositoryType.of(MavenComponentRepositoryType.FILE);
+        return ReadComponentRepository.getInstance();
     }
 
     @Override
@@ -251,32 +248,6 @@ public class ReadSBomComponent implements Component {
     }
 
     @Override
-    public List<Dependency> getDependenciesFlatFiltered() {
-        return this.dependencies.stream()
-                .filter(Dependency::shouldResolveByScope)
-                .filter(Dependency::isNotOptional)
-                .flatMap(dependency -> Stream.concat(
-                        Stream.of(dependency),
-                        dependency.getComponent() != null && dependency.getComponent().isLoaded()
-                                ? dependency.getComponent().getDependenciesFlatFiltered().stream()
-                                : Stream.empty()
-                ))
-                .distinct()
-                .sorted(Comparator.comparing(Dependency::getQualifiedName))
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<Component> getDependencyComponentsFlatFiltered() {
-        return this.getDependenciesFlatFiltered().stream()
-                .map(Dependency::getComponent)
-                .filter(Objects::nonNull)
-                .distinct()
-                .sorted(Comparator.comparing(Component::getQualifiedName))
-                .toList();
-    }
-
-    @Override
     public String getPublisher() {
         return (bomComponent.hasPublisher()) ? bomComponent.getPublisher() : null;
     }
@@ -302,6 +273,7 @@ public class ReadSBomComponent implements Component {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void setData(String key, Object value) {
         switch (key) {
             case "model" -> this.model = (Model) value;

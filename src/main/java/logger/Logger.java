@@ -4,10 +4,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.stream.Collectors;
 
 public abstract class Logger implements System.Logger {
     protected static boolean disabled = false;
     protected static boolean verbose = false;
+    private static final boolean devMode = true;
 
     private static final Map<String, Logger> loggers = new HashMap<>();
 
@@ -32,8 +34,8 @@ public abstract class Logger implements System.Logger {
     public abstract void error(String msg);
 
     public void error(String msg, Exception e) {
-        if (verbose) {
-            error(msg + "\n" + Arrays.toString(e.getStackTrace()));
+        if (devMode) {
+            error(msg + "\n" + e + "\n" + Arrays.stream(e.getStackTrace()).map(it -> "\t" + it.toString()).collect(Collectors.joining("\n")));
         } else {
             error(msg + " " + e);
         }
