@@ -10,6 +10,7 @@ import logger.Logger;
 import repository.ComponentRepository;
 import service.VersionResolver;
 
+import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.util.ArrayList;
@@ -46,8 +47,21 @@ public class ConanComponentRepository implements ComponentRepository {
             var start = System.currentTimeMillis();
             logger.info("Loading conan component: " + component.getQualifiedName());
 
-            //TODO this link doesnt look stable :/
-            var url = URI.create("https://conan.io/_next/data/eh_CQjRsfRlA2uGc_doGF/center/recipes/" + component.getArtifactId() + ".json?version=" + component.getVersion().version()).toURL();
+            //get build id
+            var buildUrl = URI.create("https://conan.io/center").toURL();
+            var reader = new BufferedReader(new InputStreamReader(buildUrl.openStream()));
+            var line = "";
+            var buildId = "";
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("buildId")) {
+                    buildId = line.substring(line.indexOf("buildId") + 10);
+                    buildId = buildId.substring(0, buildId.indexOf("\""));
+                    break;
+                }
+            }
+
+
+            var url = URI.create("https://conan.io/_next/data/" + buildId + "/center/recipes/" + component.getArtifactId() + ".json?version=" + component.getVersion().version()).toURL();
 
             var data = JsonParser.parseReader(new InputStreamReader(url.openStream()));
 
@@ -83,8 +97,7 @@ public class ConanComponentRepository implements ComponentRepository {
     public synchronized Component getComponent(String ignored, String name, Version version, Component parent) {
         if (components.containsKey(name)) {
             var available = components.get(name).stream().filter(it -> it.getVersion().equals(version)).findFirst();
-            if (available.isPresent())
-                return available.get();
+            if (available.isPresent()) return available.get();
         }
         var newComponent = new ConanComponent(name, version);
 
@@ -99,6 +112,7 @@ public class ConanComponentRepository implements ComponentRepository {
 
     @Override
     public List<Component> getLoadedComponents(String groupName, String artifactName) {
+        if (!components.containsKey(artifactName)) return new ArrayList<>();
         return new ArrayList<>(components.get(artifactName));
     }
 }

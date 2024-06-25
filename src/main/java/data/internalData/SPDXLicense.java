@@ -8,6 +8,7 @@ import data.Property;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.StringJoiner;
 
 public class SPDXLicense implements License {
@@ -42,6 +43,7 @@ public class SPDXLicense implements License {
 
     @Override
     public String getText() {
+        if (details == null) return null;
         return details.get("licenseText").getAsString();
     }
 
@@ -57,16 +59,19 @@ public class SPDXLicense implements License {
 
     @Override
     public List<Property> getProperties() {
-        var l = new ArrayList<>(List.of(
-                Property.of("licenseId", data.get("licenseId").getAsString()),
-                Property.of("seeAlso", data.get("seeAlso").getAsJsonArray().toString()),
-                Property.of("isOsiApproved", data.get("isOsiApproved").getAsString()),
-                Property.of("standardLicenseTemplate", details.get("standardLicenseTemplate").getAsString()),
-                Property.of("name", details.get("name").getAsString()),
-                Property.of("crossRef", details.get("crossRef").getAsJsonArray().toString())
-        ));
-        if (data.get("isFsfLibre") != null)
-            l.add(Property.of("isFsfLibre", data.get("isFsfLibre").getAsString()));
+        var l = new ArrayList<Property>();
+
+        l.add(Property.of("licenseId", getId()));
+        Optional.ofNullable(data.get("seeAlso")).ifPresent(s -> l.add(Property.of("seeAlso", s.getAsJsonArray().toString())));
+        Optional.ofNullable(data.get("isOsiApproved")).ifPresent(s -> l.add(Property.of("isOsiApproved", s.getAsString())));
+        Optional.ofNullable(data.get("isFsfLibre")).ifPresent(s -> l.add(Property.of("isFsfLibre", s.getAsString())));
+
+        if (details != null) {
+            l.add(Property.of("standardLicenseTemplate", details.get("standardLicenseTemplate").getAsString()));
+            l.add(Property.of("name", details.get("name").getAsString()));
+            l.add(Property.of("crossRef", details.get("crossRef").getAsJsonArray().toString()));
+        }
+
         return l;
     }
 
@@ -79,7 +84,6 @@ public class SPDXLicense implements License {
     @Override
     public String toString() {
         return new StringJoiner(", ", SPDXLicense.class.getSimpleName() + "[", "]")
-                .add("name=" + details.get("name").getAsString())
                 .add("id=" + getId())
                 .toString();
     }

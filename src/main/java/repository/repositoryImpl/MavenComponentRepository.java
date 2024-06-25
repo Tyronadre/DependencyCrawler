@@ -19,6 +19,7 @@ import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -42,12 +43,17 @@ public class MavenComponentRepository implements ComponentRepository {
 
     private final HashMap<String, TreeSet<Component>> components = new HashMap<>();
     private final HashMap<Component, MavenComponentRepositoryType> types = new HashMap<>();
+    private final HashMap<String, String> customPomFiles = new HashMap<>();
 
     private MavenComponentRepository() {
     }
 
     public static MavenComponentRepository getInstance() {
         return instance;
+    }
+
+    public void addCustomPomFile(String key, String filePath) {
+        this.customPomFiles.put(key, filePath);
     }
 
     @Override
@@ -129,6 +135,25 @@ public class MavenComponentRepository implements ComponentRepository {
             return loadStatus.get(component.getQualifiedName());
         }
 
+        //try to load from custom pom file
+        if (customPomFiles.containsKey(component.getQualifiedName())) {
+            try {
+                logger.info("Loading for " + component.getQualifiedName() + " from custom POM file");
+                component.setData("model", loadModelFromPom(customPomFiles.get(component.getQualifiedName())));
+                types.put(component, MavenComponentRepositoryType.CUSTOM);
+                loadStatus.put(component.getQualifiedName(), 0);
+                return 0;
+            } catch (IOException e) {
+                logger.error("Could not read custom POM file of component: " + component.getQualifiedName(), e);
+                loadStatus.put(component.getQualifiedName(), 1);
+                return 1;
+            } catch (XMLStreamException e) {
+                logger.error("Could not parse custom POM file of component: " + component.getQualifiedName(), e);
+                loadStatus.put(component.getQualifiedName(), 2);
+                return 2;
+            }
+        }
+
         //try to load from set type
         int componentLoadStatus = 1;
         if (getRepositoryType(component) != null) {
@@ -137,6 +162,8 @@ public class MavenComponentRepository implements ComponentRepository {
 
         if (componentLoadStatus != 0) {
             for (var type : MavenComponentRepositoryType.values()) {
+                if (type == MavenComponentRepositoryType.ROOT || type == MavenComponentRepositoryType.CUSTOM) continue;
+
                 if (type == getRepositoryType(component)) continue;
                 componentLoadStatus = loadComponent(component, type);
                 if (componentLoadStatus == 0) {
@@ -161,11 +188,11 @@ public class MavenComponentRepository implements ComponentRepository {
     }
 
     private int loadComponent(Component component, MavenComponentRepositoryType type) {
-        logger.info("Loading for " + component.getQualifiedName() + " from repository type " + type);
         if (type == MavenComponentRepositoryType.ROOT) {
             return 1;
         }
         try {
+            logger.info("Loading for " + component.getQualifiedName() + " from repository type " + type);
             var downloadLocation = getDownloadLocation(component, type);
             component.setData("model", loadModel(downloadLocation + ".pom"));
             component.setData("hashes", loadHashes(downloadLocation + ".jar"));
@@ -180,7 +207,17 @@ public class MavenComponentRepository implements ComponentRepository {
         }
     }
 
+    private Model loadModelFromPom(String filePath) throws IOException, XMLStreamException {
+        MavenStaxReader reader = new MavenStaxReader();
+        Model model;
+        try (var inputStream = new FileReader(filePath)) {
+            model = reader.read(inputStream);
+        }
+        return model;
+    }
+
     private Model loadModel(String url) throws XMLStreamException, IOException {
+
         MavenStaxReader reader = new MavenStaxReader();
         Model model;
         try (InputStream inputStream = URI.create(url).toURL().openStream()) {

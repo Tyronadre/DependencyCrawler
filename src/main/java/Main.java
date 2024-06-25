@@ -28,8 +28,10 @@ public class Main {
     private static final Logger logger = Logger.of("Main");
 
     public static void main(String[] args) {
-        args = new String[]{"--input", "generated/output_1.spdx.json", "--input-type", "spdx", "--output", "generated/output_1_renewFromSPDX", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
-        args = new String[]{"--input", "src/main/resources/input_1.json", "--output", "generated/output_1", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
+        args = new String[]{"--input", "generated/output_0.spdx.json", "--input-type", "spdx", "--output", "generated/output_0_renewFromSPDX", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
+//        args = new String[]{"--input", "src/main/resources/input_2.json", "--output", "generated/output_2", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", ""};
+//        args = new String[]{"--input", "src/main/resources/input_1.json", "--output", "generated/output_1", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
+//        args = new String[]{"--input", "src/main/resources/input_0.json", "--output", "generated/output_0", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
 
         HashMap<String, String> argMap = new HashMap<>();
         String lastKey = null;
@@ -134,7 +136,7 @@ public class Main {
         for (var outputType : outputTypes) {
             try {
                 if (Objects.equals(outputType, "license-collisions"))
-                    new LicenseCollisionBuilder().rebuildDocument(new LicenseCollisionServiceImpl().checkLicenseCollisions(rootComponent), outputFile);
+                    new LicenseCollisionBuilder().rebuildDocument(LicenseCollisionServiceImpl.getInstace().checkLicenseCollisions(rootComponent), outputFile);
                 else
                     getDocumentBuilder(outputType).buildDocument(rootComponent, outputFile);
             } catch (Exception e) {
@@ -153,14 +155,14 @@ public class Main {
         }
         if (data == null) return;
 
-        crawlComponent(data.second());
+        new BFDependencyCrawlerImpl().crawl(data.second());
 
         for (var outputType : outputTypes) {
             try {
                 if (Objects.equals(outputType, "sbom")) {
                     new MavenSBOMBuilder().rebuildDocument(data.first(), outputFile);
                 } else if (Objects.equals(outputType, "license-collisions")) {
-                    new LicenseCollisionBuilder().rebuildDocument(new LicenseCollisionServiceImpl().checkLicenseCollisions(data.second()), outputFile);
+                    new LicenseCollisionBuilder().rebuildDocument(LicenseCollisionServiceImpl.getInstace().checkLicenseCollisions(data.second()), outputFile);
                 } else {
                     getDocumentBuilder(outputType).buildDocument(data.second(), outputFile);
                 }
@@ -180,24 +182,19 @@ public class Main {
         }
         if (data == null) return;
 
-        crawlComponent(data.second());
+        new BFDependencyCrawlerImpl().crawl(data.second());
 
         for (var outputType : outputTypes) {
             try {
                 if (Objects.equals(outputType, "spdx")) {
                     new SPDXBuilder().rebuildDocument(data, outputFile);
                 } else if (Objects.equals(outputType, "license-collisions")) {
-                    new LicenseCollisionBuilder().rebuildDocument(new LicenseCollisionServiceImpl().checkLicenseCollisions(data.second()), outputFile);
+                    new LicenseCollisionBuilder().rebuildDocument(LicenseCollisionServiceImpl.getInstace().checkLicenseCollisions(data.second()), outputFile);
                 } else {
                     getDocumentBuilder(outputType).buildDocument(data.second(), outputFile);
                 }
             } catch (Exception e) {
                 logger.error("Error reading SPDX file: ", e);
-            }
-            if (Objects.equals(outputType, "spdx")) {
-                new SPDXBuilder().rebuildDocument(data, outputFile);
-            } else {
-                getDocumentBuilder(outputType).buildDocument(data.second(), outputFile);
             }
         }
     }
@@ -225,9 +222,6 @@ public class Main {
                 throw new IllegalArgumentException(outputType + " is not a valid outputFormat");
             }
         };
-    }
-
-    private static void crawlComponent(Component component) {
     }
 
     private static void printHelp() {

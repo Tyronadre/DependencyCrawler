@@ -61,11 +61,17 @@ public class BomToInternalMavenConverter {
 
     public static void buildAllVulnerabilities(List<Bom16.Vulnerability> bomVulnerabilities) {
         for (var bomVulnerability : bomVulnerabilities) {
-            var component = componentRepository.getReadComponent(bomVulnerability.getBomRef());
-            var newVul = new ReadSBomVulnerability(bomVulnerability, component);
-            component.addVulnerability(newVul);
+            var componentRef = bomVulnerability.getPropertiesList().stream().filter(it -> it.getName().equals("componentRef")).findFirst();
+            if (componentRef.isEmpty()) {
+                continue;
+            }
+            var component = componentRepository.getReadComponent(componentRef.get().getValue());
+            if (component == null) {
+                continue;
+            }
 
-            vulnerabilityRepository.addReadVulnerability(newVul);
+            vulnerabilityRepository.addReadVulnerability(new ReadSBomVulnerability(bomVulnerability, component));
+
         }
     }
 

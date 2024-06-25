@@ -40,12 +40,14 @@ public class DefaultInputReader implements DocumentReader<Component> {
         }
 
         logger.info("Reading file...");
-        //check if the input application is a java application
+
+        //save properties
+        for (var parameter : dependencyCrawlerInput.getParametersList()) {
+            if (parameter.getKey().startsWith("POM_FILE:"))
+                MavenComponentRepository.getInstance().addCustomPomFile(parameter.getKey().substring(9), parameter.getValue());
+        }
+
         var application = dependencyCrawlerInput.getApplication();
-//        if (application.getType() != DependencyCrawlerInput.Type.MAVEN) {
-//            logger.error("The input application is not a java application.");
-//            throw new IllegalArgumentException("The input application is not a java application.");
-//        }
 
         //get the parent artifact
         MavenComponent parentArtifact = (MavenComponent) MavenComponentRepository.getInstance().getComponent(application.getGroupId(), application.getName(), new VersionImpl(application.getVersion()), null);

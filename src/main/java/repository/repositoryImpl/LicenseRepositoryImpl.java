@@ -1,5 +1,6 @@
 package repository.repositoryImpl;
 
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -170,25 +171,10 @@ public class LicenseRepositoryImpl implements LicenseRepository {
             var jsonFile = new JsonObject();
             jsonFile.addProperty("licenseListVersion", json.get("licenseListVersion").getAsString());
             jsonFile.add("licenses", fileLicenses);
-            writer.write(jsonFile.toString());
+            new GsonBuilder().setPrettyPrinting().create().toJson(jsonFile, writer);
         } catch (IOException e) {
             logger.error("Could not write licenses to file. " + e.getMessage());
         }
-
-//        logger.appendInfo("Loading license exceptions list... ");
-//        this.exceptions = new ArrayList<>();
-//        try {
-//            var json = JsonParser.parseReader(new InputStreamReader(new URL("https://raw.githubusercontent.com/spdx/license-list-data/main/json/exceptions.json").openStream())).getAsJsonObject();
-//            logger.appendInfo(" parsing version: " + json.get("licenseListVersion").getAsString() + "...");
-//
-//            for (var exception : json.get("exceptions").getAsJsonArray()) {
-//                exceptions.add(exception.getAsJsonObject());
-//            }
-//
-//            logger.success(" Loaded " + exceptions.size() + " exceptions");
-//        } catch (IOException e) {
-//            logger.error(" failed " + e.getMessage());
-//        }
     }
 
 
@@ -207,17 +193,19 @@ public class LicenseRepositoryImpl implements LicenseRepository {
         return switch (name) {
             case "The Apache Software License, Version 2.0", "Apache 2.0", "Apache License, Version 2.0",
                  "The Apache License, Version 2.0", "Apache Software License - Version 2.0", "Apache License v2.0",
-                 "ASF 2.0", "Apache 2", "Apache Public License 2.0" -> idToLicense.get("Apache-2.0");
-            case "The MIT License" -> idToLicense.get("MIT");
+                 "ASF 2.0", "Apache 2", "Apache Public License 2.0", "APACHE LICENSE 2.0" ->
+                    idToLicense.get("Apache-2.0");
+            case "The MIT License", "The MIT License (MIT)" -> idToLicense.get("MIT");
             case "GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1", "LGPL, version 2.1", "LGPL 2.1" ->
                     idToLicense.get("LGPL-2.1-only");
             case "BSD Licence 3", "BSD License 3", "Eclipse Distribution License - v 1.0", "The BSD 3-Clause License",
                  "BSD", "EDL 1.0", "3-Clause BSD License", "Eclipse Public License - Version 1.0" ->
                     idToLicense.get("BSD-3-Clause");
-            case "New BSD License" -> idToLicense.get("BSD-2-Clause");
+            case "New BSD License", "The BSD License" -> idToLicense.get("BSD-2-Clause");
             case "The JSON License" -> idToLicense.get("JSON");
             case "Eclipse Public License", "Eclipse Public License - v 1.0" -> idToLicense.get("EPL-1.0");
-            case "Eclipse Public License v2.0", "Eclipse Public License - Version 2.0" -> idToLicense.get("EPL-2.0");
+            case "Eclipse Public License v2.0", "Eclipse Public License - Version 2.0", "EPL 2.0" ->
+                    idToLicense.get("EPL-2.0");
             case "GNU General Public License, version 2 (GPL2), with the classpath exception" ->
                     idToLicense.get("GPL-2.0-only");
             case "Common Development and Distribution License (CDDL) v1.0",
@@ -227,6 +215,8 @@ public class LicenseRepositoryImpl implements LicenseRepository {
             case "GNU Lesser General Public License" -> idToLicense.get("LGPL-2.1-or-later");
             case "MPL 1.1" -> idToLicense.get("MPL-1.1");
             case "Mozilla Public License, Version 2.0" -> idToLicense.get("MPL-2.0");
+            case "GPL 3" -> idToLicense.get("GPL-3.0-only");
+
 
             default -> {
                 logger.info("Could not find spdx license " + name + ". Using default license.");

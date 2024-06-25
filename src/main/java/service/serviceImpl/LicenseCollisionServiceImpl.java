@@ -1,6 +1,5 @@
 package service.serviceImpl;
 
-import com.google.gson.JsonParser;
 import com.google.protobuf.util.JsonFormat;
 import data.Component;
 import data.License;
@@ -13,80 +12,18 @@ import service.LicenseCollisionService;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 public class LicenseCollisionServiceImpl implements LicenseCollisionService {
     private static final Logger logger = Logger.of("License_Coll_Service");
     private static final LicenseCollisionServiceImpl instance = new LicenseCollisionServiceImpl();
-    private static final List<String> copyLeftLicense = List.of(
-            "GPL-3.0-only",
-            "GPL-3.0-or-later",
-            "GPL-2.0-only",
-            "GPL-2.0-or-later",
-            "GPL-1.0-only",
-            "GPL-1.0-or-later",
-            "AGPL-3.0-only",
-            "AGPL-3.0-or-later",
-            "EPL-1.0",
-            "MPL-2.0",
-            "NGPL",
-            "Ms-RL",
-            "ODbL",
-            "RPL-1.5",
-            "RPSL-1.0",
-            "OCLC-2.0"
-    );
-    private static final List<String> weakCopyLeftLicense = List.of(
-            "LGPL-3.0-only",
-            "LGPL-3.0-or-later",
-            "LGPL-2.1-only",
-            "LGPL-2.1-or-later",
-            "LGPL-2.0-only",
-            "LGPL-2.0-or-later",
-            "MPL-1.1",
-            "CPL-1.0",
-            "CDDL-1.0",
-            "YPL-1.1",
-            "SPL-1.0",
-            "Nokia",
-            "APL-1.0"
-    );
 
-    static {
-        var row = new String[]{
-                "MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "GPL-1.0-only", "GPL-1.0-or-later", "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-only", "GPL-3.0-or-later", "LGPL-2.0-only", "LGPL-2.1-only", "LGPL-3.0-only", "LGPL-3.0-or-later", "JSON", "EPL-1.0", "EPL-2.0", "CDDL-1.0", "CC0-1.0", "CPL-1.0", "MPL-1.1", "MPL-2.0"
-        };
-        var matrix = new Boolean[][]{
-                /*MIT*/                 {true, true, true, true, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true, true},
-                /*Apache-2.0*/          {true, true, true, true, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true, true},
-                /*BSD-2-Clause*/        {true, true, true, true, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true, true},
-                /*BSD-3-Clause*/        {true, true, true, true, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true, true},
-                /*GPL-1.0-only*/        {false, false, false, false, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false},
-                /*GPL-1.0-or-later*/    {false, false, false, false, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false},
-                /*GPL-2.0-only*/        {false, false, false, false, false, false, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false},
-                /*GPL-2.0-or-later*/    {false, false, false, false, false, false, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false},
-                /*GPL-3.0-only*/        {false, false, false, false, false, false, false, false, true, true, false, false, false, false, false, false, false, false, false, false, false},
-                /*GPL-3.0-or-later*/    {false, false, false, false, false, false, false, false, true, true, false, false, false, false, false, false, false, false, false, false, false},
-                /*LGPL-2.0-only*/       {true, true, true, true, false, false, true, true, false, false, true, false, false, false, true, true, true, true, true, true, true},
-                /*LGPL-2.1-only*/       {true, true, true, true, false, false, true, true, false, false, false, true, false, false, true, true, true, true, true, true, true},
-                /*LGPL-3.0-only*/       {true, true, true, true, false, false, true, true, true, true, false, false, true, true, true, true, true, true, true, true, true},
-                /*LGPL-3.0-or-later*/   {true, true, true, true, false, false, true, true, true, true, false, false, true, true, true, true, true, true, true, true, true},
-                /*JSON */               {true, true, true, true, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true, true},
-                /* EPL-1.0*/            {true, true, true, true, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true, true},
-                /* EPL-2.0 */           {true, true, true, true, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true, true},
-                /*CDDL-1.0 */           {true, true, true, true, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true, true},
-                /*CC0-1.0*/             {true, true, true, true, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true, true},
-                /*CPL-1.0*/             {true, true, true, true, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true, true},
-                /*MPL-1.1*/             {true, true, true, true, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true, true},
-                /*MPL-2.0*/             {true, true, true, true, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true, true}
 
-        };
-    }
-
-    private final HashMap<String, Collision> collisions = new HashMap<>();
-    private final List<String> comparedLicenses = new ArrayList<>();
+    private final HashMap<String, List<Collision>> collisions = new HashMap<>();
 
     private LicenseCollisionServiceImpl() {
         logger.info("Creating LicenseCollisionService.");
@@ -114,16 +51,17 @@ public class LicenseCollisionServiceImpl implements LicenseCollisionService {
             var data = LicenseCollisionSpecificationOuterClass.LicenseCollisionSpecification.newBuilder();
             JsonFormat.parser().ignoringUnknownFields().merge(new FileReader(file), data);
             for (var lc : data.getLicenseCollisionsList()) {
-                this.collisions.put(lc.getSpdxIDChild(), new Collision(lc.getSpdxIDParent(), lc.getSpdxIDChild(), lc.getCause()));
+                this.collisions.computeIfAbsent(lc.getSpdxIDChild(), k -> new ArrayList<>()).add(new Collision(lc.getSpdxIDParentList(), lc.getSpdxIDChild(), lc.getForApplication(), lc.getCause(), lc.getParentExclusionList()));
             }
         } catch (Exception e) {
-            logger.error("Could not load license collisions from file.", e);
-            throw e;
+            logger.error("Could not load license collisions from file. Fallback to predefined collisions. ", e);
+            for (var coll : this.getPredefinedLicenseCollisions()) {
+                this.collisions.computeIfAbsent(coll.spdxIdChild(), k -> new ArrayList<>()).add(coll);
+            }
         }
     }
 
     private void createLicenseCollisions(File file) {
-        // TODO: Implement this method
         var dir = new File("data");
         if (!dir.exists()) {
             dir.mkdir();
@@ -132,106 +70,92 @@ public class LicenseCollisionServiceImpl implements LicenseCollisionService {
         var builder = LicenseCollisionSpecificationOuterClass.LicenseCollisionSpecification.newBuilder();
 
         for (var coll : this.getPredefinedLicenseCollisions()) {
-            this.collisions.put(coll.spdxIdChild(), coll);
+            this.collisions.computeIfAbsent(coll.spdxIdChild(), k -> new ArrayList<>()).add(coll);
             builder.addLicenseCollisions(LicenseCollisionSpecificationOuterClass.LicenseCollision.newBuilder()
-                    .setSpdxIDParent(coll.spdxIdParent())
+                    .addAllSpdxIDParent(Optional.ofNullable(coll.spdxIdParents()).orElse(List.of()))
                     .setSpdxIDChild(coll.spdxIdChild())
+                    .setForApplication(coll.forApplication())
                     .setCause(coll.cause())
+                    .addAllParentExclusion(Optional.ofNullable(coll.parentExclusion()).orElse(List.of()))
             );
         }
 
         try {
-            JsonFormat.printer().appendTo(builder.build(), new FileWriter(file));
+            var outputStream = new FileWriter(file, StandardCharsets.UTF_8);
+            outputStream.write(JsonFormat.printer().print(builder.build()));
+            outputStream.close();
         } catch (Exception e) {
-            logger.error("Could not create license collisions file.", e);
+            logger.error("Could not create license collisions file. ", e);
         }
     }
 
     private List<Collision> getPredefinedLicenseCollisions() {
         return List.of(
-                new Collision("ANY", "GPL-1.0-only", true,  "Incompatible: MIT is not compatible with GPL-1.0-only as GPL-1.0-only is a copyleft license"),
-                new Collision("ANY", "GPL-1.0-or-later",  true, "Incompatible: MIT is not compatible with GPL-1.0-or-later as GPL-1.0-or-later is a copyleft license"),
-                new Collision("ANY", "GPL-2.0-only",  true, "Incompatible: MIT is not compatible with GPL-2.0-only as GPL-2.0-only is a copyleft license"),
-                new Collision("ANY", "GPL-2.0-or-later",  true, "Incompatible: MIT is not compatible with GPL-2.0-or-later as GPL-2.0-or-later is a copyleft license"),
-                new Collision("ANY", "GPL-3.0-only",  true, "Incompatible: MIT is not compatible with GPL-3.0-only as GPL-3.0-only is a copyleft license"),
-                new Collision("ANY", "GPL-3.0-or-later",  true, "Incompatible: MIT is not compatible with GPL-3.0-or-later as GPL-3.0-or-later is a copyleft license"),
-                new Collision("ANY", "LGPL-2.0-only",  false, "Incompatible: MIT is not compatible with LGPL-2.0-only as LGPL-2.0-only is a weak copyleft license"),
-                new Collision("ANY", "LGPL-2.1-only",  false, "Incompatible: MIT is not compatible with LGPL-2.1-only as LGPL-2.1-only is a weak copyleft license"),
-        )
+                new Collision(null, "GPL-1.0-only", true, "is not compatible with GPL-1.0-only as GPL-1.0-only is a copyleft license", List.of("GPL-1.0-or-later", "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-only", "GPL-3.0-or-later")),
+                new Collision(null, "GPL-1.0-or-later", true, "is not compatible with GPL-1.0-or-later as GPL-1.0-or-later is a copyleft license", List.of("GPL-1.0-only", "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-only", "GPL-3.0-or-later")),
+                new Collision(null, "GPL-2.0-only", true, "is not compatible with GPL-2.0-only as GPL-2.0-only is a copyleft license", List.of("GPL-1.0-only", "GPL-1.0-or-later", "GPL-2.0-or-later", "GPL-3.0-only", "GPL-3.0-or-later")),
+                new Collision(null, "GPL-2.0-or-later", true, "is not compatible with GPL-2.0-or-later as GPL-2.0-or-later is a copyleft license", List.of("GPL-1.0-only", "GPL-1.0-or-later", "GPL-2.0-only", "GPL-3.0-only", "GPL-3.0-or-later")),
+                new Collision(null, "GPL-3.0-only", true, "is not compatible with GPL-3.0-only as GPL-3.0-only is a copyleft license", List.of("GPL-1.0-only", "GPL-1.0-or-later", "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-or-later")),
+                new Collision(null, "GPL-3.0-or-later", true, "is not compatible with GPL-3.0-or-later as GPL-3.0-or-later is a copyleft license", List.of("GPL-1.0-only", "GPL-1.0-or-later", "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-only")),
+                new Collision(null, "LGPL-2.0-only", false, "is not compatible with LGPL-2.0-only as LGPL-2.0-only is a weak copyleft license", List.of("LGPL-2.1-only", "LGPL-3.0-only", "LGPL-3.0-or-later", "GPL-1.0-only", "GPL-1.0-or-later", "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-only", "GPL-3.0-or-later")),
+                new Collision(null, "LGPL-2.1-only", false, "is not compatible with LGPL-2.1-only as LGPL-2.1-only is a weak copyleft license", List.of("LGPL-2.0-only", "LGPL-3.0-only", "LGPL-3.0-or-later", "GPL-1.0-only", "GPL-1.0-or-later", "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-only", "GPL-3.0-or-later")),
+                new Collision(null, "LGPL-3.0-only", false, "is not compatible with LGPL-3.0-only as LGPL-3.0-only is a weak copyleft license", List.of("LGPL-2.0-only", "LGPL-2.1-only", "LGPL-3.0-or-later", "GPL-1.0-only", "GPL-1.0-or-later", "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-only", "GPL-3.0-or-later")),
+                new Collision(null, "LGPL-3.0-or-later", false, "is not compatible with LGPL-3.0-or-later as LGPL-3.0-or-later is a weak copyleft license", List.of("LGPL-2.0-only", "LGPL-2.1-only", "LGPL-3.0-only", "GPL-1.0-only", "GPL-1.0-or-later", "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-only", "GPL-3.0-or-later")),
+                new Collision(null, "EPL-1.0", true, "is not compatible with EPL-1.0 as EPL-1.0 is a copyleft license", null),
+                new Collision(null, "MPL-2.0", true, "is not compatible with MPL-2.0 as MPL-2.0 is a copyleft license", null),
+                new Collision(null, "NGPL", true, "is not compatible with NGPL as NGPL is a copyleft license", null),
+                new Collision(null, "Ms-RL", true, "is not compatible with Ms-RL as Ms-RL is a copyleft license", null),
+                new Collision(null, "ODbL", true, "is not compatible with ODbL as ODbL is a copyleft license", null),
+                new Collision(null, "RPL-1.5", true, "is not compatible with RPL-1.5 as RPL-1.5 is a copyleft license", null),
+                new Collision(null, "RPSL-1.0", true, "is not compatible with RPSL-1.0 as RPSL-1.0 is a copyleft license", null),
+                new Collision(null, "OCLC-2.0", true, "is not compatible with OCLC-2.0 as OCLC-2.0 is a copyleft license", null),
+                new Collision(null, "MPL-1.1", false, "is not compatible with MPL-1.1 as MPL-1.1 is a weak copyleft license", null),
+                new Collision(null, "CPL-1.0", false, "is not compatible with CPL-1.0 as CPL-1.0 is a weak copyleft license", null),
+                new Collision(null, "CDDL-1.0", false, "is not compatible with CDDL-1.0 as CDDL-1.0 is a weak copyleft license", null),
+                new Collision(null, "YPL-1.1", false, "is not compatible with YPL-1.1 as YPL-1.1 is a weak copyleft license", null),
+                new Collision(null, "SPL-1.0", false, "is not compatible with SPL-1.0 as SPL-1.0 is a weak copyleft license", null),
+                new Collision(null, "Nokia", false, "is not compatible with Nokia as Nokia is a weak copyleft license", null),
+                new Collision(null, "APL-1.0", false, "is not compatible with APL-1.0 as APL-1.0 is a weak copyleft license", null)
+        );
     }
 
     public String areLicensesCompatible(License parentLicense, License childLicense, boolean isParentApplication) {
-        if (parentLicense.equals(childLicense)) return null;
-        var parentLicenseSPDXId = parentLicense.getId();
-        var childLicenseSPDXId = childLicense.getId();
-        if (parentLicenseSPDXId == null || childLicenseSPDXId == null) return null;
-
-        var collision = switch (childLicenseSPDXId) {
-            case "MIT" -> switch (parentLicenseSPDXId) {
-                case "GPL-1.0-only", "GPL-1.0-or-later", "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-only",
-                     "GPL-3.0-or-later" -> "Incompatible: MIT is not compatible with " + parentLicenseSPDXId;
-                default -> null;
-            };
-            case "Apache-2.0" -> switch (parentLicenseSPDXId) {
-                case "GPL-1.0-only", "GPL-1.0-or-later", "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-only",
-                     "GPL-3.0-or-later" -> "Incompatible: Apache-2.0 is not compatible with " + parentLicenseSPDXId;
-                default -> null;
-            };
-            case "BSD-2-Clause" -> switch (parentLicenseSPDXId) {
-                case "GPL-1.0-only", "GPL-1.0-or-later", "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-only",
-                     "GPL-3.0-or-later" -> "Incompatible: BSD-2-Clause is not compatible with " + parentLicenseSPDXId;
-                default -> null;
-            };
-            case "BSD-3-Clause" -> switch (parentLicenseSPDXId) {
-                case "GPL-1.0-only", "GPL-1.0-or-later", "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-only",
-                     "GPL-3.0-or-later" -> "Incompatible: BSD-3-Clause is not compatible with " + parentLicenseSPDXId;
-                default -> null;
-            };
-            case "GPL-1.0-only", "GPL-1.0-or-later", "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-only",
-                 "GPL-3.0-or-later" -> switch (parentLicenseSPDXId) {
-                case "MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC" ->
-                        "Incompatible: GPL-2.0 is not compatible with " + parentLicenseSPDXId;
-                default -> null;
-            };
-            case "LGPL-2.0-only" -> switch (parentLicenseSPDXId) {
-                case "GPL-1.0-only", "GPL-1.0-or-later", "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-only",
-                     "GPL-3.0-or-later" -> "Incompatible: LGPL-2.0 is not compatible with " + parentLicenseSPDXId;
-                default -> null;
-            };
-            case "LGPL-2.1-only" -> switch (parentLicenseSPDXId) {
-                case "GPL-1.0-only", "GPL-1.0-or-later", "GPL-2.0-only", "GPL-2.0-or-later", "GPL-3.0-only",
-                     "GPL-3.0-or-later" -> "Incompatible: LGPL-2.1 is not compatible with " + parentLicenseSPDXId;
-                default -> null;
-            };
-            case "LGPL-3.0-only" -> switch (parentLicenseSPDXId) {
-                case "GPL-1.0-only", "GPL-1.0-or-later", "GPL-2.0-only", "GPL-2.0-or-later" ->
-                        "Incompatible: LGPL-3.0 is not compatible with " + parentLicenseSPDXId;
-                default -> null;
-            };
-            default -> {
-                //check for copyleft licenses, meaning parent needs to include child license
-                if (copyLeftLicense.contains(childLicenseSPDXId)) {
-                    yield "Parent license is a copyleft license (" + parentLicenseSPDXId + "), child license (" + childLicenseSPDXId + ") is not.";
-                }
-
-                //check for weak copyleft licenses, meaning parent needs to include child license
-                if (!isParentApplication && weakCopyLeftLicense.contains(parentLicenseSPDXId) && !weakCopyLeftLicense.contains(childLicenseSPDXId)) {
-                    yield "Parent license is a weak copyleft license (" + parentLicenseSPDXId + "), child license (" + childLicenseSPDXId + ") is not.";
-                }
-
-                yield null;
-            }
-        };
-
-        if (collision == null) {
-            if (!comparedLicenses.contains(parentLicenseSPDXId + childLicenseSPDXId)) {
-                logger.info(parentLicenseSPDXId + " and " + childLicenseSPDXId + " are compatible.");
-                comparedLicenses.add(parentLicenseSPDXId + childLicenseSPDXId);
-            }
+        if (parentLicense.equals(childLicense)) {
+            logger.info("License " + parentLicense.getId() + " is compatible with itself.");
             return null;
         }
-        logger.info(childLicenseSPDXId + " does not allow " + parentLicenseSPDXId + " in parent. Cause: " + collision);
-        return collision;
+        var parentLicenseSPDXId = parentLicense.getId();
+        var childLicenseSPDXId = childLicense.getId();
+        if (parentLicenseSPDXId == null) {
+            logger.info("Skipping because parent license is not a detected spdx license: " + parentLicense.getName());
+            return null;
+        }
+        if (childLicenseSPDXId == null) {
+            logger.info("Skipping because child license is not a detected spdx license: " + childLicense.getName());
+            return null;
+        }
+
+
+        if (!collisions.containsKey(childLicenseSPDXId)) {
+            logger.info(childLicenseSPDXId + " allows " + parentLicenseSPDXId + " as a license in a parent library, as it does not have any collisions defined.");
+            return null;
+        }
+
+        for (var collision : collisions.get(childLicenseSPDXId)) {
+            if (collision.forApplication() != isParentApplication) continue;
+            if (collision.spdxIdParents() == null || collision.spdxIdParents().isEmpty() || collision.spdxIdParents().contains(parentLicenseSPDXId)) {
+                //we have a possible collision. check if the parent is excluded;
+                if (collision.parentExclusion() != null && collision.parentExclusion().contains(parentLicenseSPDXId)) {
+                    logger.info(childLicenseSPDXId + " allows " + parentLicenseSPDXId + " in parent as it is specified as an exclusion.");
+                    return null;
+                }
+                logger.info(childLicenseSPDXId + " does not allow " + parentLicenseSPDXId + " in parent. Cause: " + collision.cause());
+                return parentLicenseSPDXId + " " + collision.cause();
+            }
+        }
+
+        logger.info(childLicenseSPDXId + " allows " + parentLicenseSPDXId + " as a license in a parent library, as no collisions could be applied.");
+        return null;
     }
 
     @Override
@@ -283,6 +207,7 @@ public class LicenseCollisionServiceImpl implements LicenseCollisionService {
 
     }
 
-    record Collision(String spdxIdParent, String spdxIdChild, Boolean forApplication, String cause) {
+    record Collision(List<String> spdxIdParents, String spdxIdChild, Boolean forApplication, String cause,
+                     List<String> parentExclusion) {
     }
 }

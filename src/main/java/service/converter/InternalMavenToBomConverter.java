@@ -34,7 +34,6 @@ public class InternalMavenToBomConverter {
 
         Instant now = Instant.now();
         metadataBuilder.setTimestamp(com.google.protobuf.Timestamp.newBuilder().setSeconds(now.getEpochSecond()).setNanos(now.getNano()).build());
-//        metadataBuilder.setTools() //TODO set this as a service in tools
         metadataBuilder.setComponent(buildRoot(root));
         metadataBuilder.setSupplier(buildOrganizationalEntity(Organization.of("Technische Universitaet Darmstadt", List.of("https://www.tu-darmstadt.de"), null, null)));
         metadataBuilder.setManufacturer(buildOrganizationalEntity(Organization.of("Technische Universitaet Darmstadt", List.of("https://www.tu-darmstadt.de"), null, null)));
@@ -60,7 +59,7 @@ public class InternalMavenToBomConverter {
         Optional.ofNullable(vulnerability.getModified()).ifPresent(m -> builder.setUpdated(buildTimestamp(m)));
         Optional.ofNullable(vulnerability.getAllProperties()).ifPresent(allProps -> builder.addAllProperties(buildAllProperties(allProps)));
         Optional.ofNullable(vulnerability.getAllAffects()).ifPresent(allAffects -> builder.addAllAffects(buildAllVulnerabilityAffects(allAffects)));
-        Optional.ofNullable(vulnerability.getComponent()).ifPresent(comp -> builder.addProperties(Bom16.Property.newBuilder().setName("componentRef").setValue(comp.getQualifiedName())));
+        Optional.ofNullable(vulnerability.getComponent()).ifPresent(comp -> builder.addProperties(Bom16.Property.newBuilder().setName("componentRef").setValue(comp.getPurl())));
         return builder.build();
     }
 

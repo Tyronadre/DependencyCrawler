@@ -30,12 +30,11 @@ message Application {
 // The input to the dependency crawler
 message Input {
   Application application = 1; // The application to analyze
-  optional string output = 2; // The output file to write the results to. If not specified, the results are written to output.json and output.tree respectively.
   repeated Parameter parameters = 3; // Other parameters to pass to the analysis (not yet specified)
 }
 
 // A parameter to pass to the analysis
-// Supported Paramters: additional POM files: key: "POM_FILE:groupId:artifactId:version" value: "path/to/pom.pom". The path needs to end with .pom
+// Supported Paramters: additional POM files: key: "POM_FILE:groupId:artifactId:version" value: "path/to/pom.pom".
 message Parameter {
   string key = 1; // The key of the parameter
   string value = 2; // The value of the parameter

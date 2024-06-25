@@ -3,28 +3,42 @@
     "name": "app_0",
     "version": "1.0.0",
     "groupId": "de.henrik",
-    "type": "MAVEN",
     "dependencies": [
       {
+        "groupId": "com.guicedee.activitymaster",
+        "name": "activity-master",
+        "version": "1.1.1.8-jre16",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "com.googlecode.htmlcompressor",
+        "name": "htmlcompressor",
+        "version": "1.5.3",
+        "type": "MAVEN"
+      },
+      {
         "groupId": "platform.external",
-        "name": "bzip2",
+        "name": "bart",
         "version": "main",
         "type": "ANDROID_NATIVE"
       },
       {
-        "groupId": "markusfisch",
-        "name": "ShaderEditor",
-        "version": "2.34.1",
-        "type": "JITPACK"
+        "name": "s2n",
+        "version": "1.4.1",
+        "type": "CONAN"
       },
       {
-        "groupId": "Tyronadre",
-        "name": "DependencyCrawler",
-        "version": "Default",
+        "groupId": "jitpack",
+        "name": "gradle-simple",
+        "version": "2.0",
         "type": "JITPACK"
-
       }
     ]
   },
-  "output": "generated/output_0"
+  "parameters": [
+    {
+      "key": "POM_FILE:com.googlecode.htmlcompressor:htmlcompressor:1.5.3",
+      "value": "C:/Users/Henrik/Downloads/htmlcompressor-1.5.3/htmlcompressor-1.5.3/pom.xml"
+    }
+  ]
 }

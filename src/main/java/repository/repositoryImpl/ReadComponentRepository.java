@@ -64,7 +64,14 @@ public class ReadComponentRepository implements ComponentRepository {
         return this.readComponents.get(bomComponent.getBomRef());
     }
 
+    //get or find a component by qualifier
     public ReadSBomComponent getReadComponent(String qualifier) {
-        return readComponents.get(qualifier);
+        if (readComponents.containsKey(qualifier))
+            return readComponents.get(qualifier);
+        for (var e : readComponents.entrySet()) {
+            if (e.getValue().getQualifiedName().contains(qualifier))
+                return e.getValue();
+        }
+        return null;
     }
 }

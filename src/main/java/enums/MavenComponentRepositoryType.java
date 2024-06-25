@@ -22,6 +22,7 @@ public enum MavenComponentRepositoryType implements RepositoryType {
     Mulesoft("https://repository.mulesoft.org/nexus/content/repositories/public/"),
     LinkedIn("https://linkedin.jfrog.io/artifactory/open-source/"),
     Clojars("https://clojars.org/repo/"),
+    CUSTOM("CUSTOM"), // custom pom file
     ROOT("ROOT"); // root of the application
 
     private final String url;
