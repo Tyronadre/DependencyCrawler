@@ -3,6 +3,7 @@ package repository.repositoryImpl;
 import cyclonedx.sbom.Bom16;
 import data.Component;
 import data.Dependency;
+import data.ReadComponent;
 import data.Version;
 import data.readData.ReadSBomComponent;
 import data.readData.ReadSPDXComponent;
@@ -16,7 +17,6 @@ import java.util.List;
 
 public class ReadComponentRepository implements ComponentRepository {
     HashMap<String, Component> readComponents = new HashMap<>();
-    HashMap<String, DependencyCrawlerInput.Type> typeMap = new HashMap<>();
 
     private static ReadComponentRepository instance;
 
@@ -42,10 +42,8 @@ public class ReadComponentRepository implements ComponentRepository {
     }
 
     public ComponentRepository getActualRepository(Component component) {
-        if (component instanceof ReadSBomComponent sBomComponent)
+        if (component instanceof ReadComponent sBomComponent)
             return getRepository(sBomComponent.getType());
-        if (component instanceof ReadSPDXComponent spdxComponent)
-            return getRepository(spdxComponent.getType());
         throw new IllegalArgumentException("Cannot get repository of component with type: " + component.getClass().getSimpleName());
     }
 
@@ -76,13 +74,9 @@ public class ReadComponentRepository implements ComponentRepository {
     }
 
     public List<Component> getLoadedComponents(String groupName, String artifactName) {
-        return this.readComponents.values().stream().filter(c -> c.getGroup().equals(groupName) && c.getArtifactId().equals(artifactName)).map(i -> i).toList();
+        return this.readComponents.values().stream().filter(c -> c.getGroup().equals(groupName) && c.getArtifactId().equals(artifactName)).toList();
     }
 
-
-    public Component getReadComponent(Bom16.Component bomComponent) {
-        return this.readComponents.get(bomComponent.getBomRef());
-    }
 
     //get or find a component by qualifier
     public Component getReadComponent(String qualifier) {
@@ -100,10 +94,10 @@ public class ReadComponentRepository implements ComponentRepository {
         return component;
     }
 
-    public synchronized Component getSBomComponent(Bom16.Component bomComponent, DependencyCrawlerInput.Type type) {
+    public synchronized Component getSBomComponent(Bom16.Component bomComponent, DependencyCrawlerInput.Type type, String purl) {
         if (readComponents.containsKey(bomComponent.getBomRef()))
             return readComponents.get(bomComponent.getBomRef());
-        var component = new ReadSBomComponent(bomComponent, type);
+        var component = new ReadSBomComponent(bomComponent, type, purl);
         readComponents.put(bomComponent.getBomRef(), component);
         return component;
     }

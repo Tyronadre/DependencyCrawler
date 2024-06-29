@@ -38,7 +38,13 @@ public interface Component {
      *
      * @return the filtered dependencies of the artifact.
      */
-    List<Dependency> getDependenciesFiltered();
+    default List<Dependency> getDependenciesFiltered() {
+        return getDependencies().stream()
+                .filter(Objects::nonNull)
+                .filter(Dependency::shouldResolveByScope)
+                .filter(Dependency::isNotOptional)
+                .sorted(Comparator.comparing(Dependency::getQualifiedName))
+                .collect(Collectors.toList());    }
 
     /**
      * @return the name of the artifact
@@ -65,25 +71,21 @@ public interface Component {
     Organization getManufacturer();
 
     /**
-     *
-     * @return  the contributors of the artifact
+     * @return the contributors of the artifact
      */
     List<Person> getContributors();
 
     /**
-     *
      * @return the description of the artifact
      */
     String getDescription();
 
     /**
-     *
      * @return the repository of the artifact
      */
     ComponentRepository getRepository();
 
     /**
-     *
      * @return the purl of the artifact
      */
     String getPurl();
@@ -98,12 +100,14 @@ public interface Component {
 
     /**
      * The parent of this Component (eg. specified in a bom file)
+     *
      * @return the parent of this Component
      */
     Component getParent();
 
     /**
      * Adds a dependency to this component
+     *
      * @param dependency the dependency to add
      */
     void addDependency(Dependency dependency);
@@ -164,9 +168,9 @@ public interface Component {
      * Sets the data for the given key.
      * Exact implementation is up to the component.
      *
-     * @param key the key
+     * @param key   the key
      * @param value the value
-     * @param <T> the type of the value
+     * @param <T>   the type of the value
      */
     <T> void setData(String key, T value);
 

@@ -49,11 +49,6 @@ public class ReadVexComponent implements Component {
     }
 
     @Override
-    public List<Dependency> getDependenciesFiltered() {
-        return null;
-    }
-
-    @Override
     public String getQualifiedName() {
         return group + ":" + name + ":" + version;
     }

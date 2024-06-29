@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -21,13 +22,11 @@ import static service.converter.InternalMavenToBomConverter.buildAllVulnerabilit
 import static service.converter.InternalMavenToBomConverter.buildMetadata;
 import static service.converter.InternalMavenToBomConverter.buildTimestamp;
 
-public class MavenSBOMBuilder implements DocumentBuilder<Component, Bom16.Bom> {
-    private final HashMap<Component, Bom16.Component.Builder> componentToComponentBuilder = new HashMap<>();
+public class SBOMBuilder implements DocumentBuilder<Component, Bom16.Bom> {
 
     @Override
     public void buildDocument(Component root, String outputFileName) {
         var start = System.currentTimeMillis();
-        componentToComponentBuilder.clear();
 
         logger.info("Creating SBOM for " + root.getQualifiedName() + "...");
 
@@ -40,7 +39,10 @@ public class MavenSBOMBuilder implements DocumentBuilder<Component, Bom16.Bom> {
             //create out dir if not exists
             File outDir = new File(outputFileDir[0]);
             if (!outDir.exists()) {
-                outDir.mkdir();
+                if (!outDir.mkdir()) {
+                    logger.error("Failed to create output directory.");
+                    return;
+                }
             }
         }
 
@@ -82,7 +84,7 @@ public class MavenSBOMBuilder implements DocumentBuilder<Component, Bom16.Bom> {
         bomBuilder.setSerialNumber(UUID.randomUUID().toString());
         bomBuilder.setMetadata(buildMetadata(root));
         bomBuilder.addAllDependencies(dependencies);
-        bomBuilder.addAllComponents(components.values().stream().sorted(Comparator.comparing(Bom16.Component::getBomRef)).toList());
+        bomBuilder.addAllComponents(components.values().stream().filter(it -> !Objects.equals(it.getPurl(), root.getPurl())).sorted(Comparator.comparing(Bom16.Component::getBomRef)).toList());
         var vuls = root.getDependencyComponentsFlatFiltered().stream().map(Component::getAllVulnerabilities).flatMap(Collection::stream).collect(Collectors.toSet());
         bomBuilder.addAllVulnerabilities(buildAllVulnerabilities(vuls));
 
@@ -94,7 +96,7 @@ public class MavenSBOMBuilder implements DocumentBuilder<Component, Bom16.Bom> {
 
         bomBuilder.setVersion(bom.getVersion() + 1);
 
-        bomBuilder.setMetadata(bom.getMetadata().toBuilder().setTimestamp(buildTimestamp(Timestamp.of(System.currentTimeMillis()/1000,0))));
+        bomBuilder.setMetadata(bom.getMetadata().toBuilder().setTimestamp(buildTimestamp(Timestamp.of(System.currentTimeMillis() / 1000, 0))));
 
         return bomBuilder.build();
     }

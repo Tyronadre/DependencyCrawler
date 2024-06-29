@@ -3,7 +3,7 @@ package service.serviceImpl;
 import data.Component;
 import data.ExternalReference;
 import data.Hash;
-import data.readData.ReadSPDXDependency;
+import data.readData.ReadDependency;
 import dependencyCrawler.DependencyCrawlerInput;
 import logger.Logger;
 import org.spdx.jacksonstore.MultiFormatStore;
@@ -69,6 +69,7 @@ public class SPDXReader implements DocumentReader<Pair<SpdxDocument, Component>>
                 var newComponent = buildComponent(spdxPackage);
                 if (root == null) {
                     root = newComponent;
+                    assert newComponent != null;
                     newComponent.setRoot();
                 }
                 createdComponents.put(spdxElement.getId(), newComponent);
@@ -85,7 +86,7 @@ public class SPDXReader implements DocumentReader<Pair<SpdxDocument, Component>>
         for (var d : dependenciesToBuild) {
             var parent = createdComponents.get(d.first().getId());
             var child = createdComponents.get(d.second().getId());
-            parent.addDependency(new ReadSPDXDependency(child, parent));
+            parent.addDependency(new ReadDependency(child, parent));
         }
 
         return root;

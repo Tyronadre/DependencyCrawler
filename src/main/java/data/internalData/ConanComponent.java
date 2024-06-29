@@ -65,11 +65,6 @@ public class ConanComponent implements Component {
     }
 
     @Override
-    public List<Dependency> getDependenciesFiltered() {
-        return dependencies;
-    }
-
-    @Override
     public String getQualifiedName() {
         return name + ":" + version.version();
     }

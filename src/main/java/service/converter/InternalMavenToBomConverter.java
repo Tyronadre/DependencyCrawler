@@ -18,7 +18,6 @@ import data.VulnerabilityAffectedVersion;
 import data.VulnerabilityAffects;
 import data.VulnerabilityRating;
 import data.VulnerabilityReference;
-import data.readData.ReadSBomComponent;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -184,7 +183,7 @@ public class InternalMavenToBomConverter {
         //recurse on the dependencies
         for (var dep : component.getDependenciesFiltered()) {
             if (dep.getComponent() == null) continue;
-            builder.addDependencies(Bom16.Dependency.newBuilder().setRef(dep.getComponent().getQualifiedName()).build());
+            builder.addDependencies(Bom16.Dependency.newBuilder().setRef(dep.getComponent().getPurl()).build());
             buildAllDependenciesAndComponentsRecursivelyHelper(dep.getComponent(), buildComponents, dependencies);
         }
 
@@ -194,14 +193,11 @@ public class InternalMavenToBomConverter {
     public static Bom16.Component buildRoot(Component root) {
         var builder = Bom16.Component.newBuilder(buildComponent(root));
         builder.setType(Bom16.Classification.CLASSIFICATION_APPLICATION);
-        builder.setBomRef(root.getQualifiedName());
+        builder.setBomRef(root.getPurl());
         return builder.build();
     }
 
     public static Bom16.Component buildComponent(Component component) {
-        if (component instanceof ReadSBomComponent readComponent)
-            return readComponent.getBomComponent();
-
         var builder = Bom16.Component.newBuilder();
         builder.setType(Bom16.Classification.CLASSIFICATION_LIBRARY);
 //        builder.setBomRef(); //do it when building dependencies, we may need to duplicate componentes then

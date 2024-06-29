@@ -9,8 +9,8 @@ import service.serviceImpl.BFDependencyCrawlerImpl;
 import service.serviceImpl.DefaultInputReader;
 import service.serviceImpl.LicenseCollisionBuilder;
 import service.serviceImpl.LicenseCollisionServiceImpl;
-import service.serviceImpl.MavenSBOMBuilder;
-import service.serviceImpl.MavenSBOMReader;
+import service.serviceImpl.SBOMBuilder;
+import service.serviceImpl.SBOMReader;
 import service.serviceImpl.SPDXBuilder;
 import service.serviceImpl.SPDXReader;
 import service.serviceImpl.TreeBuilder;
@@ -28,9 +28,10 @@ public class Main {
     private static final Logger logger = Logger.of("Main");
 
     public static void main(String[] args) {
-        args = new String[]{"--input", "generated/output_0.spdx.json", "--input-type", "spdx", "--output", "generated/output_0_renewFromSPDX", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
+//        args = new String[]{"--input", "generated/output_0.sbom.json", "--input-type", "sbom", "--output", "generated/output_0_renewFromSBOM", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
+//        args = new String[]{"--input", "generated/output_0.spdx.json", "--input-type", "spdx", "--output", "generated/output_0_renewFromSPDX", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
 //        args = new String[]{"--input", "src/main/resources/input_2.json", "--output", "generated/output_2", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", ""};
-//        args = new String[]{"--input", "src/main/resources/input_1.json", "--output", "generated/output_1", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
+        args = new String[]{"--input", "src/main/resources/input_1.json", "--output", "generated/output_1", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
 //        args = new String[]{"--input", "src/main/resources/input_0.json", "--output", "generated/output_0", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
 
         HashMap<String, String> argMap = new HashMap<>();
@@ -148,7 +149,7 @@ public class Main {
     private static void readFromSBOM(String inputFile, String outputFile, ArrayList<String> outputTypes) {
         Pair<Bom16.Bom, Component> data;
         try {
-            data = new MavenSBOMReader().readDocument(inputFile);
+            data = new SBOMReader().readDocument(inputFile);
         } catch (Exception e) {
             logger.error("Error reading SBOM file: ", e);
             return;
@@ -160,7 +161,7 @@ public class Main {
         for (var outputType : outputTypes) {
             try {
                 if (Objects.equals(outputType, "sbom")) {
-                    new MavenSBOMBuilder().rebuildDocument(data.first(), outputFile);
+                    new SBOMBuilder().rebuildDocument(data.first(), outputFile);
                 } else if (Objects.equals(outputType, "license-collisions")) {
                     new LicenseCollisionBuilder().buildDocument(LicenseCollisionServiceImpl.getInstace().checkLicenseCollisions(data.second()), outputFile);
                 } else {
@@ -212,7 +213,7 @@ public class Main {
 
     private static DocumentBuilder<Component,?> getDocumentBuilder(String outputType) {
         return switch (outputType) {
-            case "sbom" -> new MavenSBOMBuilder();
+            case "sbom" -> new SBOMBuilder();
             case "spdx" -> new SPDXBuilder();
             case "vex" -> new VexBuilder();
             case "tree-all" -> new TreeBuilder(true);

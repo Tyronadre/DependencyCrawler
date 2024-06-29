@@ -19,10 +19,8 @@ import repository.VulnerabilityRepository;
 import repository.repositoryImpl.MavenComponentRepository;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * An artifact in a Maven repository.
@@ -42,7 +40,6 @@ public class MavenComponent implements Component {
     boolean isRoot = false;
     private List<Vulnerability> vulnerabilities;
     private List<LicenseChoice> licenseChoices = new ArrayList<>();
-    private List<Person> authors;
 
     public MavenComponent(String groupId, String artifactId, Version version) {
         this.groupId = groupId;
@@ -53,16 +50,6 @@ public class MavenComponent implements Component {
     @Override
     public List<Dependency> getDependencies() {
         return this.dependencies;
-    }
-
-    @Override
-    public List<Dependency> getDependenciesFiltered() {
-        return this.dependencies.stream()
-                .filter(Objects::nonNull)
-                .filter(Dependency::shouldResolveByScope)
-                .filter(Dependency::isNotOptional)
-                .sorted(Comparator.comparing(Dependency::getQualifiedName))
-                .collect(Collectors.toList());
     }
 
     @Override

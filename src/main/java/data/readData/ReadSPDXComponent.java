@@ -131,11 +131,6 @@ public class ReadSPDXComponent implements ReadComponent {
     }
 
     @Override
-    public List<Dependency> getDependenciesFiltered() {
-        return dependencies.stream().filter(Dependency::isNotOptional).filter(Dependency::shouldResolveByScope).toList();
-    }
-
-    @Override
     public String getQualifiedName() {
         return spdxPackage.getId();
     }
