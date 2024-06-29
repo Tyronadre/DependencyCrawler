@@ -147,6 +147,7 @@ public interface Component {
                 .distinct()
                 .map(Dependency::getComponent)
                 .filter(Objects::nonNull)
+                .distinct()
                 .sorted(Comparator.comparing(Component::getQualifiedName))
                 .toList();
     }

@@ -65,10 +65,6 @@ public class JitPackComponentRepository implements ComponentRepository {
                 var licenseData = new String(zipFile.getInputStream(zipFile.getEntry(zipFile.getEntry(folderName + "LICENSE").getName())).readAllBytes());
                 var license = LicenseRepository.getInstance().getLicense(licenseData, getDownloadLocation(component));
                 component.setData("licenseChoice", LicenseChoice.of(license, null, null));
-
-                //TODO if maven or pom file parse it?
-
-
             } catch (Exception e) {
                 logger.error("Could not parse JitPack Component " + component.getQualifiedName() + ". Probably no LICENSE file present in repository. ", e);
                 return 2;
@@ -119,7 +115,7 @@ public class JitPackComponentRepository implements ComponentRepository {
 
     @Override
     public String getDownloadLocation(Component component) {
-        return baseurl + component.getGroup() + "/" + component.getArtifactId() + "/releases/tags/" + component.getVersion().version();
+        return baseurl + component.getGroup() + "/" + component.getArtifactId() + "/releases/tag/" + component.getVersion().version();
     }
 
     @Override

@@ -1,14 +1,13 @@
 package service;
 
-import data.Component;
 import logger.Logger;
 
-public interface DocumentBuilder <T> {
+public interface DocumentBuilder <V, T> {
     Logger logger = Logger.of("DocumentBuilder");
 
-    void buildDocument(Component root, String outputFileName);
+    void buildDocument(V data, String outputFileName);
 
-    default void rebuildDocument(T object, String path){
+    default void rebuildDocument(T data, String outputFileName){
         throw new UnsupportedOperationException("Not implemented");
     }
 }

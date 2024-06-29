@@ -5,6 +5,9 @@ import data.Component;
 import data.Dependency;
 import data.Version;
 import data.readData.ReadSBomComponent;
+import data.readData.ReadSPDXComponent;
+import dependencyCrawler.DependencyCrawlerInput;
+import org.spdx.library.model.SpdxPackage;
 import repository.ComponentRepository;
 import service.VersionResolver;
 
@@ -12,7 +15,8 @@ import java.util.HashMap;
 import java.util.List;
 
 public class ReadComponentRepository implements ComponentRepository {
-    HashMap<String, ReadSBomComponent> readComponents = new HashMap<>();
+    HashMap<String, Component> readComponents = new HashMap<>();
+    HashMap<String, DependencyCrawlerInput.Type> typeMap = new HashMap<>();
 
     private static ReadComponentRepository instance;
 
@@ -27,6 +31,25 @@ public class ReadComponentRepository implements ComponentRepository {
     }
 
 
+    private ComponentRepository getRepository(DependencyCrawlerInput.Type type) {
+        return switch (type) {
+            case MAVEN -> MavenComponentRepository.getInstance();
+            case ANDROID_NATIVE -> AndroidNativeComponentRepository.getInstance();
+            case CONAN -> ConanComponentRepository.getInstance();
+            case JITPACK -> JitPackComponentRepository.getInstance();
+            default -> null;
+        };
+    }
+
+    public ComponentRepository getActualRepository(Component component) {
+        if (component instanceof ReadSBomComponent sBomComponent)
+            return getRepository(sBomComponent.getType());
+        if (component instanceof ReadSPDXComponent spdxComponent)
+            return getRepository(spdxComponent.getType());
+        throw new IllegalArgumentException("Cannot get repository of component with type: " + component.getClass().getSimpleName());
+    }
+
+
     @Override
     public List<? extends Version> getVersions(Dependency dependency) {
         throw new UnsupportedOperationException();
@@ -38,13 +61,13 @@ public class ReadComponentRepository implements ComponentRepository {
     }
 
     @Override
-    public int loadComponent(Component component) {
-        throw new UnsupportedOperationException();
+    public synchronized int loadComponent(Component component) {
+        return getActualRepository(component).loadComponent(component);
     }
 
     @Override
     public synchronized Component getComponent(String groupId, String artifactId, Version version, Component parent) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("use the specific getComponent method for the type of component you want to get (getSPDXComponent, getSBomComponent, ...)");
     }
 
     @Override
@@ -53,25 +76,35 @@ public class ReadComponentRepository implements ComponentRepository {
     }
 
     public List<Component> getLoadedComponents(String groupName, String artifactName) {
-        return this.readComponents.values().stream().filter(c -> c.getGroup().equals(groupName) && c.getArtifactId().equals(artifactName)).map(i -> (Component) i).toList();
+        return this.readComponents.values().stream().filter(c -> c.getGroup().equals(groupName) && c.getArtifactId().equals(artifactName)).map(i -> i).toList();
     }
 
-    public void addReadComponent(Bom16.Component bomComponent, ReadSBomComponent component) {
-        this.readComponents.put(bomComponent.getBomRef(), component);
-    }
 
     public Component getReadComponent(Bom16.Component bomComponent) {
         return this.readComponents.get(bomComponent.getBomRef());
     }
 
     //get or find a component by qualifier
-    public ReadSBomComponent getReadComponent(String qualifier) {
+    public Component getReadComponent(String qualifier) {
         if (readComponents.containsKey(qualifier))
             return readComponents.get(qualifier);
-        for (var e : readComponents.entrySet()) {
-            if (e.getValue().getQualifiedName().contains(qualifier))
-                return e.getValue();
-        }
         return null;
+    }
+
+
+    public synchronized Component getSPDXComponent(SpdxPackage spdxPackage, DependencyCrawlerInput.Type type, String purl) {
+        if (readComponents.containsKey(purl))
+            return readComponents.get(purl);
+        var component = new ReadSPDXComponent(spdxPackage, type, purl);
+        readComponents.put(purl, component);
+        return component;
+    }
+
+    public synchronized Component getSBomComponent(Bom16.Component bomComponent, DependencyCrawlerInput.Type type) {
+        if (readComponents.containsKey(bomComponent.getBomRef()))
+            return readComponents.get(bomComponent.getBomRef());
+        var component = new ReadSBomComponent(bomComponent, type);
+        readComponents.put(bomComponent.getBomRef(), component);
+        return component;
     }
 }

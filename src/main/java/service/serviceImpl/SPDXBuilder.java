@@ -4,7 +4,6 @@ import data.Component;
 import data.Dependency;
 import data.ExternalReference;
 import data.Hash;
-import data.LicenseChoice;
 import exceptions.SPDXBuilderException;
 import logger.Logger;
 import org.spdx.jacksonstore.MultiFormatStore;
@@ -12,8 +11,6 @@ import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
 import org.spdx.library.SpdxConstants;
 import org.spdx.library.Version;
-import org.spdx.library.model.Checksum;
-import org.spdx.library.model.ExternalRef;
 import org.spdx.library.model.ReferenceType;
 import org.spdx.library.model.Relationship;
 import org.spdx.library.model.SpdxCreatorInformation;
@@ -38,13 +35,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
 
-public class SPDXBuilder implements DocumentBuilder<Pair<SpdxDocument, Component>> {
+public class SPDXBuilder implements DocumentBuilder<Component, Pair<SpdxDocument, Component>> {
     private static final Logger logger = Logger.of("SPDXBuilder");
 
     MultiFormatStore store;
@@ -135,46 +131,22 @@ public class SPDXBuilder implements DocumentBuilder<Pair<SpdxDocument, Component
             var spdxPackage = new SpdxPackage(store, uri, SpdxConstants.SPDX_ELEMENT_REF_PRENUM + component.getQualifiedName(), copyManager, true);
             buildSPDXElements.put(component.getQualifiedName(), spdxPackage);
 
-            if (component.getAllHashes() != null) {
-
-                for (Hash hash : component.getAllHashes()) {
-                    try {
-
-                        var checksum = spdxPackage.createChecksum(switch (hash.getAlgorithm()) {
-                            case "sha1", "HASH_ALG_SHA_1" -> ChecksumAlgorithm.SHA1;
-                            case "sha256", "HASH_ALG_SHA_256" -> ChecksumAlgorithm.SHA256;
-                            case "sha512", "HASH_ALG_SHA_512" -> ChecksumAlgorithm.SHA512;
-                            case "md5", "HASH_ALG_MD_5" -> ChecksumAlgorithm.MD5;
-                            default -> throw new SPDXBuilderException("Unexpected value: " + hash.getAlgorithm());
-                        }, hash.getValue());
-                        spdxPackage.addChecksum(checksum);
-
-
-                    } catch (Exception e) {
-                        logger.error(hash.getValue() + " " + component + " " + e.getMessage());
-                    }
-                }
-            }
+            buildAllHashes(component, spdxPackage);
+            buildAllExternalRefs(component, spdxPackage);
+            buildLicense(component, spdxPackage);
 
 //            spdxPackage.setBuiltDate();
-            spdxPackage.setName(component.getGroup() != null ? component.getGroup().replace('.', ' ') : " " + component.getArtifactId());
+            spdxPackage.setName(component.getQualifiedName().replace(':', ' '));
             var supplier = component.getSupplier();
             if (supplier != null) {
                 spdxPackage.setSupplier("Organization: " + supplier.getName());
                 spdxPackage.setOriginator("Organization: " + supplier.getName());
             }
 
-            if (component.getAllExternalReferences() != null)
-                for (ExternalReference externalReference : component.getAllExternalReferences()) {
-                    var ref = spdxPackage.createExternalRef(ReferenceCategory.OTHER, new ReferenceType(externalReference.getType()), externalReference.getUrl(), null);
-                    spdxPackage.addExternalRef(ref);
-
-                }
             spdxPackage.setPackageFileName(component.getPurl());
-            spdxPackage.setDownloadLocation(component.getDownloadLocation() + ".jar");
+            spdxPackage.setDownloadLocation(component.getDownloadLocation());
 //            spdxPackage.setFilesAnalyzed();
             if (component.getAllLicenses() != null) {
-                buildAllLicenses(component.getAllLicenses(), spdxPackage);
             }
 //            spdxPackage.setPackageVerificationCode();
             spdxPackage.setPrimaryPurpose(Purpose.LIBRARY);
@@ -199,6 +171,38 @@ public class SPDXBuilder implements DocumentBuilder<Pair<SpdxDocument, Component
         }
     }
 
+    private void buildAllHashes(Component component, SpdxPackage spdxPackage) {
+        if (component.getAllHashes() != null) {
+            for (Hash hash : component.getAllHashes()) {
+                try {
+                    var checksum = spdxPackage.createChecksum(switch (hash.getAlgorithm()) {
+                        case "sha1", "HASH_ALG_SHA_1" -> ChecksumAlgorithm.SHA1;
+                        case "sha256", "HASH_ALG_SHA_256" -> ChecksumAlgorithm.SHA256;
+                        case "sha512", "HASH_ALG_SHA_512" -> ChecksumAlgorithm.SHA512;
+                        case "md5", "HASH_ALG_MD_5" -> ChecksumAlgorithm.MD5;
+                        default -> throw new SPDXBuilderException("Unexpected value: " + hash.getAlgorithm());
+                    }, hash.getValue());
+                    spdxPackage.addChecksum(checksum);
+                } catch (Exception e) {
+                    logger.error(hash.getValue() + " " + component + " " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    private void buildAllExternalRefs(Component component, SpdxPackage spdxPackage) {
+        if (component.getAllExternalReferences() != null) {
+            for (ExternalReference externalReference : component.getAllExternalReferences()) {
+                try {
+                    var ref = spdxPackage.createExternalRef(ReferenceCategory.OTHER, new ReferenceType(externalReference.getType()), externalReference.getUrl(), null);
+                    spdxPackage.addExternalRef(ref);
+                } catch (InvalidSPDXAnalysisException e) {
+                    logger.error("Could not build external reference for " + component.getQualifiedName() + ". " + e.getMessage());
+                }
+            }
+        }
+    }
+
     private Collection<Relationship> buildAllDependencies(Component component) {
         var list = new ArrayList<Relationship>();
 
@@ -213,21 +217,21 @@ public class SPDXBuilder implements DocumentBuilder<Pair<SpdxDocument, Component
                 throw new RuntimeException(e);
             }
         }
-
         return list;
-
-
     }
 
-    private void buildAllLicenses(List<LicenseChoice> allLicenses, SpdxPackage spdxPackage) {
-        for (LicenseChoice licenseChoice : allLicenses) {
-            try {
-                var license = LicenseInfoFactory.parseSPDXLicenseString(licenseChoice.getLicense().getId(), store, uri, copyManager);
-                spdxPackage.setLicenseDeclared(license);
-            } catch (InvalidSPDXAnalysisException e) {
-                logger.info("Could not build license  " + licenseChoice.getLicense() + ". " + e.getMessage());
-            }
+    private void buildLicense(Component component, SpdxPackage spdxPackage) {
+        if (component.getAllLicenses() == null || component.getAllLicenses().isEmpty()) {
+            return;
         }
+        var licenseChoice = component.getAllLicenses().getFirst();
+        try {
+            var license = LicenseInfoFactory.parseSPDXLicenseString(licenseChoice.getLicense().getId(), store, uri, copyManager);
+            spdxPackage.setLicenseDeclared(license);
+        } catch (InvalidSPDXAnalysisException e) {
+            logger.info("Could not build license  " + licenseChoice.getLicense() + ". " + e.getMessage());
+        }
+
     }
 
 
@@ -264,98 +268,42 @@ public class SPDXBuilder implements DocumentBuilder<Pair<SpdxDocument, Component
         }
     }
 
-    private void updateSpdxDocument(SpdxDocument spdxDocument, Component component) throws InvalidSPDXAnalysisException {
+    private void updateSpdxDocument(SpdxDocument spdxDocument, Component rootComponent) throws InvalidSPDXAnalysisException {
         var componentsToBuild = new ArrayDeque<>(spdxDocument.getDocumentDescribes());
         var buildComponents = new ArrayList<SpdxElement>();
         var loadedComponents = new HashMap<String, Component>();
-        for (var c : component.getDependencyComponentsFlatFiltered()) {
+        for (var c : rootComponent.getDependencyComponentsFlatFiltered()) {
             loadedComponents.put(c.getQualifiedName(), c);
         }
-        var newComponents = new ArrayList<Component>();
+        loadedComponents.put(rootComponent.getQualifiedName(), rootComponent);
+
 
 
         while (!componentsToBuild.isEmpty()) {
             var spdxPackage = (SpdxPackage) componentsToBuild.poll();
+            Component finalComponent = loadedComponents.get(spdxPackage.getId());
             buildComponents.add(spdxPackage);
 
             //update the spdx from the component
-            Optional.ofNullable(component.getAllLicenses()).ifPresent(licenseChoices -> {
-                if (licenseChoices.isEmpty()) return;
-                var licenseChoice = licenseChoices.getFirst();
-                try {
-                    spdxPackage.setLicenseDeclared(LicenseInfoFactory.parseSPDXLicenseString(licenseChoice.getLicense().getId(), spdxDocument.getModelStore(), spdxDocument.getDocumentUri(), spdxDocument.getCopyManager()));
-                } catch (InvalidSPDXAnalysisException e) {
-                    logger.error("Could not build license  " + licenseChoice.getLicense() + ". " + e.getMessage());
-                }
-            });
-            Optional.ofNullable(component.getSupplier()).ifPresent(manufacturer -> {
+            buildLicense(finalComponent, spdxPackage);
+            Optional.ofNullable(finalComponent.getSupplier()).ifPresent(manufacturer -> {
                 try {
                     spdxPackage.setSupplier("Organization: " + manufacturer.getName());
                 } catch (InvalidSPDXAnalysisException e) {
-                    logger.error("Could not set supplier for " + component.getQualifiedName() + ". " + e.getMessage());
+                    logger.error("Could not set supplier for " + finalComponent.getQualifiedName() + ". " + e.getMessage());
                 }
             });
-            Optional.ofNullable(component.getDownloadLocation()).ifPresent(downloadLocation -> {
+            Optional.ofNullable(finalComponent.getDownloadLocation()).ifPresent(downloadLocation -> {
                 try {
-                    spdxPackage.setDownloadLocation(downloadLocation + ".jar");
+                    spdxPackage.setDownloadLocation(downloadLocation);
                 } catch (InvalidSPDXAnalysisException e) {
-                    logger.error("Could not set download location for " + component.getQualifiedName() + ". " + e.getMessage());
+                    logger.error("Could not set download location for " + finalComponent.getQualifiedName() + ". " + e.getMessage());
                 }
             });
-            Optional.ofNullable(component.getAllHashes()).ifPresent(hashes -> {
-                List<Checksum> oldChecksums = new ArrayList<>();
-                try {
-                    oldChecksums.addAll(spdxPackage.getChecksums());
-                    spdxPackage.getChecksums().clear();
-                } catch (InvalidSPDXAnalysisException e) {
-                    logger.error("Could not clear checksums for " + component.getQualifiedName() + ". " + e.getMessage());
-                }
-                for (Hash hash : hashes) {
-                    try {
-                        var checksum = spdxPackage.createChecksum(switch (hash.getAlgorithm()) {
-                            case "SHA1", "HASH_ALG_SHA_1" -> ChecksumAlgorithm.SHA1;
-                            case "SHA256", "HASH_ALG_SHA_256" -> ChecksumAlgorithm.SHA256;
-                            case "SHA512", "HASH_ALG_SHA_512" -> ChecksumAlgorithm.SHA512;
-                            case "MD5", "HASH_ALG_MD_5" -> ChecksumAlgorithm.MD5;
-                            default -> throw new SPDXBuilderException("Unexpected value: " + hash.getAlgorithm());
-                        }, hash.getValue());
-                        oldChecksums.removeIf(it -> {
-                            try {
-                                return it.getAlgorithm().equals(checksum.getAlgorithm());
-                            } catch (InvalidSPDXAnalysisException e) {
-                                throw new RuntimeException(e);
-                            }
-                        });
-                        spdxPackage.addChecksum(checksum);
-                    } catch (Exception e) {
-                        logger.error("Error creating hash for " + component + " ", e);
-                    }
-                }
-                for (Checksum oldChecksum : oldChecksums) {
-                    try {
-                        spdxPackage.addChecksum(oldChecksum);
-                    } catch (InvalidSPDXAnalysisException e) {
-                        logger.error("Could not add checksum for " + component.getQualifiedName() + ". " + e.getMessage());
-                    }
-                }
-            });
-            Optional.ofNullable(component.getAllExternalReferences()).ifPresent(externalReferences -> {
-                for (ExternalReference externalReference : externalReferences) {
-                    try {
-                        ExternalRef ref = spdxPackage.createExternalRef(ReferenceCategory.OTHER, new ReferenceType(externalReference.getType()), externalReference.getUrl(), null);
-                        spdxPackage.addExternalRef(ref);
-                    } catch (InvalidSPDXAnalysisException e) {
-                        logger.error("Could not set external reference for " + component.getQualifiedName() + ". ", e);
-                    }
-                }
-            });
-            Optional.ofNullable(component.getPurl()).ifPresent(purl -> {
-                try {
-                    spdxPackage.addExternalRef(spdxPackage.createExternalRef(ReferenceCategory.OTHER, new ReferenceType("purl"), purl, null));
-                } catch (InvalidSPDXAnalysisException e) {
-                    logger.error("Could not set purl for " + component.getQualifiedName() + ". ", e);
-                }
-            });
+            spdxPackage.getChecksums().clear();
+            buildAllHashes(finalComponent, spdxPackage);
+            spdxPackage.getExternalRefs().clear();
+            buildAllExternalRefs(finalComponent, spdxPackage);
 
 
             //relationship of the element
@@ -373,4 +321,6 @@ public class SPDXBuilder implements DocumentBuilder<Pair<SpdxDocument, Component
             }
         }
     }
+
+
 }

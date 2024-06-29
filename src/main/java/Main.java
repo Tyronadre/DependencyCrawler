@@ -130,13 +130,13 @@ public class Main {
         }
         if (rootComponent == null) return;
 
-        new BFDependencyCrawlerImpl().crawl(rootComponent);
+        new BFDependencyCrawlerImpl().crawl(rootComponent, true);
 
 
         for (var outputType : outputTypes) {
             try {
                 if (Objects.equals(outputType, "license-collisions"))
-                    new LicenseCollisionBuilder().rebuildDocument(LicenseCollisionServiceImpl.getInstace().checkLicenseCollisions(rootComponent), outputFile);
+                    new LicenseCollisionBuilder().buildDocument(LicenseCollisionServiceImpl.getInstace().checkLicenseCollisions(rootComponent), outputFile);
                 else
                     getDocumentBuilder(outputType).buildDocument(rootComponent, outputFile);
             } catch (Exception e) {
@@ -155,14 +155,14 @@ public class Main {
         }
         if (data == null) return;
 
-        new BFDependencyCrawlerImpl().crawl(data.second());
+        new BFDependencyCrawlerImpl().crawl(data.second(), false);
 
         for (var outputType : outputTypes) {
             try {
                 if (Objects.equals(outputType, "sbom")) {
                     new MavenSBOMBuilder().rebuildDocument(data.first(), outputFile);
                 } else if (Objects.equals(outputType, "license-collisions")) {
-                    new LicenseCollisionBuilder().rebuildDocument(LicenseCollisionServiceImpl.getInstace().checkLicenseCollisions(data.second()), outputFile);
+                    new LicenseCollisionBuilder().buildDocument(LicenseCollisionServiceImpl.getInstace().checkLicenseCollisions(data.second()), outputFile);
                 } else {
                     getDocumentBuilder(outputType).buildDocument(data.second(), outputFile);
                 }
@@ -182,14 +182,14 @@ public class Main {
         }
         if (data == null) return;
 
-        new BFDependencyCrawlerImpl().crawl(data.second());
+        new BFDependencyCrawlerImpl().crawl(data.second(), false);
 
         for (var outputType : outputTypes) {
             try {
                 if (Objects.equals(outputType, "spdx")) {
                     new SPDXBuilder().rebuildDocument(data, outputFile);
                 } else if (Objects.equals(outputType, "license-collisions")) {
-                    new LicenseCollisionBuilder().rebuildDocument(LicenseCollisionServiceImpl.getInstace().checkLicenseCollisions(data.second()), outputFile);
+                    new LicenseCollisionBuilder().buildDocument(LicenseCollisionServiceImpl.getInstace().checkLicenseCollisions(data.second()), outputFile);
                 } else {
                     getDocumentBuilder(outputType).buildDocument(data.second(), outputFile);
                 }
@@ -210,7 +210,7 @@ public class Main {
     }
 
 
-    private static DocumentBuilder<?> getDocumentBuilder(String outputType) {
+    private static DocumentBuilder<Component,?> getDocumentBuilder(String outputType) {
         return switch (outputType) {
             case "sbom" -> new MavenSBOMBuilder();
             case "spdx" -> new SPDXBuilder();

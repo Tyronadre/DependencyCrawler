@@ -8,10 +8,9 @@ import service.DocumentBuilder;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.Comparator;
 
-public class TreeBuilder implements DocumentBuilder<Object> {
+public class TreeBuilder implements DocumentBuilder<Component, Component> {
     private static final Logger logger = Logger.of("TreeBuilder");
     private final boolean showUnresolved;
 

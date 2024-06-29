@@ -37,16 +37,17 @@ public class ConanComponent implements Component {
 
 
             //DEPENDENCIES
-            for (var dependencyO : this.jsonData.get("use_it").getAsJsonObject().get("requires").getAsJsonArray()) {
-                var dSplit = dependencyO.getAsString().split("/");
-                this.dependencies.add(new ConanDependency(dSplit[0], Version.of(dSplit[1]), this));
-            }
+            if (this.jsonData.get("use_it") != null)
+                for (var dependencyO : this.jsonData.get("use_it").getAsJsonObject().get("requires").getAsJsonArray()) {
+                    var dSplit = dependencyO.getAsString().split("/");
+                    this.dependencies.add(new ConanDependency(dSplit[0], Version.of(dSplit[1]), this));
+                }
+
 
             //LICENSE
-            for (var licenseES : this.jsonData.get("licenses").getAsJsonObject().entrySet()) {
-                var licenseName = licenseES.getKey();
-                this.licenseChoices.add(LicenseChoice.of(LicenseRepository.getInstance().getLicense(licenseName, null), null, null));
-            }
+            if (this.jsonData.get("licenses") != null)
+                for (var licenseES : this.jsonData.get("licenses").getAsJsonObject().entrySet())
+                    this.licenseChoices.add(LicenseChoice.of(LicenseRepository.getInstance().getLicense(licenseES.getKey(), null), null, null));
 
             this.loaded = true;
 
@@ -145,7 +146,7 @@ public class ConanComponent implements Component {
 
     @Override
     public List<Hash> getAllHashes() {
-        return null;
+        return List.of();
     }
 
     @Override

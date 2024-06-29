@@ -38,7 +38,7 @@ cron job ob neue vulerabilitys auf vex / cyclondx
 
 - [ ] version resolver ist nicht recursive auf pom files die als dependency management geladen werden
 - [ ] read from sbom broken
-- [ ] read from vex broken
+- [ ] read from spdx broken
 
 ## TODOS
 

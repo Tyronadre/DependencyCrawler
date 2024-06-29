@@ -4,7 +4,6 @@ import com.google.protobuf.util.JsonFormat;
 import cyclonedx.sbom.Bom16;
 import data.Component;
 import data.Timestamp;
-import repository.repositoryImpl.ReadVulnerabilityRepository;
 import service.DocumentBuilder;
 
 import java.io.File;
@@ -22,7 +21,7 @@ import static service.converter.InternalMavenToBomConverter.buildAllVulnerabilit
 import static service.converter.InternalMavenToBomConverter.buildMetadata;
 import static service.converter.InternalMavenToBomConverter.buildTimestamp;
 
-public class MavenSBOMBuilder implements DocumentBuilder<Bom16.Bom> {
+public class MavenSBOMBuilder implements DocumentBuilder<Component, Bom16.Bom> {
     private final HashMap<Component, Bom16.Component.Builder> componentToComponentBuilder = new HashMap<>();
 
     @Override
@@ -85,7 +84,6 @@ public class MavenSBOMBuilder implements DocumentBuilder<Bom16.Bom> {
         bomBuilder.addAllDependencies(dependencies);
         bomBuilder.addAllComponents(components.values().stream().sorted(Comparator.comparing(Bom16.Component::getBomRef)).toList());
         var vuls = root.getDependencyComponentsFlatFiltered().stream().map(Component::getAllVulnerabilities).flatMap(Collection::stream).collect(Collectors.toSet());
-        vuls.addAll(ReadVulnerabilityRepository.getInstance().getAllVulnerabilities());
         bomBuilder.addAllVulnerabilities(buildAllVulnerabilities(vuls));
 
         return bomBuilder.build();

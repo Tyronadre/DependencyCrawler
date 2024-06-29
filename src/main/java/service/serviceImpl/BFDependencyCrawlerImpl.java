@@ -3,6 +3,7 @@ package service.serviceImpl;
 import data.Component;
 import data.Dependency;
 import data.Property;
+import data.ReadComponent;
 import data.internalData.MavenComponent;
 import logger.Logger;
 import service.BFDependencyCrawler;
@@ -22,11 +23,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
     private static final Logger logger = Logger.of("DependencyCrawler");
 
-    public void crawl(Component parentComponent) {
+    public void crawl(Component parentComponent, Boolean updateDependenciesToNewestVersion) {
 
         var time = System.currentTimeMillis();
         logger.info("Crawling dependencies of " + parentComponent.getQualifiedName() + "...");
-        int numberOfComponents = crawlMulti(parentComponent);
+        int numberOfComponents = crawlMulti(parentComponent, updateDependenciesToNewestVersion);
 
 
         double timeTaken = (System.currentTimeMillis() - time) / 1000.0;
@@ -35,7 +36,7 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
         logger.success("Crawling finished in " + timeTaken + "s. (" + format.format(timeTaken / numberOfComponents) + "s per component)");
     }
 
-    public int crawlMulti(Component parentComponent) {
+    public int crawlMulti(Component parentComponent, Boolean updateDependenciesToNewestVersion) {
         parentComponent.loadComponent();
         var repository = parentComponent.getRepository();
 
@@ -92,7 +93,7 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
                 });
             } else {
                 try {
-                    Future<Void> future = completionService.poll(100, TimeUnit.MILLISECONDS);
+                    Future<Void> future = completionService.poll(1, TimeUnit.MINUTES);
                     if (future != null) {
                         future.get(); // ensure exceptions are propagated
                     }
@@ -112,7 +113,8 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
                 logger.error("Failed to resolve all components within the timeout period.");
                 executorService.shutdownNow();
             }
-        } catch (InterruptedException e) {
+        }
+        catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logger.error("Thread interrupted while waiting for executor service to terminate." + e);
             executorService.shutdownNow();
@@ -125,8 +127,10 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
             logger.info("All components resolved successfully.");
         }
 
-        logger.info("Applying overwritten versions...");
-        updateDependenciesToNewestVersion(parentComponent);
+        if (updateDependenciesToNewestVersion) {
+            logger.info("Applying overwritten versions...");
+            updateDependenciesToNewestVersion(parentComponent);
+        }
 
         logger.success("Loaded " + loadCount.get() + " components.");
         if (failCount.get() > 0) {
@@ -141,7 +145,7 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
             var dependency = queue.poll();
             var dependencyComponent = dependency.getComponent();
             if (dependencyComponent == null) continue;
-            if (!(dependencyComponent instanceof MavenComponent) && !(dependency.getTreeParent() == rootComponent)) {
+            if (!(dependencyComponent instanceof MavenComponent) && !(dependency.getTreeParent() == rootComponent) && !(dependencyComponent instanceof ReadComponent readComponent && readComponent.getActualComponent() instanceof MavenComponent)) {
                 logger.info("skipping component " + dependencyComponent + " and all its dependants " + dependencyComponent.getDependencyComponentsFlatFiltered() + " since its not a maven component and not on top level.");
                 continue;
             }

@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public class VexBuilder implements DocumentBuilder<Iterable<Vulnerability>> {
+public class VexBuilder implements DocumentBuilder<Component, Iterable<Vulnerability>> {
     private static final Logger logger = Logger.of("VexBuilder");
 
     @Override

@@ -1,7 +1,6 @@
 package service.serviceImpl;
 
 import com.google.protobuf.util.JsonFormat;
-import data.Component;
 import data.LicenseCollision;
 import data.Timestamp;
 import dependencyCrawler.LicenseCollisionOutputOuterClass;
@@ -14,21 +13,16 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-public class LicenseCollisionBuilder implements DocumentBuilder<List<LicenseCollision>> {
+public class LicenseCollisionBuilder implements DocumentBuilder<List<LicenseCollision>, Void> {
 
     @Override
-    public void buildDocument(Component root, String outputFileName) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void rebuildDocument(List<LicenseCollision> collisions, String path) {
+    public void buildDocument(List<LicenseCollision> collisions, String outputFileName) {
         if (collisions.isEmpty()) {
             logger.info("No License Collisions to write.");
             return;
         }
 
-        logger.info("Writing License Collisions to " + path + "...");
+        logger.info("Writing License Collisions to " + outputFileName + "...");
 
         var builder = LicenseCollisionOutputOuterClass.LicenseCollisionOutput.newBuilder();
         builder.setCreationDate(InternalMavenToBomConverter.buildTimestamp(Timestamp.of(System.currentTimeMillis() / 1000, 0)));
@@ -43,7 +37,7 @@ public class LicenseCollisionBuilder implements DocumentBuilder<List<LicenseColl
         }
         var collisionsProto = builder.build();
 
-        var outputFileDir = path.split("/", 2);
+        var outputFileDir = outputFileName.split("/", 2);
         if (outputFileDir.length > 1) {
             //create out dir if not exists
             File outDir = new File(outputFileDir[0]);
@@ -54,7 +48,7 @@ public class LicenseCollisionBuilder implements DocumentBuilder<List<LicenseColl
 
         // json file
         try {
-            var file = new File(path + ".license-collisions.json");
+            var file = new File(outputFileName + ".license-collisions.json");
             var outputStream = new FileWriter(file, StandardCharsets.UTF_8);
             outputStream.write(JsonFormat.printer().print(collisionsProto));
             outputStream.close();

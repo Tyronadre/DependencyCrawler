@@ -185,9 +185,8 @@ public class MavenComponent implements Component {
             if (this.parent == null) return;
             if (!this.parent.isLoaded()) {
                 this.parent.loadComponent();
-                if (!this.parent.isLoaded()) return;
-                if (this.parent.getAllLicenses() == null) return;
-                this.licenseChoices = new ArrayList<>(this.parent.getAllLicenses());
+                if (this.parent.isLoaded() && this.parent.getAllLicenses() != null)
+                    this.licenseChoices = new ArrayList<>(this.parent.getAllLicenses());
             }
         }
 
@@ -275,6 +274,7 @@ public class MavenComponent implements Component {
 
     @Override
     public String getDownloadLocation() {
+        if (this.isRoot) return null;
         return this.repository.getDownloadLocation(this);
     }
 

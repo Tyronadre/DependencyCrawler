@@ -37,7 +37,7 @@ public interface ComponentRepository {
      * @param groupId    the group id
      * @param artifactId the artifact id
      * @param version    the version
-     * @param parent
+     * @param parent     a parent in the tree. note that components are unique, and and a component can have different parents. this is used to find a repository for maven components
      * @return the component or null
      */
     Component getComponent(String groupId, String artifactId, Version version, Component parent);

@@ -11,7 +11,7 @@ import data.Property;
 import data.Version;
 import data.Vulnerability;
 import repository.ComponentRepository;
-import repository.repositoryImpl.ReadVulnerabilityRepository;
+import repository.repositoryImpl.VulnerabilityRepositoryImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +33,7 @@ public class ReadVexComponent implements Component {
 
     @Override
     public synchronized void loadComponent() {
-        ReadVulnerabilityRepository.getInstance().updateReadVulnerabilities(this);
+        VulnerabilityRepositoryImpl.getInstance().updateVulnerabilities(this);
 
         loaded = true;
     }

@@ -3,7 +3,6 @@ package service.serviceImpl;
 import data.Component;
 import data.ExternalReference;
 import data.Hash;
-import data.readData.ReadSPDXComponent;
 import data.readData.ReadSPDXDependency;
 import dependencyCrawler.DependencyCrawlerInput;
 import logger.Logger;
@@ -14,10 +13,6 @@ import org.spdx.library.model.SpdxDocument;
 import org.spdx.library.model.SpdxElement;
 import org.spdx.library.model.SpdxPackage;
 import org.spdx.storage.simple.InMemSpdxStore;
-import repository.repositoryImpl.AndroidNativeComponentRepository;
-import repository.repositoryImpl.ConanComponentRepository;
-import repository.repositoryImpl.JitPackComponentRepository;
-import repository.repositoryImpl.MavenComponentRepository;
 import repository.repositoryImpl.ReadComponentRepository;
 import service.DocumentReader;
 import util.Pair;
@@ -168,15 +163,13 @@ public class SPDXReader implements DocumentReader<Pair<SpdxDocument, Component>>
         }
 
 
-        var repository = switch (type) {
-            case MAVEN -> MavenComponentRepository.getInstance();
-            case CONAN -> ConanComponentRepository.getInstance();
-            case ANDROID_NATIVE -> AndroidNativeComponentRepository.getInstance();
-            case JITPACK -> JitPackComponentRepository.getInstance();
-            default -> ReadComponentRepository.getInstance();
-        };
+        try {
+            return ReadComponentRepository.getInstance().getSPDXComponent(spdxPackage, type, purl);
 
-        return new ReadSPDXComponent(spdxPackage, repository, purl);
+        } catch (Exception e) {
+            logger.error("Could not get component for " + spdxPackage + ". ", e);
+        }
+        return null;
     }
 
     private List<ExternalReference> buildAllExternalReferences(List<ExternalRef> externalRefsList) {

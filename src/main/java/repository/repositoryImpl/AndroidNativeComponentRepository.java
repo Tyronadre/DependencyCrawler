@@ -10,6 +10,7 @@ import repository.ComponentRepository;
 import repository.LicenseRepository;
 import service.VersionResolver;
 
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -54,9 +55,8 @@ public class AndroidNativeComponentRepository implements ComponentRepository {
 
         if (license != null && owners != null) {
             logger.success("Loaded Android Native Component: " + component.getQualifiedName() + "(" + (System.currentTimeMillis() - start) + "ms)");
-            return 0;
         }
-        return 1;
+        return 0;
     }
 
     private List<String> loadOwners(String url) {
@@ -66,6 +66,8 @@ public class AndroidNativeComponentRepository implements ComponentRepository {
             String decodedContent = new String(decodedBytes, StandardCharsets.UTF_8);
             logger.info("Loaded owners for AndroidNative from " + url);
             return List.of(decodedContent.split("\n"));
+        } catch (FileNotFoundException ignored) {
+            logger.info("No owners for AndroidNative found at " + url);
         } catch (Exception e) {
             logger.error("Could not load owners for AndroidNative from " + url, e);
         }

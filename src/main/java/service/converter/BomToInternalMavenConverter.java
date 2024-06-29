@@ -19,11 +19,10 @@ import data.VulnerabilityAffectedVersion;
 import data.VulnerabilityAffects;
 import data.VulnerabilityRating;
 import data.VulnerabilityReference;
-import data.readData.ReadSBomComponent;
 import data.readData.ReadSBomDependency;
 import data.readData.ReadSBomVulnerability;
 import repository.repositoryImpl.ReadComponentRepository;
-import repository.repositoryImpl.ReadVulnerabilityRepository;
+import repository.repositoryImpl.VulnerabilityRepositoryImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,15 +30,9 @@ import java.util.stream.Collectors;
 
 public class BomToInternalMavenConverter {
     private static final ReadComponentRepository componentRepository = ReadComponentRepository.getInstance();
-    private static final ReadVulnerabilityRepository vulnerabilityRepository = ReadVulnerabilityRepository.getInstance();
 
     public static Component buildComponent(Bom16.Component bomComponent) {
-        var componentFromRepository = componentRepository.getReadComponent(bomComponent);
-        if (componentFromRepository != null) return componentFromRepository;
-
-        var newComponent = ReadSBomComponent.of(bomComponent);
-        componentRepository.addReadComponent(bomComponent, newComponent);
-        return newComponent;
+        return componentRepository.getReadComponent(bomComponent);
     }
 
     /**
@@ -66,11 +59,10 @@ public class BomToInternalMavenConverter {
                 continue;
             }
             var component = componentRepository.getReadComponent(componentRef.get().getValue());
+            var vulnerability = new ReadSBomVulnerability(bomVulnerability, component);
             if (component == null) {
-                continue;
+                VulnerabilityRepositoryImpl.getInstance().addReadVulnerability(vulnerability);
             }
-
-            vulnerabilityRepository.addReadVulnerability(new ReadSBomVulnerability(bomVulnerability, component));
 
         }
     }

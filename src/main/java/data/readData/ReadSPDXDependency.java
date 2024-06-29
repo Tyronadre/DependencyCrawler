@@ -71,4 +71,9 @@ public class ReadSPDXDependency implements Dependency {
     public void setScope(String scope) {
         throw new IllegalArgumentException();
     }
+
+    @Override
+    public String toString(){
+        return getQualifiedName();
+    }
 }

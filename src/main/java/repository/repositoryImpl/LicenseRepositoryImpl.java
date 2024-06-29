@@ -209,7 +209,8 @@ public class LicenseRepositoryImpl implements LicenseRepository {
             case "GNU General Public License, version 2 (GPL2), with the classpath exception" ->
                     idToLicense.get("GPL-2.0-only");
             case "Common Development and Distribution License (CDDL) v1.0",
-                 "COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0" -> idToLicense.get("CDDL-1.0");
+                 "COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0",
+                 "Common Development and Distribution License" -> idToLicense.get("CDDL-1.0");
             case "Public Domain, per Creative Commons CC0" -> idToLicense.get("CC0-1.0");
             case "Common Public License Version 1.0" -> idToLicense.get("CPL-1.0");
             case "GNU Lesser General Public License" -> idToLicense.get("LGPL-2.1-or-later");

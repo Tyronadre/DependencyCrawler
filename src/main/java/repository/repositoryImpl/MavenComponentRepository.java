@@ -201,7 +201,7 @@ public class MavenComponentRepository implements ComponentRepository {
         } catch (FileNotFoundException e) {
             return 1;
         } catch (XMLStreamException | IOException e) {
-            logger.error("Could not parse POM file of component: " + component.getQualifiedName(), e);
+            logger.error("Could not parse POM file of component: " + component.getQualifiedName() + " in MavenRepository with type " + type + ". Trying other Repositories.", e);
             loadStatus.put(component.getQualifiedName(), 2);
             return 2;
         }
@@ -269,6 +269,9 @@ public class MavenComponentRepository implements ComponentRepository {
 
     @Override
     public String getDownloadLocation(Component component) {
+        if (getRepositoryType(component) == MavenComponentRepositoryType.CUSTOM) {
+            return null;
+        }
         return getDownloadLocation(component, getRepositoryType(component));
     }
 

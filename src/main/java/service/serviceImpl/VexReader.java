@@ -7,7 +7,6 @@ import data.Version;
 import data.readData.ReadVexComponent;
 import data.readData.ReadVexVulnerability;
 import logger.Logger;
-import repository.repositoryImpl.ReadVulnerabilityRepository;
 import service.DocumentReader;
 
 import java.io.File;
@@ -56,7 +55,6 @@ public class VexReader implements DocumentReader<List<ReadVexComponent>> {
             var newComp = new ReadVexComponent(refSplit[0], refSplit[1], Version.of(refSplit[2]));
             var newVul = new ReadVexVulnerability(newComp, vul);
             newComp.setData("addVulnerability", newVul);
-            ReadVulnerabilityRepository.getInstance().addReadVulnerability(newVul);
             components.add(newComp);
         }
 

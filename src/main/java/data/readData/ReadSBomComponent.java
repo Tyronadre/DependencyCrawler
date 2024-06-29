@@ -11,16 +11,14 @@ import data.Person;
 import data.Property;
 import data.Version;
 import data.Vulnerability;
-import enums.ComponentType;
+import dependencyCrawler.DependencyCrawlerInput;
 import logger.Logger;
 import org.apache.maven.api.model.Model;
 import repository.ComponentRepository;
 import repository.repositoryImpl.ReadComponentRepository;
-import repository.repositoryImpl.ReadVulnerabilityRepository;
 import service.converter.BomToInternalMavenConverter;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.StringJoiner;
 
@@ -32,6 +30,9 @@ import static service.converter.BomToInternalMavenConverter.buildHashes;
 import static service.converter.BomToInternalMavenConverter.buildOrganization;
 
 public class ReadSBomComponent implements Component {
+    private static final Logger logger = Logger.of("ReadComponent");
+
+    private final DependencyCrawlerInput.Type type;
     private final Bom16.Component bomComponent;
     private final List<Dependency> dependencies;
     private final List<Property> properties;
@@ -40,38 +41,18 @@ public class ReadSBomComponent implements Component {
     private List<Vulnerability> vulnerabilities;
     private final List<Person> authors;
     private final List<LicenseChoice> licenseChoices;
-
-    private static final Logger logger = Logger.of("ReadComponent");
-    private static final HashMap<String, ReadSBomComponent> components = new HashMap<>();
     private boolean isRoot = false;
     private boolean isLoaded = false;
 
-    private ComponentRepository repository;
-    private final ComponentType type = ComponentType.MAVEN;
 
-    /**
-     * Returns a ReadComponent object of the given Bom16.Component object.
-     * If the component is already created, it returns the existing object.
-     *
-     * @param bomComponent the Bom16.Component object
-     * @return the ReadComponent object
-     */
-    public static ReadSBomComponent of(Bom16.Component bomComponent) {
-        if (components.containsKey(bomComponent.getGroup() + ":" + bomComponent.getName() + ":" + bomComponent.getVersion())) {
-            return components.get(bomComponent.getGroup() + ":" + bomComponent.getName() + ":" + bomComponent.getVersion());
-        }
-        ReadSBomComponent component = new ReadSBomComponent(bomComponent);
-        components.put(bomComponent.getGroup() + ":" + bomComponent.getName() + ":" + bomComponent.getVersion(), component);
-        return component;
-    }
-
-    private ReadSBomComponent(Bom16.Component bomComponent) {
+    public ReadSBomComponent(Bom16.Component bomComponent, DependencyCrawlerInput.Type type) {
         this.bomComponent = bomComponent;
         this.dependencies = new ArrayList<>();
         this.properties = buildAllProperties(bomComponent.getPropertiesList());
         this.authors = BomToInternalMavenConverter.buildAllPersons(bomComponent.getAuthorsList(), null);
         this.vulnerabilities = new ArrayList<>();
         this.licenseChoices = buildAllLicenseChoices(this.bomComponent.getLicensesList());
+        this.type = type;
     }
 
 
@@ -91,13 +72,13 @@ public class ReadSBomComponent implements Component {
         var start = System.currentTimeMillis();
         logger.info("Updating read component: " + this.getQualifiedName());
 
-        if (this.repository != null) this.repository.loadComponent(this);
+        ReadComponentRepository.getInstance().loadComponent(this);
 
-        switch (this.type) {
-            case MAVEN -> {
-            }
-            default -> throw new UnsupportedOperationException("Cannot load read component of type " + type);
-        }
+//        switch (this.type) {
+//            case MAVEN -> {
+//            }
+//            default -> throw new UnsupportedOperationException("Cannot load read component of type " + type);
+//        }
 
         //ToDo ignore licences for now
 //        // LICENSES
@@ -125,8 +106,6 @@ public class ReadSBomComponent implements Component {
 //            licenseChoices.forEach(licenseChoice -> this.licenseChoices.removeIf(licenseChoice1 -> licenseChoice1.getLicense().getNameOrId().equals(licenseChoice)));
 //        }
 
-        // VULNERABILITIES
-        ReadVulnerabilityRepository.getInstance().updateReadVulnerabilities(this);
 
         isLoaded = true;
         logger.success("Loaded component: " + this.getQualifiedName() + " (" + (System.currentTimeMillis() - start) + "ms)");
@@ -242,9 +221,7 @@ public class ReadSBomComponent implements Component {
 
     @Override
     public String getDownloadLocation() {
-        if (this.repository == null)
-            return null;
-        return this.repository.getDownloadLocation(this);
+        return ReadComponentRepository.getInstance().getDownloadLocation(this);
     }
 
     @Override
@@ -277,7 +254,6 @@ public class ReadSBomComponent implements Component {
     public void setData(String key, Object value) {
         switch (key) {
             case "model" -> this.model = (Model) value;
-            case "repository" -> this.repository = (ComponentRepository) value;
             case "hashes" -> this.hashes = (List<Hash>) value;
             case "vulnerabilities" -> this.vulnerabilities = (List<Vulnerability>) value;
             default -> throw new UnsupportedOperationException("Cannot set data for key " + key);
@@ -309,5 +285,9 @@ public class ReadSBomComponent implements Component {
     @Override
     public void addVulnerability(Vulnerability newVul) {
         this.vulnerabilities.add(newVul);
+    }
+
+    public DependencyCrawlerInput.Type getType() {
+        return type;
     }
 }
