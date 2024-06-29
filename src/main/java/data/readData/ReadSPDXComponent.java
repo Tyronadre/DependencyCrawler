@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.StringJoiner;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -303,7 +302,7 @@ public class ReadSPDXComponent implements ReadComponent {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", ReadSPDXComponent.class.getSimpleName() + "[", "]").add(getQualifiedName()).toString();
+        return "ReadSPDXComponent {" + this.actualComponent.toString() + "}";
     }
 
     public DependencyCrawlerInput.Type getType() {

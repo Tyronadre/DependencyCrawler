@@ -64,6 +64,7 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
                         // process the component
                         if (component != null)
                             if (!component.isLoaded()) {
+
                                 component.loadComponent();
 
                                 if (component.isLoaded()) {
@@ -77,16 +78,18 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
                                         }
                                     });
 
-                                    loadCount.getAndIncrement();
+                                    loadCount.incrementAndGet();
                                 } else {
-                                    failCount.getAndIncrement();
+                                    failCount.incrementAndGet();
                                 }
                             }
 
-                    } catch (Exception e) {
+                    }
+                    catch (Exception e) {
                         logger.error("Failed to resolve dependency " + dependency, e);
-                        failCount.getAndIncrement();
-                    } finally {
+                        failCount.incrementAndGet();
+                    }
+                    finally {
                         activeTasks.decrementAndGet();
                     }
                     return null;
@@ -97,11 +100,13 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
                     if (future != null) {
                         future.get(); // ensure exceptions are propagated
                     }
-                } catch (InterruptedException e) {
+                }
+                catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     logger.error("Thread interrupted while waiting for tasks to complete." + e);
                     break;
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     logger.error("Error occurred during task execution." + e);
                 }
             }
@@ -120,11 +125,12 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
             executorService.shutdownNow();
         }
 
-        logger.info("Resolved " + loadCount.get() + " components.");
+        logger.success("Resolved " + loadCount.get() + " components.");
         if (failCount.get() > 0) {
             logger.error("Failed to resolve " + failCount.get() + " components.");
-        } else {
-            logger.info("All components resolved successfully.");
+        }
+        else {
+            logger.success("All components resolved successfully.");
         }
 
         if (updateDependenciesToNewestVersion) {
@@ -132,10 +138,6 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
             updateDependenciesToNewestVersion(parentComponent);
         }
 
-        logger.success("Loaded " + loadCount.get() + " components.");
-        if (failCount.get() > 0) {
-            logger.error("Failed to load " + failCount.get() + " components.");
-        }
         return loadCount.get() + failCount.get();
     }
 

@@ -182,4 +182,8 @@ public class ReadVexComponent implements Component {
     }
 
 
+    @Override
+    public String toString() {
+        return this.getQualifiedName();
+    }
 }

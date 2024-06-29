@@ -59,7 +59,7 @@ public class ReadComponentRepository implements ComponentRepository {
     }
 
     @Override
-    public synchronized int loadComponent(Component component) {
+    public int loadComponent(Component component) {
         return getActualRepository(component).loadComponent(component);
     }
 

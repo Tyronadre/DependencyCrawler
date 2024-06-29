@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 public abstract class Logger implements System.Logger {
     // if true, the logger will print the full stack trace of an exception
-    private static final boolean devMode = false;
+    private static final boolean devMode = true;
 
     protected static boolean disabled = false;
     protected static boolean verbose = false;

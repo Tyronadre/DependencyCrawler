@@ -316,4 +316,5 @@ public class ReadSBomComponent implements ReadComponent {
     public DependencyCrawlerInput.Type getType() {
         return type;
     }
+
 }

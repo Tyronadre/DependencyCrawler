@@ -165,7 +165,11 @@ public class MavenComponentRepository implements ComponentRepository {
                 if (type == MavenComponentRepositoryType.ROOT || type == MavenComponentRepositoryType.CUSTOM) continue;
 
                 if (type == getRepositoryType(component)) continue;
-                componentLoadStatus = loadComponent(component, type);
+
+                var newComponentLoadStatus = loadComponent(component, type);
+                if (newComponentLoadStatus > componentLoadStatus) {
+                    componentLoadStatus = newComponentLoadStatus;
+                }
                 if (componentLoadStatus == 0) {
                     types.put(component, type);
                     break;
