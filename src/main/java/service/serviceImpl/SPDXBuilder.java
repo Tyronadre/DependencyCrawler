@@ -175,11 +175,11 @@ public class SPDXBuilder implements DocumentBuilder<Component, Pair<SpdxDocument
         if (component.getAllHashes() != null) {
             for (Hash hash : component.getAllHashes()) {
                 try {
-                    var checksum = spdxPackage.createChecksum(switch (hash.getAlgorithm()) {
-                        case "sha1", "HASH_ALG_SHA_1" -> ChecksumAlgorithm.SHA1;
-                        case "sha256", "HASH_ALG_SHA_256" -> ChecksumAlgorithm.SHA256;
-                        case "sha512", "HASH_ALG_SHA_512" -> ChecksumAlgorithm.SHA512;
-                        case "md5", "HASH_ALG_MD_5" -> ChecksumAlgorithm.MD5;
+                    var checksum = spdxPackage.createChecksum(switch (hash.getAlgorithm().toUpperCase()) {
+                        case "SHA1", "HASH_ALG_SHA_1" -> ChecksumAlgorithm.SHA1;
+                        case "SHA256", "HASH_ALG_SHA_256" -> ChecksumAlgorithm.SHA256;
+                        case "SHA512", "HASH_ALG_SHA_512" -> ChecksumAlgorithm.SHA512;
+                        case "MD5", "HASH_ALG_MD_5" -> ChecksumAlgorithm.MD5;
                         default -> throw new SPDXBuilderException("Unexpected value: " + hash.getAlgorithm());
                     }, hash.getValue());
                     spdxPackage.addChecksum(checksum);
