@@ -37,8 +37,8 @@ cron job ob neue vulerabilitys auf vex / cyclondx
 ## Bugs
 
 - [ ] version resolver ist nicht recursive auf pom files die als dependency management geladen werden
-- [ ] read from sbom broken
-- [ ] read from spdx broken
+- [x] read from sbom broken
+- [x] read from spdx broken
 
 ## TODOS
 
@@ -68,6 +68,8 @@ cron job ob neue vulerabilitys auf vex / cyclondx
 - (license analysis) https://www.blackducksoftware.com
 - (license analysis) https://github.com/jk1/Gradle-License-Report
 
+
+
 ## FRAGEN
 
 ## ARBEIT
@@ -90,6 +92,11 @@ textuell vergleich
 ### EVALUATION
 
 empirischer vergleich
+
+- https://github.com/anchore/syft
+- https://mergebase.com
+- https://fossa.com
+- cyclone dx plugin
 
 ### LIMITATIONS
 
