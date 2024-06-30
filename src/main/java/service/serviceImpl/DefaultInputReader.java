@@ -11,6 +11,7 @@ import data.internalData.MavenDependency;
 import data.internalData.VersionImpl;
 import dependencyCrawler.DependencyCrawlerInput;
 import logger.Logger;
+import repository.repositoryImpl.LicenseRepositoryImpl;
 import repository.repositoryImpl.MavenComponentRepository;
 import service.DocumentReader;
 
@@ -51,6 +52,9 @@ public class DefaultInputReader implements DocumentReader<Component> {
 
         //get the parent artifact
         MavenComponent parentArtifact = (MavenComponent) MavenComponentRepository.getInstance().getComponent(application.getGroupId(), application.getName(), new VersionImpl(application.getVersion()), null);
+        if (application.hasLicenseId()){
+            parentArtifact.setData("license", LicenseRepositoryImpl.getInstance().getLicense(application.getLicenseId(), null));
+        }
         parentArtifact.setRoot();
 
         //read the dependencies

@@ -34,12 +34,14 @@ public class SBOMBuilder implements DocumentBuilder<Component, Bom16.Bom> {
 
         logger.info("SBOM created. Writing to file...");
 
-        var outputFileDir = outputFileName.split("/", 2);
-        if (outputFileDir.length > 1) {
+        var file = new File(outputFileName + ".sbom.json");
+
+        if (!file.getParentFile().exists()) {
             //create out dir if not exists
-            File outDir = new File(outputFileDir[0]);
+            var outDir = file.getParentFile();
             if (!outDir.exists()) {
-                if (!outDir.mkdir()) {
+                logger.info("Creating output directory. " + outDir.getAbsolutePath());
+                if (!outDir.mkdirs()) {
                     logger.error("Failed to create output directory.");
                     return;
                 }
@@ -48,12 +50,11 @@ public class SBOMBuilder implements DocumentBuilder<Component, Bom16.Bom> {
 
         // json file
         try {
-            var file = new File(outputFileName + ".sbom.json");
             var outputStream = new FileWriter(file, StandardCharsets.UTF_8);
             outputStream.write(JsonFormat.printer().print(bom));
             outputStream.close();
         } catch (IOException e) {
-            logger.error("Failed writing to JSON.");
+            logger.error("Failed writing to JSON while building SBOM. " + new File(outputFileName + ".sbom.json").getAbsolutePath(), e);
         }
 
         logger.success(new File(outputFileName).getAbsolutePath() + ".sbom.json saved (" + (System.currentTimeMillis() - start) + "ms)");
@@ -68,7 +69,7 @@ public class SBOMBuilder implements DocumentBuilder<Component, Bom16.Bom> {
             outputStream.write(JsonFormat.printer().print(bom));
             outputStream.close();
         } catch (IOException e) {
-            logger.error("Failed writing to JSON.");
+            logger.error("Failed writing to JSON while rebuild SBOM." + new File(path + ".sbom.json").getAbsolutePath(), e);
         }
     }
 

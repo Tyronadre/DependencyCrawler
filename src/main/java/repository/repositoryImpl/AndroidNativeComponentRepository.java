@@ -112,4 +112,9 @@ public class AndroidNativeComponentRepository implements ComponentRepository {
     public List<Component> getLoadedComponents(String groupName, String artifactName) {
         return List.of();
     }
+
+    @Override
+    public List<Component> getLoadedComponents() {
+        return this.components.values().stream().flatMap(TreeSet::stream).toList();
+    }
 }

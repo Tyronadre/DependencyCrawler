@@ -158,7 +158,7 @@ public class SPDXBuilder implements DocumentBuilder<Component, Pair<SpdxDocument
             spdxPackage.setVersionInfo(component.getVersion().version());
             Optional.ofNullable(component.getPurl()).ifPresent(purl -> {
                 try {
-                    spdxPackage.addExternalRef(spdxPackage.createExternalRef(ReferenceCategory.OTHER, new ReferenceType("purl"), purl, null));
+                    spdxPackage.addExternalRef(spdxPackage.createExternalRef(ReferenceCategory.OTHER, new ReferenceType("purl"), purl.replace(" ", "_"), null));
                 } catch (InvalidSPDXAnalysisException e) {
                     logger.error("Could not set purl for " + component.getQualifiedName() + ". ", e);
                 }

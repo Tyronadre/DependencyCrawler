@@ -4,6 +4,7 @@ import data.Component;
 import data.Dependency;
 import data.ExternalReference;
 import data.Hash;
+import data.License;
 import data.LicenseChoice;
 import data.Organization;
 import data.Person;
@@ -311,16 +312,10 @@ public class MavenComponent implements Component {
             case "hashes" -> setHashes((List<Hash>) value);
             case "vulnerabilities" -> setVulnerabilities((List<Vulnerability>) value);
             case "repository" -> setRepository((ComponentRepository) value);
+            case "license" -> licenseChoices.add(LicenseChoice.of((License) value, null, null));
             case "addProperty" -> {
                 var property = (Property) value;
                 this.properties.add(Property.of(property.getName(), property.getValue()));
-            }
-            case "removeDependencyIfOtherVersionPresent" -> {
-                var dependency = (Dependency) value;
-                if (this.dependencies.stream().anyMatch(d -> d.getComponent().getGroup().equals(dependency.getComponent().getGroup()) && d.getComponent().getArtifactId().equals(dependency.getComponent().getArtifactId()) && !d.getComponent().getVersion().equals(dependency.getComponent().getVersion()))) {
-                    this.dependencies.remove(dependency);
-                    logger.info("Removed dependency " + dependency + " from " + this.getQualifiedName() + " because newer version is present.");
-                }
             }
             default -> logger.error("Unknown key: " + key);
         }

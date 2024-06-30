@@ -53,7 +53,7 @@ public class LicenseCollisionBuilder implements DocumentBuilder<List<LicenseColl
             outputStream.write(JsonFormat.printer().print(collisionsProto));
             outputStream.close();
         } catch (IOException e) {
-            logger.error("Failed writing to JSON.");
+            logger.error("Failed writing to JSON.", e);
         }
     }
 }

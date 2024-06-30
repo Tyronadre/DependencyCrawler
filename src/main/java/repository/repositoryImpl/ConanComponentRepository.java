@@ -115,4 +115,9 @@ public class ConanComponentRepository implements ComponentRepository {
         if (!components.containsKey(artifactName)) return new ArrayList<>();
         return new ArrayList<>(components.get(artifactName));
     }
+
+    @Override
+    public List<Component> getLoadedComponents() {
+        return this.components.values().stream().flatMap(TreeSet::stream).toList();
+    }
 }

@@ -170,6 +170,8 @@ public class MavenComponentRepository implements ComponentRepository {
                 if (newComponentLoadStatus > componentLoadStatus) {
                     componentLoadStatus = newComponentLoadStatus;
                 }
+                if (newComponentLoadStatus == 0)
+                    componentLoadStatus = 0;
                 if (componentLoadStatus == 0) {
                     types.put(component, type);
                     break;
@@ -202,9 +204,9 @@ public class MavenComponentRepository implements ComponentRepository {
             component.setData("hashes", loadHashes(downloadLocation + ".jar"));
             loadStatus.put(component.getQualifiedName(), 0);
             return 0;
-        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
             return 1;
-        } catch (XMLStreamException | IOException e) {
+        } catch (XMLStreamException e) {
             logger.error("Could not parse POM file of component: " + component.getQualifiedName() + " in MavenRepository with type " + type + ". Trying other Repositories.", e);
             loadStatus.put(component.getQualifiedName(), 2);
             return 2;
@@ -289,6 +291,11 @@ public class MavenComponentRepository implements ComponentRepository {
             return List.of();
         }
         return new ArrayList<>(components.get(groupName + ":" + artifactName));
+    }
+
+    @Override
+    public List<Component> getLoadedComponents() {
+        return this.components.values().stream().flatMap(TreeSet::stream).toList();
     }
 
 }

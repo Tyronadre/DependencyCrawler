@@ -193,7 +193,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
         return switch (name) {
             case "The Apache Software License, Version 2.0", "Apache 2.0", "Apache License, Version 2.0",
                  "The Apache License, Version 2.0", "Apache Software License - Version 2.0", "Apache License v2.0",
-                 "ASF 2.0", "Apache 2", "Apache Public License 2.0", "APACHE LICENSE 2.0" ->
+                 "ASF 2.0", "Apache 2", "Apache Public License 2.0", "APACHE LICENSE 2.0", "Apache Licence 2.0" ->
                     idToLicense.get("Apache-2.0");
             case "The MIT License", "The MIT License (MIT)" -> idToLicense.get("MIT");
             case "GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1", "LGPL, version 2.1", "LGPL 2.1" ->

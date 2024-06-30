@@ -25,6 +25,7 @@ message Application {
   optional string groupId = 3;  // The group id of the application, if present
   repeated Dependency dependencies = 4; // The dependencies of the application
   Type type = 5; // The type of the application
+  optional string licenseId = 6; // The spdx license id of the application if known
 }
 
 // The input to the dependency crawler

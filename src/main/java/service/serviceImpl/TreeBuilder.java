@@ -36,7 +36,7 @@ public class TreeBuilder implements DocumentBuilder<Component, Component> {
         try (PrintWriter writer = new PrintWriter(outputFileName + ".tree.txt")) {
             printTree(root, 0, "", writer);
         } catch (FileNotFoundException e) {
-            logger.error("Failed writing to tree.");
+            logger.error("Failed writing to tree.", e);
         }
 
         logger.success(new File(outputFileName).getAbsolutePath() + ".tree.txt saved (" + (System.currentTimeMillis() - start) + "ms)");

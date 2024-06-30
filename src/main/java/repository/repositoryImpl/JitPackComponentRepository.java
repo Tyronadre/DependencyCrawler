@@ -63,6 +63,9 @@ public class JitPackComponentRepository implements ComponentRepository {
             try (ZipFile zipFile = new ZipFile(zipFileF)) {
                 var folderName = zipFile.stream().findFirst().get().getName();
                 var licenseData = new String(zipFile.getInputStream(zipFile.getEntry(zipFile.getEntry(folderName + "LICENSE").getName())).readAllBytes());
+                if (zipFile.getEntry(folderName + "license.txt") == null) {
+                    licenseData = new String(zipFile.getInputStream(zipFile.getEntry(folderName + "license.txt")).readAllBytes());
+                }
                 var license = LicenseRepository.getInstance().getLicense(licenseData, getDownloadLocation(component));
                 component.setData("licenseChoice", LicenseChoice.of(license, null, null));
             } catch (Exception e) {
@@ -121,5 +124,10 @@ public class JitPackComponentRepository implements ComponentRepository {
     @Override
     public List<Component> getLoadedComponents(String groupName, String artifactName) {
         return List.of();
+    }
+
+    @Override
+    public List<Component> getLoadedComponents() {
+        return this.components.values().stream().flatMap(TreeSet::stream).toList();
     }
 }

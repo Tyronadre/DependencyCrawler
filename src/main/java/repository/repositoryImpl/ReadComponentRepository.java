@@ -77,6 +77,11 @@ public class ReadComponentRepository implements ComponentRepository {
         return this.readComponents.values().stream().filter(c -> c.getGroup().equals(groupName) && c.getArtifactId().equals(artifactName)).toList();
     }
 
+    @Override
+    public List<Component> getLoadedComponents() {
+        return this.readComponents.values().stream().toList();
+    }
+
 
     //get or find a component by qualifier
     public Component getReadComponent(String qualifier) {

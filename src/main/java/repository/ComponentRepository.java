@@ -3,11 +3,24 @@ package repository;
 import data.Component;
 import data.Dependency;
 import data.Version;
+import repository.repositoryImpl.AndroidNativeComponentRepository;
+import repository.repositoryImpl.ConanComponentRepository;
+import repository.repositoryImpl.JitPackComponentRepository;
+import repository.repositoryImpl.MavenComponentRepository;
 import service.VersionResolver;
 
 import java.util.List;
 
 public interface ComponentRepository {
+    static List<ComponentRepository> getAllRepositories() {
+        return List.of(
+                AndroidNativeComponentRepository.getInstance(),
+                ConanComponentRepository.getInstance(),
+                JitPackComponentRepository.getInstance(),
+                MavenComponentRepository.getInstance()
+        );
+    }
+
     /**
      * Returns a list of all possible versions for this dependency.
      *
@@ -53,5 +66,10 @@ public interface ComponentRepository {
      * @return the sorted list
      */
     List<Component> getLoadedComponents(String groupName, String artifactName);
+
+    /**
+     * Returns all loaded components.
+     */
+    List<Component> getLoadedComponents();
 
 }

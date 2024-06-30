@@ -53,7 +53,7 @@ public class VexBuilder implements DocumentBuilder<Component, Iterable<Vulnerabi
             outputStream.write(JsonFormat.printer().print(vex));
             outputStream.close();
         } catch (IOException e) {
-            logger.error("Failed writing to JSON.");
+            logger.error("Failed writing to JSON.", e);
         }
 
         logger.success(new File(outputFileName).getAbsolutePath() + ".vex.json saved (" + (System.currentTimeMillis() - start) + "ms)");
@@ -176,7 +176,7 @@ public class VexBuilder implements DocumentBuilder<Component, Iterable<Vulnerabi
             outputStream.write(JsonFormat.printer().print(builder.build()));
             outputStream.close();
         } catch (IOException e) {
-            logger.error("Failed writing to JSON." + e.getMessage());
+            logger.error("Failed writing to JSON.", e);
         }
         logger.success("VEX updated.");
     }

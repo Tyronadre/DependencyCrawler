@@ -6,6 +6,7 @@ import data.Property;
 import data.ReadComponent;
 import data.internalData.MavenComponent;
 import logger.Logger;
+import repository.ComponentRepository;
 import service.BFDependencyCrawler;
 
 import java.text.DecimalFormat;
@@ -27,16 +28,17 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
 
         var time = System.currentTimeMillis();
         logger.info("Crawling dependencies of " + parentComponent.getQualifiedName() + "...");
-        int numberOfComponents = crawlMulti(parentComponent, updateDependenciesToNewestVersion);
+        crawlMulti(parentComponent, updateDependenciesToNewestVersion);
 
+        var loadedComponents = ComponentRepository.getAllRepositories().stream().mapToInt(it -> it.getLoadedComponents().size()).sum();
 
         double timeTaken = (System.currentTimeMillis() - time) / 1000.0;
         var format = new DecimalFormat("0.##");
 
-        logger.success("Crawling finished in " + timeTaken + "s. (" + format.format(timeTaken / numberOfComponents) + "s per component)");
+        logger.success("Crawling finished in " + timeTaken + "s. Loaded " + loadedComponents + " Components. (" + format.format(timeTaken / loadedComponents) + "s per component)");
     }
 
-    public int crawlMulti(Component parentComponent, Boolean updateDependenciesToNewestVersion) {
+    public void crawlMulti(Component parentComponent, Boolean updateDependenciesToNewestVersion) {
         parentComponent.loadComponent();
         var repository = parentComponent.getRepository();
 
@@ -125,20 +127,18 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
             executorService.shutdownNow();
         }
 
-        logger.success("Resolved " + loadCount.get() + " components.");
-        if (failCount.get() > 0) {
-            logger.error("Failed to resolve " + failCount.get() + " components.");
-        }
-        else {
-            logger.success("All components resolved successfully.");
-        }
+//        logger.success("Resolved " + loadCount.get() + " components.");
+//        if (failCount.get() > 0) {
+//            logger.error("Failed to resolve " + failCount.get() + " components.");
+//        }
+//        else {
+//            logger.success("All components resolved successfully.");
+//        }
 
         if (updateDependenciesToNewestVersion) {
             logger.info("Applying overwritten versions...");
             updateDependenciesToNewestVersion(parentComponent);
         }
-
-        return loadCount.get() + failCount.get();
     }
 
     public void updateDependenciesToNewestVersion(Component rootComponent) {

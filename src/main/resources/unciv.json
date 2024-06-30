@@ -1,0 +1,71 @@
+{
+  "application": {
+    "name": "Unciv",
+    "version": "1.0.0",
+    "description": "Open-source Android/Desktop remake of Civ V",
+    "type": "JAVA",
+    "dependencies": [
+      {
+        "groupId": "com.badlogicgames.gdx",
+        "name": "gdx",
+        "version": "1.9.10",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "com.badlogicgames.gdx",
+        "name": "gdx-backend-android",
+        "version": "1.9.10",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "org.jetbrains.kotlinx",
+        "name": "kotlinx-coroutines-android",
+        "version": "1.8.1",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "org.jetbrains.kotlin",
+        "name": "kotlin-reflect",
+        "version": "1.8.10",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "io.ktor",
+        "name": "ktor-client-core",
+        "version": "2.3.12",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "io.ktor",
+        "name": "ktor-client-cio",
+        "version": "2.3.12",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "io.ktor",
+        "name": "ktor-client-websockets",
+        "version": "2.3.12",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "io.ktor",
+        "name": "ktor-client-encoding",
+        "version": "2.3.12",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "io.ktor",
+        "name": "ktor-client-content-negotiation",
+        "version": "2.3.12",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "io.ktor",
+        "name": "ktor-serialization-kotlinx-json",
+        "version": "2.3.12",
+        "type": "MAVEN"
+      }
+    ],
+    "license": "MPL-2.0"
+  }
+}
