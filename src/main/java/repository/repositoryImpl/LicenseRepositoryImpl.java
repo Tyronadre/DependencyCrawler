@@ -27,6 +27,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
     private static final Logger logger = Logger.of("LicenseRepository");
 
     HashMap<String, License> idToLicense;
+    HashMap<String, List<String>> idToSpecialName;
     HashMap<String, License> nameToLicense;
     List<JsonObject> exceptions;
 
@@ -44,6 +45,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
         this.nameToLicense = new HashMap<>();
         this.idToLicense = new HashMap<>();
 
+        // LOAD SPDX LICENSES
         var licenseListFile = new File("data/licenses.json");
         try {
             Files.createDirectories(licenseListFile.getParentFile().toPath());
@@ -64,6 +66,61 @@ public class LicenseRepositoryImpl implements LicenseRepository {
                 return;
             }
             readLicensesFromNet(licenseListFile, licenseListNet);
+        }
+
+        // LOAD CUSTOM LICENSE NAMES
+        var customLicenseNameFile = new File("data/license-custom-names.json");
+        if (customLicenseNameFile.exists()) {
+            loadCustomLicenseNames();
+        } else {
+            createCustomLicenseNames(true);
+        }
+    }
+
+    private void loadCustomLicenseNames() {
+        logger.appendInfo("Loading custom license names... ");
+        try (var reader = new FileReader(new File("data/license-custom-names.json"))) {
+            var parsed = JsonParser.parseReader(reader);
+            if (parsed.isJsonNull()) {
+                createCustomLicenseNames(true);
+                return;
+            }
+            var json = parsed.getAsJsonObject();
+            idToSpecialName = new HashMap<>();
+            for (var entry : json.entrySet()) {
+                idToSpecialName.put(entry.getKey(), List.of(entry.getValue().getAsString().split(", ")));
+            }
+            logger.success("Loaded " + idToSpecialName.size() + " custom license names");
+        } catch (IOException e) {
+            logger.error("Could not load custom license names. " + e.getMessage());
+            createCustomLicenseNames(false);
+        }
+    }
+
+    private void createCustomLicenseNames(boolean writeToFile) {
+        idToSpecialName.put("Apache-2.0", List.of("The Apache Software License, Version 2.0", "Apache 2.0", "Apache License, Version 2.0", "The Apache License, Version 2.0", "Apache Software License - Version 2.0", "Apache License v2.0", "ASF 2.0", "Apache 2", "Apache Public License 2.0", "APACHE LICENSE 2.0", "Apache License, version 2.0"));
+        idToSpecialName.put("MIT", List.of("The MIT License", "The MIT License (MIT)"));
+        idToSpecialName.put("LGPL-2.1-only", List.of("GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1", "LGPL, version 2.1", "LGPL 2.1"));
+        idToSpecialName.put("BSD-3-Clause", List.of("BSD Licence 3", "BSD License 3", "Eclipse Distribution License - v 1.0", "The BSD 3-Clause License", "BSD", "EDL 1.0", "3-Clause BSD License", "Eclipse Public License - Version 1.0"));
+        idToSpecialName.put("BSD-2-Clause", List.of("New BSD License", "The BSD License", "BSD License"));
+        idToSpecialName.put("JSON", List.of("The JSON License"));
+        idToSpecialName.put("EPL-1.0", List.of("Eclipse Public License", "Eclipse Public License - v 1.0", "Eclipse Public License v1.0"));
+        idToSpecialName.put("EPL-2.0", List.of("Eclipse Public License v2.0", "Eclipse Public License - Version 2.0", "EPL 2.0"));
+        idToSpecialName.put("GPL-2.0-only", List.of("GNU General Public License, version 2 (GPL2), with the classpath exception"));
+        idToSpecialName.put("CDDL-1.0", List.of("Common Development and Distribution License (CDDL) v1.0", "COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0", "CDDL 1.1"));
+        idToSpecialName.put("CC0-1.0", List.of("Public Domain, per Creative Commons CC0"));
+        idToSpecialName.put("CPL-1.0", List.of("Common Public License Version 1.0"));
+        idToSpecialName.put("LGPL-2.1-or-later", List.of("GNU Lesser General Public License", "GNU Library General Public License v2.1 or later"));
+        idToSpecialName.put("MPL-1.1", List.of("MPL 1.1"));
+        idToSpecialName.put("MPL-2.0", List.of("Mozilla Public License, Version 2.0"));
+        idToSpecialName.put("GPL-3.0-only", List.of("GPL 3"));
+
+        if (writeToFile) {
+            try (var writer = new FileWriter("data/license-custom-names.json")) {
+                new GsonBuilder().setPrettyPrinting().create().toJson(idToSpecialName, writer);
+            } catch (IOException e) {
+                logger.error("Could not write custom license names to file. " + e.getMessage());
+            }
         }
 
     }
@@ -184,48 +241,21 @@ public class LicenseRepositoryImpl implements LicenseRepository {
             return findLicenseInFile(name, url);
         }
 
-        if (idToLicense.containsKey(name))
-            return idToLicense.get(name);
-        if (nameToLicense.containsKey(name))
-            return nameToLicense.get(name);
+        if (idToLicense.containsKey(name)) return idToLicense.get(name);
+        if (nameToLicense.containsKey(name)) return nameToLicense.get(name);
 
+        for (var entry : idToSpecialName.entrySet()) {
+            if (entry.getValue().contains(name)) {
+                return idToLicense.get(entry.getKey());
+            }
+        }
 
-        return switch (name) {
-            case "The Apache Software License, Version 2.0", "Apache 2.0", "Apache License, Version 2.0",
-                 "The Apache License, Version 2.0", "Apache Software License - Version 2.0", "Apache License v2.0",
-                 "ASF 2.0", "Apache 2", "Apache Public License 2.0", "APACHE LICENSE 2.0", "Apache Licence 2.0" ->
-                    idToLicense.get("Apache-2.0");
-            case "The MIT License", "The MIT License (MIT)" -> idToLicense.get("MIT");
-            case "GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1", "LGPL, version 2.1", "LGPL 2.1" ->
-                    idToLicense.get("LGPL-2.1-only");
-            case "BSD Licence 3", "BSD License 3", "Eclipse Distribution License - v 1.0", "The BSD 3-Clause License",
-                 "BSD", "EDL 1.0", "3-Clause BSD License", "Eclipse Public License - Version 1.0" ->
-                    idToLicense.get("BSD-3-Clause");
-            case "New BSD License", "The BSD License" -> idToLicense.get("BSD-2-Clause");
-            case "The JSON License" -> idToLicense.get("JSON");
-            case "Eclipse Public License", "Eclipse Public License - v 1.0" -> idToLicense.get("EPL-1.0");
-            case "Eclipse Public License v2.0", "Eclipse Public License - Version 2.0", "EPL 2.0" ->
-                    idToLicense.get("EPL-2.0");
-            case "GNU General Public License, version 2 (GPL2), with the classpath exception" ->
-                    idToLicense.get("GPL-2.0-only");
-            case "Common Development and Distribution License (CDDL) v1.0",
-                 "COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0",
-                 "Common Development and Distribution License" -> idToLicense.get("CDDL-1.0");
-            case "Public Domain, per Creative Commons CC0" -> idToLicense.get("CC0-1.0");
-            case "Common Public License Version 1.0" -> idToLicense.get("CPL-1.0");
-            case "GNU Lesser General Public License" -> idToLicense.get("LGPL-2.1-or-later");
-            case "MPL 1.1" -> idToLicense.get("MPL-1.1");
-            case "Mozilla Public License, Version 2.0" -> idToLicense.get("MPL-2.0");
-            case "GPL 3" -> idToLicense.get("GPL-3.0-only");
-
-
-            default -> {
-                logger.info("Could not find spdx license " + name + ". Using default license.");
-                yield new License() {
-                    @Override
-                    public String getId() {
-                        return null;
-                    }
+        logger.info("Could not find spdx license " + name + ". Using default license.");
+        return new License() {
+            @Override
+            public String getId() {
+                return null;
+            }
 
                     @Override
                     public String getName() {
