@@ -54,7 +54,7 @@ public class SPDXBuilder implements DocumentBuilder<Component, Pair<SpdxDocument
     @Override
     public void buildDocument(Component root, String outputFileName) {
         var start = System.currentTimeMillis();
-        logger.appendInfo("Creating SPDX for " + root.getQualifiedName() + "...");
+        logger.info("Creating SPDX for " + root.getQualifiedName() + "...");
         this.root = root;
 
 
@@ -84,8 +84,7 @@ public class SPDXBuilder implements DocumentBuilder<Component, Pair<SpdxDocument
 
             logger.success(new File(outputFileName).getAbsolutePath() + ".spdx.json saved (" + (System.currentTimeMillis() - start) + "ms)");
         } catch (Exception e) {
-            logger.error("Error building SPDX document" + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error building SPDX document",  e);
         }
 
 
@@ -102,7 +101,7 @@ public class SPDXBuilder implements DocumentBuilder<Component, Pair<SpdxDocument
 //        creationInfo.setLicenseListVersion("3.0");
             return creationInfo;
         } catch (InvalidSPDXAnalysisException e) {
-            logger.appendError("Error building CreationInfo" + e.getMessage());
+            logger.error("Error building CreationInfo", e);
         }
         return null;
     }
@@ -241,7 +240,7 @@ public class SPDXBuilder implements DocumentBuilder<Component, Pair<SpdxDocument
         spdxDocument = data.first();
 
         var start = System.currentTimeMillis();
-        logger.appendInfo("Rewriting SPDX...");
+        logger.info("Rewriting SPDX...");
 
         var outputFileDir = outputFileName.split("/", 2);
         if (outputFileDir.length > 1) {

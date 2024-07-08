@@ -8,6 +8,7 @@ import data.internalData.MavenComponent;
 import logger.Logger;
 import repository.ComponentRepository;
 import service.BFDependencyCrawler;
+import util.Constants;
 
 import java.text.DecimalFormat;
 import java.util.ArrayDeque;
@@ -28,7 +29,12 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
 
         var time = System.currentTimeMillis();
         logger.info("Crawling dependencies of " + parentComponent.getQualifiedName() + "...");
-        crawlMulti(parentComponent, updateDependenciesToNewestVersion);
+        crawlMulti(parentComponent);
+
+        if (updateDependenciesToNewestVersion) {
+            logger.info("Applying overwritten versions...");
+            updateDependenciesToNewestVersion(parentComponent);
+        }
 
         var loadedComponents = ComponentRepository.getAllRepositories().stream().mapToInt(it -> it.getLoadedComponents().size()).sum();
 
@@ -38,13 +44,13 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
         logger.success("Crawling finished in " + timeTaken + "s. Loaded " + loadedComponents + " Components. (" + format.format(timeTaken / loadedComponents) + "s per component)");
     }
 
-    public void crawlMulti(Component parentComponent, Boolean updateDependenciesToNewestVersion) {
+    public void crawlMulti(Component parentComponent) {
         parentComponent.loadComponent();
         var repository = parentComponent.getRepository();
 
         AtomicInteger loadCount = new AtomicInteger();
         AtomicInteger failCount = new AtomicInteger();
-        ExecutorService executorService = Executors.newFixedThreadPool(20);
+        ExecutorService executorService = Executors.newFixedThreadPool(Constants.crawlThreads);
         CompletionService<Void> completionService = new ExecutorCompletionService<>(executorService);
         var queue = new ConcurrentLinkedDeque<>(parentComponent.getDependenciesFiltered());
         AtomicInteger activeTasks = new AtomicInteger(0);
@@ -74,9 +80,15 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
 
                                     component.getDependencies().forEach(c -> {
                                         if (!c.isNotOptional()) {
-                                            logger.info("Dependency " + c + " is not resolved because it is optional.");
+                                            if (Constants.crawlOptional || Constants.crawlEverything)
+                                                logger.info("Dependency " + c + " is optional.");
+                                            else
+                                                logger.info("Dependency " + c + " is not resolved because it is optional.");
                                         } else if (!c.shouldResolveByScope()) {
-                                            logger.info("Dependency " + c + " is not resolved because it is of scope \"" + c.getScope() + "\".");
+                                            if (Constants.crawlEverything)
+                                                logger.info("Dependency " + c + " is of scope \"" + c.getScope() + "\". Might cannot be resolved.");
+                                            else
+                                                logger.info("Dependency " + c + " is not resolved because it is of scope \"" + c.getScope() + "\".");
                                         }
                                     });
 
@@ -86,12 +98,10 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
                                 }
                             }
 
-                    }
-                    catch (Exception e) {
+                    } catch (Exception e) {
                         logger.error("Failed to resolve dependency " + dependency, e);
                         failCount.incrementAndGet();
-                    }
-                    finally {
+                    } finally {
                         activeTasks.decrementAndGet();
                     }
                     return null;
@@ -102,13 +112,11 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
                     if (future != null) {
                         future.get(); // ensure exceptions are propagated
                     }
-                }
-                catch (InterruptedException e) {
+                } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     logger.error("Thread interrupted while waiting for tasks to complete." + e);
                     break;
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     logger.error("Error occurred during task execution." + e);
                 }
             }
@@ -120,24 +128,10 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
                 logger.error("Failed to resolve all components within the timeout period.");
                 executorService.shutdownNow();
             }
-        }
-        catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logger.error("Thread interrupted while waiting for executor service to terminate." + e);
             executorService.shutdownNow();
-        }
-
-//        logger.success("Resolved " + loadCount.get() + " components.");
-//        if (failCount.get() > 0) {
-//            logger.error("Failed to resolve " + failCount.get() + " components.");
-//        }
-//        else {
-//            logger.success("All components resolved successfully.");
-//        }
-
-        if (updateDependenciesToNewestVersion) {
-            logger.info("Applying overwritten versions...");
-            updateDependenciesToNewestVersion(parentComponent);
         }
     }
 

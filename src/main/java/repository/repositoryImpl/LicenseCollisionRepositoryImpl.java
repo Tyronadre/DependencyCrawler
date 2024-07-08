@@ -1,4 +1,4 @@
-package service.serviceImpl;
+package repository.repositoryImpl;
 
 import com.google.protobuf.util.JsonFormat;
 import data.Component;
@@ -7,7 +7,8 @@ import data.LicenseCollision;
 import data.internalData.LicenseCollisionImpl;
 import dependencyCrawler.LicenseCollisionSpecificationOuterClass;
 import logger.Logger;
-import service.LicenseCollisionService;
+import repository.LicenseCollisionRepository;
+import util.Constants;
 
 import java.io.File;
 import java.io.FileReader;
@@ -18,17 +19,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
-public class LicenseCollisionServiceImpl implements LicenseCollisionService {
+public class LicenseCollisionRepositoryImpl implements LicenseCollisionRepository {
     private static final Logger logger = Logger.of("License_Coll_Service");
-    private static final LicenseCollisionServiceImpl instance = new LicenseCollisionServiceImpl();
+    private static final LicenseCollisionRepositoryImpl instance = new LicenseCollisionRepositoryImpl();
 
 
     private final HashMap<String, List<Collision>> collisions = new HashMap<>();
 
-    private LicenseCollisionServiceImpl() {
+    private LicenseCollisionRepositoryImpl() {
         logger.info("Creating LicenseCollisionService.");
 
-        var file = new File("data/license-collisions.json");
+        var file = new File(Constants.getDataFolder(), "license-collisions.json");
         if (file.exists()) {
             try {
                 loadLicenseCollisions(file);
@@ -42,7 +43,7 @@ public class LicenseCollisionServiceImpl implements LicenseCollisionService {
 
     }
 
-    public static LicenseCollisionServiceImpl getInstace() {
+    public static LicenseCollisionRepositoryImpl getInstace() {
         return instance;
     }
 
@@ -62,9 +63,9 @@ public class LicenseCollisionServiceImpl implements LicenseCollisionService {
     }
 
     private void createLicenseCollisions(File file) {
-        var dir = new File("data");
+        var dir = new File(LicenseRepositoryImpl.class.getProtectionDomain().getCodeSource().getLocation().getPath() + "/data");
         if (!dir.exists()) {
-            dir.mkdir();
+            dir.mkdirs();
         }
 
         var builder = LicenseCollisionSpecificationOuterClass.LicenseCollisionSpecification.newBuilder();

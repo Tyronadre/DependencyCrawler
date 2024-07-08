@@ -9,6 +9,7 @@ import logger.Logger;
 import repository.ComponentRepository;
 import repository.LicenseRepository;
 import service.VersionResolver;
+import util.Constants;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -24,7 +25,7 @@ import java.util.zip.ZipFile;
 public class JitPackComponentRepository implements ComponentRepository {
     private static final Logger logger = Logger.of("JitPackRepository");
     private static final String baseurl = "https://github.com/";
-    private static final String tempZipFolder = "data/jitpack/";
+    private static final File tempZipFolder = new File(Constants.getDataFolder() + "/jitpack/");
     private static final JitPackComponentRepository instance = new JitPackComponentRepository();
     HashMap<String, TreeSet<Component>> components = new HashMap<>();
 
@@ -51,23 +52,25 @@ public class JitPackComponentRepository implements ComponentRepository {
         var start = System.currentTimeMillis();
         logger.info("Loading JitPack Component: " + component.getQualifiedName());
 
-        var downloadFolder = new File(tempZipFolder);
-        if (!downloadFolder.exists())
-            if (!downloadFolder.mkdirs()) {
-                logger.error("Could not create a download folder " + downloadFolder.getAbsoluteFile() + ". Cannot load JitPackComponent " + component);
+        if (!tempZipFolder.exists())
+            if (!tempZipFolder.mkdirs()) {
+                logger.error("Could not create a download folder " + tempZipFolder.getAbsoluteFile() + ". Cannot load JitPackComponent " + component);
                 return 2;
             }
 
         var zipFileF = new File(tempZipFolder + "/" + component.getGroup() + "_" + component.getArtifactId() + "_" + component.getVersion().version() + ".zip");
         if (downloadZipFile(component, zipFileF)) {
             try (ZipFile zipFile = new ZipFile(zipFileF)) {
-                var folderName = zipFile.stream().findFirst().get().getName();
-                var licenseData = new String(zipFile.getInputStream(zipFile.getEntry(zipFile.getEntry(folderName + "LICENSE").getName())).readAllBytes());
-                if (zipFile.getEntry(folderName + "license.txt") == null) {
-                    licenseData = new String(zipFile.getInputStream(zipFile.getEntry(folderName + "license.txt")).readAllBytes());
+                var entries = zipFile.entries();
+                while (entries.hasMoreElements()) {
+                    var entry = entries.nextElement();
+                    if (entry.getName().toLowerCase().contains("license")){
+                        var licenseData = new String(zipFile.getInputStream(entry).readAllBytes());
+                        var license = LicenseRepository.getInstance().getLicense(licenseData, getDownloadLocation(component));
+                        component.setData("licenseChoice", LicenseChoice.of(license, null, null));
+                        break;
+                    }
                 }
-                var license = LicenseRepository.getInstance().getLicense(licenseData, getDownloadLocation(component));
-                component.setData("licenseChoice", LicenseChoice.of(license, null, null));
             } catch (Exception e) {
                 logger.error("Could not parse JitPack Component " + component.getQualifiedName() + ". Probably no LICENSE file present in repository. ", e);
                 return 2;

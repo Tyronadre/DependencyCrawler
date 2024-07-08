@@ -1,5 +1,6 @@
 package logger;
 
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -11,7 +12,6 @@ import java.time.format.DateTimeFormatter;
 
 public class DefaultLogger extends Logger {
     private final String name;
-
     private static final OutputStream logFile;
 
     static {
@@ -43,10 +43,10 @@ public class DefaultLogger extends Logger {
     }
 
     private void log(LogLevel level, String msg) {
-        if (disabled) {
+        if (!Logger.devMode && Logger.level == null) {
             return;
         }
-        if (!verbose && level == LogLevel.INFO) {
+        if (!Logger.devMode && Logger.level.ordinal() < level.ordinal()) {
             return;
         }
 
@@ -63,20 +63,6 @@ public class DefaultLogger extends Logger {
         }
     }
 
-    @Override
-    public void appendInfo(String msg) {
-        log(LogLevel.INFO, msg);
-    }
-
-    @Override
-    public void appendError(String msg) {
-        log(LogLevel.ERROR, msg);
-    }
-
-    @Override
-    public void appendSuccess(String msg) {
-        log(LogLevel.SUCCESS, msg);
-    }
 
     @Override
     public void info(String msg) {
@@ -91,11 +77,6 @@ public class DefaultLogger extends Logger {
     @Override
     public void success(String msg) {
         log(LogLevel.SUCCESS, msg);
-    }
-
-    @Override
-    public void errorOverwriteLine(String msg, int index) {
-        throw new UnsupportedOperationException("Not supported by this logger");
     }
 
 }

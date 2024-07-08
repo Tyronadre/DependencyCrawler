@@ -1,14 +1,15 @@
 import cyclonedx.sbom.Bom16;
 import data.Component;
 import data.readData.ReadVexComponent;
+import logger.LogLevel;
 import logger.Logger;
 import org.spdx.library.model.SpdxDocument;
 import repository.LicenseRepository;
+import repository.repositoryImpl.LicenseCollisionRepositoryImpl;
 import service.DocumentBuilder;
 import service.serviceImpl.BFDependencyCrawlerImpl;
 import service.serviceImpl.DefaultInputReader;
 import service.serviceImpl.LicenseCollisionBuilder;
-import service.serviceImpl.LicenseCollisionServiceImpl;
 import service.serviceImpl.SBOMBuilder;
 import service.serviceImpl.SBOMReader;
 import service.serviceImpl.SPDXBuilder;
@@ -16,25 +17,29 @@ import service.serviceImpl.SPDXReader;
 import service.serviceImpl.TreeBuilder;
 import service.serviceImpl.VexBuilder;
 import service.serviceImpl.VexReader;
+import util.Constants;
 import util.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 
 public class Main {
     private static final Logger logger = Logger.of("Main");
 
     public static void main(String[] args) {
+//        args = new String[]{"--input", "src/main/resources/input_0.json"};
 //        args = new String[]{"--input", "generated/output_0.sbom.json", "--input-type", "sbom", "--output", "generated/output_0_renewFromSBOM", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
 //        args = new String[]{"--input", "generated/output_0.spdx.json", "--input-type", "spdx", "--output", "generated/output_0_renewFromSPDX", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
 //        args = new String[]{"--input", "src/main/resources/input_2.json", "--output", "generated/output_2", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
 //        args = new String[]{"--input", "src/main/resources/input_1.json", "--output", "generated/output_1", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
-//        args = new String[]{"--input", "src/main/resources/photoprism.json", "--output", "testoutput/output_0", "--verbose"};
+//        args = new String[]{"--input", "src/main/resources/photoprism.json", "--output", "testoutput/output_0"};
 
-        HashMap<String, String> argMap = new HashMap<>();
+
+                HashMap < String, String> argMap = new HashMap<>();
         String lastKey = null;
         for (String arg : args) {
             if (arg.startsWith("--")) {
@@ -51,7 +56,8 @@ public class Main {
                     argMap.put(lastKey, argMap.get(lastKey) + ";" + arg);
             }
         }
-        var illegalArgs = argMap.keySet().stream().filter(s -> !(s.equals("input") || s.equals("output") || s.equals("input-type") || s.equals("output-type") || s.equals("help") || s.equals("verbose") || s.equals("no-log"))).toList();
+        var legalArgs = List.of("input", "output", "input-type", "output-type", "help", "log-level", "no-log", "crawl-optional","crawl-all","crawl-threads");
+        var illegalArgs = argMap.keySet().stream().filter(s -> !legalArgs.contains(s)).toList();
         if (!illegalArgs.isEmpty()) {
             logger.error("Illegal Arguments: " + illegalArgs);
             return;
@@ -63,11 +69,29 @@ public class Main {
         }
 
         if (argMap.containsKey("no-log")) {
-            Logger.setDisabled(true);
+            Logger.setLevel(null);
         }
 
-        if (argMap.containsKey("verbose")) {
-            Logger.setVerbose(true);
+        if (argMap.containsKey("log-level")) {
+            try {
+                Logger.setLevel(LogLevel.valueOf((argMap.get("log-level").toUpperCase())));
+            } catch (IllegalArgumentException e) {
+                logger.error("Illegal log level: " + argMap.get("log-level") + ". Allowed values are: " + Arrays.toString(LogLevel.values()));
+            }
+        }
+
+        if (argMap.containsKey("crawl-optional")) {
+            logger.info("Will crawl optional dependencies");
+            Constants.crawlOptional = true;
+        }
+
+        if (argMap.containsKey("crawl-all")) {
+            logger.info("Will crawl all dependencies");
+            Constants.crawlEverything = true;
+        }
+
+        if (argMap.containsKey("crawl-threads")) {
+            Constants.crawlThreads = Integer.parseInt(argMap.get("crawl-threads"));
         }
 
         if (!argMap.containsKey("input")) {
@@ -92,6 +116,7 @@ public class Main {
                 outputTypes.add("sbom");
                 outputTypes.add("spdx");
                 outputTypes.add("vex");
+                outputTypes.add("license-collisions");
             } else {
                 outputTypes.add(inputType);
             }
@@ -137,7 +162,7 @@ public class Main {
         for (var outputType : outputTypes) {
             try {
                 if (Objects.equals(outputType, "license-collisions"))
-                    new LicenseCollisionBuilder().buildDocument(LicenseCollisionServiceImpl.getInstace().checkLicenseCollisions(rootComponent), outputFile);
+                    new LicenseCollisionBuilder().buildDocument(LicenseCollisionRepositoryImpl.getInstace().checkLicenseCollisions(rootComponent), outputFile);
                 else
                     getDocumentBuilder(outputType).buildDocument(rootComponent, outputFile);
             } catch (Exception e) {
@@ -163,7 +188,7 @@ public class Main {
                 if (Objects.equals(outputType, "sbom")) {
                     new SBOMBuilder().rebuildDocument(data.first(), outputFile);
                 } else if (Objects.equals(outputType, "license-collisions")) {
-                    new LicenseCollisionBuilder().buildDocument(LicenseCollisionServiceImpl.getInstace().checkLicenseCollisions(data.second()), outputFile);
+                    new LicenseCollisionBuilder().buildDocument(LicenseCollisionRepositoryImpl.getInstace().checkLicenseCollisions(data.second()), outputFile);
                 } else {
                     getDocumentBuilder(outputType).buildDocument(data.second(), outputFile);
                 }
@@ -190,7 +215,7 @@ public class Main {
                 if (Objects.equals(outputType, "spdx")) {
                     new SPDXBuilder().rebuildDocument(data, outputFile);
                 } else if (Objects.equals(outputType, "license-collisions")) {
-                    new LicenseCollisionBuilder().buildDocument(LicenseCollisionServiceImpl.getInstace().checkLicenseCollisions(data.second()), outputFile);
+                    new LicenseCollisionBuilder().buildDocument(LicenseCollisionRepositoryImpl.getInstace().checkLicenseCollisions(data.second()), outputFile);
                 } else {
                     getDocumentBuilder(outputType).buildDocument(data.second(), outputFile);
                 }
@@ -211,7 +236,7 @@ public class Main {
     }
 
 
-    private static DocumentBuilder<Component,?> getDocumentBuilder(String outputType) {
+    private static DocumentBuilder<Component, ?> getDocumentBuilder(String outputType) {
         return switch (outputType) {
             case "sbom" -> new SBOMBuilder();
             case "spdx" -> new SPDXBuilder();
@@ -227,23 +252,29 @@ public class Main {
 
     private static void printHelp() {
         logger.normal("""
-                                
+
                 Reads a specified input file and outputs it in the specified format(s).
-                                
-                Per default, reads a JSON file in the custom input format and outputs a SBOM file.
+
+                Per default, reads a JSON file in the custom input format and outputs a SBOM, SPDX and VEX file.
                 The default input file format is specified in the ReadMe.md of the GitRepository.
 
                 If an input-type is specified, the input file is read in the specified format and then updated.
                 If the input-type is vex, the only possible output type is vex.
-                                
+
                 Usage:
-                --input <file> :                        input file in JSON format
-                --output <file name> :                  output file name
-                --input-type <type> :                   type of the input file. Supported types: sbom, spdx, vex
-                --output-type <type1> [<type2> ...] :   one or multiple output types. Supported types: sbom, spdx, vex, tree, tree-all
+                --input <file> :                                    input file in JSON format
+                --output <file name> :                  [output]    output file name
+                --input-type <type> :                   [default]   type of the input file. Supported types: default, sbom, spdx, vex.
+                --output-type <type1> [<type2> ...] :   [sbom, spdx, vex, license-collisions]
+                                                                    one or multiple output types. Supported types: sbom, spdx, vex, tree, tree-all, license-collisions
+                --no-log :                              [false]     disable logging.
+                --log-level :                           [INFO]      what level of logs should be shown. Supported types: ERROR, SUCCESS, INFO.
+                --crawl-optional :                      [false]     crawl dependencies flagged as optional (maven).
+                --crawl-all :                           [false]     crawl all dependencies, regardless of scope and optional (maven).
+                --crawl-threads :                       [20]        number of threads for crawling.
+                --data-folder :                         [crntDir]   changed the location of the data folder.
+
                 --help :                                print this help message
-                --verbose :                             print verbose output
-                --no-log :                              disable logging
                 """);
     }
 

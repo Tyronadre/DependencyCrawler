@@ -8,10 +8,9 @@ import java.util.stream.Collectors;
 
 public abstract class Logger implements System.Logger {
     // if true, the logger will print the full stack trace of an exception
-    private static final boolean devMode = false;
+    static final boolean devMode = true;
 
-    protected static boolean disabled = false;
-    protected static boolean verbose = false;
+    protected static LogLevel level = LogLevel.INFO;
 
     private static final Map<String, Logger> loggers = new HashMap<>();
 
@@ -25,11 +24,9 @@ public abstract class Logger implements System.Logger {
         return loggers.get(name);
     }
 
-    public abstract void appendInfo(String msg);
-
-    public abstract void appendError(String msg);
-
-    public abstract void appendSuccess(String msg);
+    public static void setLevel(LogLevel level) {
+        Logger.level = level;
+    }
 
     public abstract void info(String msg);
 
@@ -49,18 +46,8 @@ public abstract class Logger implements System.Logger {
         System.out.println(LogLevel.colorReset + s);
     }
 
-    public abstract void errorOverwriteLine(String msg, int index);
-
-    public static void setVerbose(boolean verbose) {
-        Logger.verbose = verbose;
-    }
-
-    public static void setDisabled(boolean disabled) {
-        Logger.disabled = disabled;
-    }
 
     // ------ Classes from LOGGER ------ //
-
 
     @Override
     public boolean isLoggable(Level level) {

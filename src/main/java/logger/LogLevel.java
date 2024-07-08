@@ -1,9 +1,9 @@
 package logger;
 
 public enum LogLevel {
-    INFO("\u001B[90m"),
     ERROR("\u001B[31m"),
-    SUCCESS("\u001B[32m");
+    SUCCESS("\u001B[32m"),
+    INFO("\u001B[90m");
 
     private final String color;
 

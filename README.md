@@ -1,112 +1,105 @@
-# FileFormat
+# Dependency Crawler
 
-## SPDX
+This tool allows for easy creation of SPDX, CycloneDX-SBOM and VEX files. It can also analyze license collisions.
+As an input, this uses a custom json input format, to allow maximum flexibility. 
+The goal of this tool is to be able to analyze dependencies of an application, without being in the possession of the original build files.
+Therefor, this takes a list of specified dependencies, analyzes them, and outputs in the given formats.
 
-SPDX als eigenes proto file schreiben?
+Note that this tool has some constraints when resolving versions, and should be used as a best effort service. 
 
-## NATIVE LIBRARY
+## input format
 
-Ich bekomme eine repo link (conan)
-ODER Native librarys von android
-(NAME DER LIB, VERSION (ANDROID
-VERSION)) [link](https://android.googlesource.com/platform/system/core.git/+/refs/tags/android-14.0.0_r45)
+By default we use a custom input format for maximum flexibility. The input format of the tool can be found in ProtoParser/src/in/dependency-crawler-input.proto.
+It contains the information that the tool will analyze.
+Here is an example input:
+```json
+{
+  "application": {
+    "name": "app_0",        //name of the application (can be filled at will but not null)
+    "version": "1.0.0",     //version of the application (can be filled at will but not null)
+    "groupId": "de.henrik", //group id of the application (optional)
+    "dependencies": [
+      {
+        "groupId": "com.guicedee.activitymaster", //group of the dependency (optional)
+        "name": "activity-master",                //the name of the dependency (not null)
+        "version": "1.1.1.8-jre16",               //the version of the dependency (not null)
+        "type": "MAVEN"                           //what type of component this is, where it can be found (MAVEN -> maven central repository)
+      },
+      {
+        "groupId": "com.googlecode.htmlcompressor",
+        "name": "htmlcompressor",                 
+        "version": "1.5.3",                       //this is a version not found in the maven repo. however, we can find it only. we can
+        "type": "MAVEN"                           //specify the found pom file in "parameters".
+      },
+      {
+        "groupId": "platform.external",           //for an android native dependency groupId is the path in the android repository,
+        "name": "bart",                           //the name is the name of the repository
+        "version": "main",                        //the version is the tag, e.g. "main"
+        "type": "ANDROID_NATIVE"                  
+      },
+      {
+        "name": "s2n",
+        "version": "1.4.1",
+        "type": "CONAN"                           //c++/c build system
+      },
+      {
+        "groupId": "jitpack",                     //a jitpack component is basicly a git repository release added to the code as library
+        "name": "gradle-simple",                  //groupId, name are the same to ANDROID_NATIVE
+        "version": "2.0",                         //the version is the release tag
+        "type": "JITPACK"                         
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "key": "POM_FILE:com.googlecode.htmlcompressor:htmlcompressor:1.5.3", //a custom pom file. Syntax: "POM_FILE:{groupId}:{name}:{version}"
+      "value": "C:/Users/Henrik/Downloads/htmlcompressor-1.5.3/htmlcompressor-1.5.3/pom.xml"
+    }
+  ]
+}
+```
 
-## Lizenzen
+The tool can also read from CycloneDX-SBOM, SPDX and VEX files. Note, that a vex file does not contain enough information to generate another format than itself from it.
 
-Wenn Lizenz nicht in Component, in parent gucken!
+We can transform the input formats as such:
+- default -> sbom, spdx, vex, tree, tree-all, license-collisions
+- sbom -> sbom, spdx, vex, tree, tree-all, license-collisions
+- spdx -> sbom, spdx, vex, tree, tree-all, license-collisions
+- vex -> vex
 
-## Licence collision
+## Output Formats
 
-Ob Lizenzen sich gegenseitig verbieten, z.b. dependency hat common lizenz, aber parent hat private lizenz.
+CycloneDX-SBOM, VEX and SPDX are standards and should be familiar.
+Tree and tree-all are a custom tree format, that will show a tree of dependencies. tree-all will include the first level of non resolved dependencies additionally.
+License-collisions will contain all collisions in libraries, and in the application in a json format.
 
-Ich bin mir nicht sicher was ich hier machen soll. Ich kann zwar die alle durchgehen, aber eigentlich sollten
-dependencies an sich ja immer diese Bedingungen erfüllen.
-Was Sinn machen würde, wäre zu gucken anhand aller Lizenzen die die Dependencies haben, wie die Lizenz von der App
-aussehen muss.
-Außerdem kann ich hier nur die ein paar Lizenzen prüfen, da ich jede per Hand analysieren muss. (es werden eh fast
-ausschließlich Apache-2.0, GPL-3.0 und MIT benutzt)
+## Commands
 
-## Conversion
+The shortest command to execute a programm is such:
+```powershell
+java -jar DependencyCrawler.jar --input input.json
+```
+This will execute the crawler with the default input format, and output sbom, spdx, vex and license-collisions. 
 
-Ressourcen neu laden aus web laden
+To update and transform and sbom file we use:
+```powershell
+java -jar DependencyCrawler.jar --input input.sbom.json --input-format sbom --output updated_sbom --output-format sbom spdx
+```
 
-## vulnerability
+All available commands are as followed:
+```text
+Usage:
+--input <file> :                                    input file in JSON format
+--output <file name> :                  [output]    output file name
+--input-type <type> :                   [default]   type of the input file. Supported types: default, sbom, spdx, vex.
+--output-type <type1> [<type2> ...] :   [sbom, spdx, vex, license-collisions]
+                                        one or multiple output types. Supported types: sbom, spdx, vex, tree, tree-all, license-collisions
+--no-log :                              [false]     disable logging.
+--log-level :                           [INFO]      what level of logs should be shown. Supported types: ERROR, SUCCESS, INFO.
+--crawl-optional :                      [false]     crawl dependencies flagged as optional (maven).
+--crawl-all :                           [false]     crawl all dependencies, regardless of scope and optional (maven).
+--crawl-threads :                       [20]        number of threads for crawling.
+--data-folder :                         [crntDir]   changed the location of the data folder.
 
-cron job ob neue vulerabilitys auf vex / cyclondx
-
-## Bugs
-
-- [ ] version resolver ist nicht recursive auf pom files die als dependency management geladen werden
-- [x] read from sbom broken
-- [x] read from spdx broken
-
-## TODOS
-
-- [X] https://jitpack.io als source. (zip runterladen)
-- [x] vex files output
-- [x] read spdx file
-- [x] update loaded spdx file
-- [x] read sbom file
-- [x] conan repo link dependency (native). iwi api link rausfinden und parsen.
-- [x] android native dependency. version is tag
-- [x] license collision. von allen (auch dependencies)
-- [x] read & update vex file
-- [x] better gradlew script
-- [x] SPDX Lizenzen laden
-- [x] Wenn Component in mehreren Versionen, dann höchste Version nehmen
-- [x] Im input kann eine Component mehrfach vorkommen, hier höchste benutzte Version nehmen.
-- [x] use data from maven parent when empty
-- [x] dependency tree sbom nur tiefe 1
-- [x] user möglichkeit geben pom files zu spezifizieren, für repos die nicht geladen werden konnten im zweiten durchgang
-
-## References
-
-- (License find) https://github.com/pivotal/LicenseFinder
-- (License find) https://github.com/jaredsburrows/gradle-license-plugin
-- (license analysis) https://fossa.com
-- (license analysis) https://www.mend.io
-- (license analysis) https://www.blackducksoftware.com
-- (license analysis) https://github.com/jk1/Gradle-License-Report
-
-
-
-## FRAGEN
-
-## ARBEIT
-
-~ 30 Seiten zusätzlich bilder u.ä
-~ englisch!
-
-### INTRODUCTION
-
-einführung für person die sich nicht auskennt
-
-### BACKGROUND
-
-### RELATED WORK (oder nach evaluation)
-
-textuell vergleich
-
-### ANSATZ
-
-### EVALUATION
-
-empirischer vergleich
-
-- https://github.com/anchore/syft
-- https://mergebase.com
-- https://fossa.com
-- cyclone dx plugin
-
-### LIMITATIONS
-
-### CONCLUSION
-
-## until 2 weeks
-
-- conversion
-- vex file
-- nativ libraries?
-- mehr lizenzen laden?
-- lizenz collision?
-- text anfangen
+--help :                                print this help message
+```

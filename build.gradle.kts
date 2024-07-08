@@ -42,6 +42,8 @@ dependencies {
     implementation("org.spdx:java-spdx-library:1.1.11")
     implementation("org.spdx:spdx-jackson-store:1.1.9.1")
     implementation("org.slf4j:slf4j-nop:2.0.0")
+    implementation("org.metaeffekt.core:ae-security:0.115.0")
+
 
 
     implementation(project(":ProtoParser"))

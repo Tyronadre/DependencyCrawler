@@ -1,11 +1,11 @@
-package service;
+package repository;
 
 import data.Component;
 import data.LicenseCollision;
 
 import java.util.List;
 
-public interface LicenseCollisionService {
+public interface LicenseCollisionRepository {
 
     /**
      * Check for license collisions in the given component, and any children.

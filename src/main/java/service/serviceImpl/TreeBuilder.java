@@ -22,7 +22,7 @@ public class TreeBuilder implements DocumentBuilder<Component, Component> {
     @Override
     public void buildDocument(Component root, String outputFileName) {
         var start = System.currentTimeMillis();
-        logger.appendInfo("Creating TREE for " + root.getQualifiedName() + "...");
+        logger.info("Creating TREE for " + root.getQualifiedName() + "...");
 
         var outputFileDir = outputFileName.split("/", 2);
         if (outputFileDir.length > 1) {

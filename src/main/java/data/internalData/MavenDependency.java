@@ -136,7 +136,7 @@ public class MavenDependency implements Dependency {
 
     @Override
     public boolean isNotOptional() {
-        return !optional;
+        return true;
     }
 
     @Override

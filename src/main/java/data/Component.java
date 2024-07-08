@@ -1,6 +1,7 @@
 package data;
 
 import repository.ComponentRepository;
+import util.Constants;
 
 import java.util.Comparator;
 import java.util.List;
@@ -39,12 +40,27 @@ public interface Component {
      * @return the filtered dependencies of the artifact.
      */
     default List<Dependency> getDependenciesFiltered() {
+        if (Constants.crawlEverything) {
+            return getDependencies().stream()
+                    .filter(Objects::nonNull)
+                    .sorted(Comparator.comparing(Dependency::getQualifiedName))
+                    .collect(Collectors.toList());
+
+        }
+        if (Constants.crawlOptional) {
+            return getDependencies().stream()
+                    .filter(Objects::nonNull)
+                    .filter(Dependency::shouldResolveByScope)
+                    .sorted(Comparator.comparing(Dependency::getQualifiedName))
+                    .collect(Collectors.toList());
+        }
         return getDependencies().stream()
                 .filter(Objects::nonNull)
                 .filter(Dependency::shouldResolveByScope)
                 .filter(Dependency::isNotOptional)
                 .sorted(Comparator.comparing(Dependency::getQualifiedName))
-                .collect(Collectors.toList());    }
+                .collect(Collectors.toList());
+    }
 
     /**
      * @return the name of the artifact
@@ -130,8 +146,6 @@ public interface Component {
      */
     default List<Dependency> getDependenciesFlatFiltered() {
         return getDependencies().stream()
-                .filter(Dependency::shouldResolveByScope)
-                .filter(Dependency::isNotOptional)
                 .flatMap(dependency -> Stream.concat(
                         Stream.of(dependency),
                         dependency.getComponent() != null && dependency.getComponent().isLoaded()

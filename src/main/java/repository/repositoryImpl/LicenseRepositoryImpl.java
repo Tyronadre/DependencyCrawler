@@ -10,6 +10,7 @@ import data.Property;
 import data.internalData.SPDXLicense;
 import logger.Logger;
 import repository.LicenseRepository;
+import util.Constants;
 
 import java.io.File;
 import java.io.FileReader;
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -41,12 +43,13 @@ public class LicenseRepositoryImpl implements LicenseRepository {
 
 
     private LicenseRepositoryImpl() {
-        logger.appendInfo("Loading license list... ");
+        logger.info("Loading license list... ");
         this.nameToLicense = new HashMap<>();
         this.idToLicense = new HashMap<>();
+        this.idToSpecialName = new HashMap<>();
 
         // LOAD SPDX LICENSES
-        var licenseListFile = new File("data/licenses.json");
+        var licenseListFile = new File(Constants.getDataFolder(), "licenses.json");
         try {
             Files.createDirectories(licenseListFile.getParentFile().toPath());
         } catch (IOException e) {
@@ -69,7 +72,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
         }
 
         // LOAD CUSTOM LICENSE NAMES
-        var customLicenseNameFile = new File("data/license-custom-names.json");
+        var customLicenseNameFile = new File(Constants.getDataFolder(), "license-custom-names.json");
         if (customLicenseNameFile.exists()) {
             loadCustomLicenseNames();
         } else {
@@ -78,8 +81,8 @@ public class LicenseRepositoryImpl implements LicenseRepository {
     }
 
     private void loadCustomLicenseNames() {
-        logger.appendInfo("Loading custom license names... ");
-        try (var reader = new FileReader(new File("data/license-custom-names.json"))) {
+        logger.info("Loading custom license names... ");
+        try (var reader = new FileReader(new File(Constants.getDataFolder(), "license-custom-names.json"))) {
             var parsed = JsonParser.parseReader(reader);
             if (parsed.isJsonNull()) {
                 createCustomLicenseNames(true);
@@ -88,7 +91,11 @@ public class LicenseRepositoryImpl implements LicenseRepository {
             var json = parsed.getAsJsonObject();
             idToSpecialName = new HashMap<>();
             for (var entry : json.entrySet()) {
-                idToSpecialName.put(entry.getKey(), List.of(entry.getValue().getAsString().split(", ")));
+                var l = new ArrayList<String>();
+                for (com.google.gson.JsonElement jsonElement : entry.getValue().getAsJsonArray()) {
+                    l.add(jsonElement.getAsString());
+                }
+                idToSpecialName.put(entry.getKey(), l);
             }
             logger.success("Loaded " + idToSpecialName.size() + " custom license names");
         } catch (IOException e) {
@@ -98,7 +105,19 @@ public class LicenseRepositoryImpl implements LicenseRepository {
     }
 
     private void createCustomLicenseNames(boolean writeToFile) {
-        idToSpecialName.put("Apache-2.0", List.of("The Apache Software License, Version 2.0", "Apache 2.0", "Apache License, Version 2.0", "The Apache License, Version 2.0", "Apache Software License - Version 2.0", "Apache License v2.0", "ASF 2.0", "Apache 2", "Apache Public License 2.0", "APACHE LICENSE 2.0", "Apache License, version 2.0"));
+        idToSpecialName.put("Apache-2.0", List.of(
+                "The Apache Software License, Version 2.0",
+                "Apache 2.0",
+                "Apache License, Version 2.0",
+                "The Apache License, Version 2.0",
+                "Apache Software License - Version 2.0",
+                "Apache License v2.0",
+                "ASF 2.0",
+                "Apache 2",
+                "Apache Public License 2.0",
+                "APACHE LICENSE 2.0",
+                "Apache License, version 2.0"
+        ));
         idToSpecialName.put("MIT", List.of("The MIT License", "The MIT License (MIT)"));
         idToSpecialName.put("LGPL-2.1-only", List.of("GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1", "LGPL, version 2.1", "LGPL 2.1"));
         idToSpecialName.put("BSD-3-Clause", List.of("BSD Licence 3", "BSD License 3", "Eclipse Distribution License - v 1.0", "The BSD 3-Clause License", "BSD", "EDL 1.0", "3-Clause BSD License", "Eclipse Public License - Version 1.0"));
@@ -115,8 +134,9 @@ public class LicenseRepositoryImpl implements LicenseRepository {
         idToSpecialName.put("MPL-2.0", List.of("Mozilla Public License, Version 2.0"));
         idToSpecialName.put("GPL-3.0-only", List.of("GPL 3"));
 
+
         if (writeToFile) {
-            try (var writer = new FileWriter("data/license-custom-names.json")) {
+            try (var writer = new FileWriter(new File(Constants.getDataFolder(), "license-custom-names.json"))) {
                 new GsonBuilder().setPrettyPrinting().create().toJson(idToSpecialName, writer);
             } catch (IOException e) {
                 logger.error("Could not write custom license names to file. " + e.getMessage());
@@ -133,7 +153,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
      * @param json The json object from the net
      */
     private void readLicensesFromFile(File file, JsonObject json) {
-        logger.appendInfo("Loading license list from file... ");
+        logger.info("Loading license list from file... ");
 
         String netVersion = null;
         if (json.has("licenseListVersion")) {
@@ -257,52 +277,52 @@ public class LicenseRepositoryImpl implements LicenseRepository {
                 return null;
             }
 
-                    @Override
-                    public String getName() {
-                        return name;
-                    }
+            @Override
+            public String getName() {
+                return name;
+            }
 
-                    @Override
-                    public String getNameOrId() {
-                        return getName();
-                    }
+            @Override
+            public String getNameOrId() {
+                return getName();
+            }
 
-                    @Override
-                    public String getText() {
-                        return null;
-                    }
+            @Override
+            public String getText() {
+                return null;
+            }
 
-                    @Override
-                    public String getUrl() {
-                        return url;
-                    }
+            @Override
+            public String getUrl() {
+                return url;
+            }
 
-                    @Override
-                    public Licensing getLicensing() {
-                        return null;
-                    }
+            @Override
+            public Licensing getLicensing() {
+                return null;
+            }
 
-                    @Override
-                    public List<Property> getProperties() {
-                        return null;
-                    }
+            @Override
+            public List<Property> getProperties() {
+                return null;
+            }
 
-                    @Override
-                    public String getAcknowledgement() {
-                        return null;
-                    }
+            @Override
+            public String getAcknowledgement() {
+                return null;
+            }
 
-                    @Override
-                    public String toString() {
-                        return "License{" +
-                                "name='" + getNameOrId() + '\'' +
-                                ", url='" + url + '\'' +
-                                '}';
-                    }
-                };
+            @Override
+            public String toString() {
+                return "License{" +
+                        "name='" + getNameOrId() + '\'' +
+                        ", url='" + url + '\'' +
+                        '}';
             }
         };
+
     }
+
 
     private License findLicenseInFile(String licenseData, String url) {
         if (Pattern.compile(".*Apache License.*Version 2\\.0.*", Pattern.DOTALL).matcher(licenseData).find())
