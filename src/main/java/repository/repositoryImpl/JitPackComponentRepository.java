@@ -9,7 +9,7 @@ import logger.Logger;
 import repository.ComponentRepository;
 import repository.LicenseRepository;
 import service.VersionResolver;
-import util.Constants;
+import settings.Settings;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -25,7 +25,7 @@ import java.util.zip.ZipFile;
 public class JitPackComponentRepository implements ComponentRepository {
     private static final Logger logger = Logger.of("JitPackRepository");
     private static final String baseurl = "https://github.com/";
-    private static final File tempZipFolder = new File(Constants.getDataFolder() + "/jitpack/");
+    private static final File tempZipFolder = new File(Settings.getDataFolder() + "/jitpack/");
     private static final JitPackComponentRepository instance = new JitPackComponentRepository();
     HashMap<String, TreeSet<Component>> components = new HashMap<>();
 
@@ -38,7 +38,7 @@ public class JitPackComponentRepository implements ComponentRepository {
 
     @Override
 
-    public List<? extends Version> getVersions(Dependency dependency) {
+    public List<Version> getVersions(Dependency dependency) {
         throw new UnsupportedOperationException();
     }
 

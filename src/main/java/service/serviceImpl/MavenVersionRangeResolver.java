@@ -4,7 +4,6 @@ import data.Dependency;
 import data.Version;
 import data.internalData.MavenDependency;
 import data.internalData.MavenVersionRange;
-import data.internalData.VersionImpl;
 import exceptions.VersionRangeResolutionException;
 import repository.repositoryImpl.MavenComponentRepository;
 import service.VersionRangeResolver;
@@ -81,7 +80,7 @@ public class MavenVersionRangeResolver implements VersionRangeResolver {
      * @param dependency   the dependency
      * @return the versions that satisfy the version bound
      */
-    private List<VersionImpl> getVersions(VersionBound versionBound, MavenDependency dependency) {
+    private List<Version> getVersions(VersionBound versionBound, MavenDependency dependency) {
         var versions = MavenComponentRepository.getInstance().getVersions(dependency);
         if (versionBound.lowerBound == null && versionBound.upperBound == null) {
             return versions;

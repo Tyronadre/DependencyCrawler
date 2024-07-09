@@ -1,20 +1,15 @@
 package data;
 
 public interface Timestamp {
-    static Timestamp of(long seconds, int nano) {
-        return new Timestamp() {
-            @Override
-            public int getNanos() {
-                return nano;
-            }
 
-            @Override
-            public long getSeconds() {
-                return seconds;
-            }
-        };
+    long seconds();
+
+    int nanos();
+
+    static Timestamp of(long seconds, int nanos) {
+        return new TimestampRecord(seconds, nanos);
     }
 
-    int getNanos();
-    long getSeconds();
+    record TimestampRecord(long seconds, int nanos) implements Timestamp {
+    }
 }

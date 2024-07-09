@@ -2,20 +2,15 @@ package data;
 
 public interface Hash {
 
-    static Hash of(String alg, String value) {
-        return new Hash() {
-            @Override
-            public String getAlgorithm() {
-                return alg;
-            }
+    String algorithm();
 
-            @Override
-            public String getValue() {
-                return value;
-            }
-        };
+    String value();
+
+    static Hash of(String alg, String value) {
+        return new HashRecord(alg, value);
     }
 
-    String getAlgorithm();
-    String getValue();
+    record HashRecord(String algorithm, String value) implements Hash {
+    }
+
 }

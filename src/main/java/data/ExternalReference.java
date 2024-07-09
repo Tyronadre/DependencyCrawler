@@ -1,41 +1,18 @@
 package data;
 
-import java.util.List;
-
 public interface ExternalReference {
 
-    static ExternalReference of(String type, String url, String comment, List<Hash> hashes) {
-        return new ExternalReference() {
-            @Override
-            public String getCategory() {
-                return null;
-            }
+    String type();
 
-            @Override
-            public String getType() {
-                return type;
-            }
+    String url();
 
-            @Override
-            public String getUrl() {
-                return url;
-            }
+    String comment();
 
-            @Override
-            public String getComment() {
-                return comment;
-            }
-
-            @Override
-            public List<Hash> getHashes() {
-                return hashes;
-            }
-        };
+    static ExternalReference of(String type, String url, String comment) {
+        return new ExternalReferenceRecord(type, url, comment);
     }
 
-    String getCategory();
-    String getType();
-    String getUrl();
-    String getComment();
-    List<Hash> getHashes();
+    record ExternalReferenceRecord(String type, String url, String comment) implements ExternalReference {
+    }
+
 }

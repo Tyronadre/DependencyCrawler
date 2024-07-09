@@ -76,7 +76,7 @@ public class ReadSBomComponent implements ReadComponent {
                         licenseChoice.getAcknowledgement().toString())).collect(Collectors.toList());
 
         //ExternalReferences
-        this.externalReferences = bomComponent.getExternalReferencesList().stream().map(externalReference -> ExternalReference.of(externalReference.getType().toString(), externalReference.getUrl(), externalReference.getComment(), null)).collect(Collectors.toList());
+        this.externalReferences = bomComponent.getExternalReferencesList().stream().map(externalReference -> ExternalReference.of( externalReference.getType().toString(), externalReference.getUrl(), externalReference.getComment())).collect(Collectors.toList());
 
         //Hashes
         this.hashes = bomComponent.getHashesList().stream().map(hash -> Hash.of(hash.getAlg().toString(), hash.getValue())).collect(Collectors.toList());
@@ -105,15 +105,15 @@ public class ReadSBomComponent implements ReadComponent {
         }
 
         // LICENSES
-        Map<String, LicenseChoice> licensesGiven = licenseChoices.stream().collect(Collectors.toMap(l -> l.getLicense().getNameOrId(), Function.identity()));
-        this.licenseChoices = this.actualComponent.getAllLicenses().stream().map(licenseLoaded -> licensesGiven.getOrDefault(licenseLoaded.getLicense().getNameOrId(), licenseLoaded)).collect(Collectors.toList());
+        Map<String, LicenseChoice> licensesGiven = licenseChoices.stream().collect(Collectors.toMap(l -> l.license().nameOrId(), Function.identity()));
+        this.licenseChoices = this.actualComponent.getAllLicenses().stream().map(licenseLoaded -> licensesGiven.getOrDefault(licenseLoaded.license().nameOrId(), licenseLoaded)).collect(Collectors.toList());
 
         // EXTERNAL REFERENCES
-        this.externalReferences.addAll(actualComponent.getAllExternalReferences().stream().filter(externalReference -> externalReferences.stream().noneMatch(er -> er.getUrl().equals(externalReference.getUrl()))).toList());
+        this.externalReferences.addAll(actualComponent.getAllExternalReferences().stream().filter(externalReference -> externalReferences.stream().noneMatch(er -> er.url().equals(externalReference.url()))).toList());
 
         // HASHES
-        var hashesGiven = this.hashes.stream().collect(Collectors.toMap(Hash::getAlgorithm, Function.identity()));
-        this.hashes = this.actualComponent.getAllHashes().stream().map(hashLoaded -> hashesGiven.getOrDefault(hashLoaded.getAlgorithm(), hashLoaded)).collect(Collectors.toList());
+        var hashesGiven = this.hashes.stream().collect(Collectors.toMap(Hash::algorithm, Function.identity()));
+        this.hashes = this.actualComponent.getAllHashes().stream().map(hashLoaded -> hashesGiven.getOrDefault(hashLoaded.algorithm(), hashLoaded)).collect(Collectors.toList());
 
         //Vulnerabilities
         this.vulnerabilities = VulnerabilityRepository.getInstance().getVulnerabilities(this);
@@ -205,8 +205,8 @@ public class ReadSBomComponent implements ReadComponent {
     @Override
     public String getProperty(String key) {
         return properties.stream()
-                .filter(property -> property.getName().equals(key))
-                .map(Property::getValue)
+                .filter(property -> property.name().equals(key))
+                .map(Property::value)
                 .findFirst()
                 .orElse(null);
     }

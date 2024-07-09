@@ -1,7 +1,6 @@
 package exceptions;
 
 import data.Dependency;
-import data.VersionRangeRequest;
 
 public class VersionRangeResolutionException extends Exception{
     Dependency dependency;

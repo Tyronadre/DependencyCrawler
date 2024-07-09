@@ -8,7 +8,7 @@ import data.internalData.LicenseCollisionImpl;
 import dependencyCrawler.LicenseCollisionSpecificationOuterClass;
 import logger.Logger;
 import repository.LicenseCollisionRepository;
-import util.Constants;
+import settings.Settings;
 
 import java.io.File;
 import java.io.FileReader;
@@ -29,7 +29,7 @@ public class LicenseCollisionRepositoryImpl implements LicenseCollisionRepositor
     private LicenseCollisionRepositoryImpl() {
         logger.info("Creating LicenseCollisionService.");
 
-        var file = new File(Constants.getDataFolder(), "license-collisions.json");
+        var file = new File(Settings.getDataFolder(), "license-collisions.json");
         if (file.exists()) {
             try {
                 loadLicenseCollisions(file);
@@ -122,17 +122,17 @@ public class LicenseCollisionRepositoryImpl implements LicenseCollisionRepositor
 
     public String areLicensesCompatible(License parentLicense, License childLicense, boolean isParentApplication) {
         if (parentLicense.equals(childLicense)) {
-            logger.info("License " + parentLicense.getId() + " is compatible with itself.");
+            logger.info("License " + parentLicense.id() + " is compatible with itself.");
             return null;
         }
-        var parentLicenseSPDXId = parentLicense.getId();
-        var childLicenseSPDXId = childLicense.getId();
+        var parentLicenseSPDXId = parentLicense.id();
+        var childLicenseSPDXId = childLicense.id();
         if (parentLicenseSPDXId == null) {
-            logger.info("Skipping because parent license is not a detected spdx license: " + parentLicense.getName());
+            logger.info("Skipping because parent license is not a detected spdx license: " + parentLicense.name());
             return null;
         }
         if (childLicenseSPDXId == null) {
-            logger.info("Skipping because child license is not a detected spdx license: " + childLicense.getName());
+            logger.info("Skipping because child license is not a detected spdx license: " + childLicense.name());
             return null;
         }
 
@@ -191,11 +191,11 @@ public class LicenseCollisionRepositoryImpl implements LicenseCollisionRepositor
 
         var licenseCollisions = new ArrayList<LicenseCollision>();
         for (var licenseChoice1 : parentComponent.getAllLicenses()) {
-            var parentLicense = licenseChoice1.getLicense();
+            var parentLicense = licenseChoice1.license();
             if (parentLicense == null) continue;
 
             for (var licenseChoice2 : childComponent.getAllLicenses()) {
-                var childLicense = licenseChoice2.getLicense();
+                var childLicense = licenseChoice2.license();
                 if (childLicense == null) continue;
 
                 var incompatibleCause = areLicensesCompatible(parentLicense, childLicense, isParentApplication);

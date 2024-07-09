@@ -1,10 +1,8 @@
 package data.internalData;
 
 import data.ExternalReference;
-import data.Hash;
 
 import java.util.HashMap;
-import java.util.List;
 
 public class ExternalReferenceImpl implements ExternalReference {
     String type;
@@ -32,12 +30,7 @@ public class ExternalReferenceImpl implements ExternalReference {
     }
 
     @Override
-    public String getCategory() {
-        return null;
-    }
-
-    @Override
-    public String getType() {
+    public String type() {
         return switch (this.type) {
             case ("homepage") -> "EXTERNAL_REFERENCE_TYPE_WEBSITE";
             case ("scm") -> "EXTERNAL_REFERENCE_TYPE_VCS";
@@ -50,17 +43,13 @@ public class ExternalReferenceImpl implements ExternalReference {
     }
 
     @Override
-    public String getUrl() {
+    public String url() {
         return this.url;
     }
 
     @Override
-    public String getComment() {
+    public String comment() {
         return null;
     }
 
-    @Override
-    public List<Hash> getHashes() {
-        return null;
-    }
 }

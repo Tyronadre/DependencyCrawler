@@ -68,8 +68,4 @@ public class JitPackDependency implements Dependency {
         return true;
     }
 
-    @Override
-    public void setScope(String scope) {
-        throw new UnsupportedOperationException();
-    }
 }

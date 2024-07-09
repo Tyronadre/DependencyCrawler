@@ -8,5 +8,5 @@ public interface BFDependencyCrawler {
      *
      * @param parentComponent the parent component
      */
-    void crawl(Component parentComponent, Boolean updateDependenciesToNewestVersion);
+    void crawl(Component parentComponent, boolean updateDependenciesToNewestVersion);
 }

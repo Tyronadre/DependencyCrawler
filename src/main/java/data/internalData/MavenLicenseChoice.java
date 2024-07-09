@@ -10,17 +10,17 @@ public class MavenLicenseChoice implements data.LicenseChoice {
     }
 
     @Override
-    public License getLicense() {
+    public License license() {
         return license;
     }
 
     @Override
-    public String getExpression() {
+    public String expression() {
         return null;
     }
 
     @Override
-    public String getAcknowledgement() {
+    public String acknowledgement() {
         return null;
     }
 }

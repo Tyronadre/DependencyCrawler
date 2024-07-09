@@ -68,8 +68,8 @@ public class InternalMavenToBomConverter {
 
     private static Bom16.VulnerabilityAffects buildVulnerabilityAffect(VulnerabilityAffects vulnerabilityAffects) {
         var builder = Bom16.VulnerabilityAffects.newBuilder();
-        Optional.ofNullable(vulnerabilityAffects.getAllVersions()).ifPresent(allVersions -> builder.addAllVersions(buildAllVulnerabilityAffectedVersions(allVersions)));
-        Optional.ofNullable(vulnerabilityAffects.getAffectedComponent()).ifPresent(comp -> builder.setRef(comp.getQualifiedName()));
+        Optional.ofNullable(vulnerabilityAffects.allVersions()).ifPresent(allVersions -> builder.addAllVersions(buildAllVulnerabilityAffectedVersions(allVersions)));
+        Optional.ofNullable(vulnerabilityAffects.affectedComponent()).ifPresent(comp -> builder.setRef(comp.getQualifiedName()));
         return builder.build();
     }
 
@@ -79,9 +79,9 @@ public class InternalMavenToBomConverter {
 
     private static Bom16.VulnerabilityAffectedVersions buildVulnerabilityAffectedVersions(VulnerabilityAffectedVersion vulnerabilityAffectedVersion) {
         var builder = Bom16.VulnerabilityAffectedVersions.newBuilder();
-        Optional.ofNullable(vulnerabilityAffectedVersion.getVersion()).ifPresent(v -> builder.setVersion(v.version()));
-        Optional.ofNullable(vulnerabilityAffectedVersion.getVersionRange()).ifPresent(builder::setRange);
-        Optional.ofNullable(vulnerabilityAffectedVersion.getAffectedStatus()).ifPresent(s -> builder.setStatus(buildVulnerabilityAffectedStatus(s)));
+        Optional.ofNullable(vulnerabilityAffectedVersion.version()).ifPresent(v -> builder.setVersion(v.version()));
+        Optional.ofNullable(vulnerabilityAffectedVersion.versionRange()).ifPresent(builder::setRange);
+        Optional.ofNullable(vulnerabilityAffectedVersion.affectedStatus()).ifPresent(s -> builder.setStatus(buildVulnerabilityAffectedStatus(s)));
         return builder.build();
     }
 
@@ -95,21 +95,21 @@ public class InternalMavenToBomConverter {
 
     private static Bom16.VulnerabilityRating buildVulnerabilityRating(VulnerabilityRating vulnerabilityRating) {
         var builder = Bom16.VulnerabilityRating.newBuilder();
-        Optional.ofNullable(vulnerabilityRating.getSource()).ifPresent(s -> builder.setSource(buildSource(s)));
-        Optional.ofNullable(vulnerabilityRating.getBaseScore()).ifPresent(builder::setScore);
-        Optional.ofNullable(vulnerabilityRating.getSeverity()).ifPresent(s -> builder.setSeverity(buildSeverity(s)));
-        Optional.ofNullable(vulnerabilityRating.getMethod()).ifPresent(m -> builder.setMethod(buildMethod(m)));
-        Optional.ofNullable(vulnerabilityRating.getVector()).ifPresent(builder::setVector);
-        Optional.ofNullable(vulnerabilityRating.getJustification()).ifPresent(builder::setJustification);
+        Optional.ofNullable(vulnerabilityRating.source()).ifPresent(s -> builder.setSource(buildSource(s)));
+        Optional.ofNullable(vulnerabilityRating.baseScore()).ifPresent(builder::setScore);
+        Optional.ofNullable(vulnerabilityRating.severity()).ifPresent(s -> builder.setSeverity(buildSeverity(s)));
+        Optional.ofNullable(vulnerabilityRating.method()).ifPresent(m -> builder.setMethod(buildMethod(m)));
+        Optional.ofNullable(vulnerabilityRating.vector()).ifPresent(builder::setVector);
+        Optional.ofNullable(vulnerabilityRating.justification()).ifPresent(builder::setJustification);
         return builder.build();
     }
 
     private static Bom16.ScoreMethod buildMethod(String m) {
         return switch (m) {
-            case "4" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV4;
-            case "3.1" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV31;
-            case "3" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV3;
-            case "2" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV2;
+            case "CVSS:4" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV4;
+            case "CVSS:3.1" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV31;
+            case "CVSS:3" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV3;
+            case "CVSS:2" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV2;
             default -> Bom16.ScoreMethod.valueOf(m);
         };
     }
@@ -130,15 +130,15 @@ public class InternalMavenToBomConverter {
 
     private static Bom16.VulnerabilityReference buildVulnerabilityReference(VulnerabilityReference vulnerabilityReference) {
         var builder = Bom16.VulnerabilityReference.newBuilder();
-        builder.setId(vulnerabilityReference.getIdentifier());
-        builder.setSource(buildSource(vulnerabilityReference.getSource()));
+        builder.setId(vulnerabilityReference.identifier());
+        builder.setSource(buildSource(vulnerabilityReference.source()));
         return builder.build();
     }
 
     public static Bom16.Source buildSource(Property source) {
         var builder = Bom16.Source.newBuilder();
-        Optional.ofNullable(source.getName()).ifPresent(builder::setName);
-        Optional.ofNullable(source.getValue()).ifPresent(builder::setUrl);
+        Optional.ofNullable(source.name()).ifPresent(builder::setName);
+        Optional.ofNullable(source.value()).ifPresent(builder::setUrl);
         return builder.build();
     }
 
@@ -228,9 +228,9 @@ public class InternalMavenToBomConverter {
 
     private static Bom16.ExternalReference buildExternalReference(ExternalReference externalReference) {
         var builder = Bom16.ExternalReference.newBuilder();
-        Optional.ofNullable(externalReference.getType()).ifPresent(type -> builder.setType(buildExternalReferenceType(type)));
-        Optional.ofNullable(externalReference.getUrl()).ifPresent(builder::setUrl);
-        Optional.ofNullable(externalReference.getComment()).ifPresent(builder::setComment);
+        Optional.ofNullable(externalReference.type()).ifPresent(type -> builder.setType(buildExternalReferenceType(type)));
+        Optional.ofNullable(externalReference.url()).ifPresent(builder::setUrl);
+        Optional.ofNullable(externalReference.comment()).ifPresent(builder::setComment);
         return builder.build();
     }
 
@@ -238,10 +238,7 @@ public class InternalMavenToBomConverter {
         try {
             return Bom16.ExternalReferenceType.valueOf(type);
         } catch (Exception ignored) {
-
-            return switch (type) {
-                default -> Bom16.ExternalReferenceType.EXTERNAL_REFERENCE_TYPE_OTHER;
-            };
+            return Bom16.ExternalReferenceType.EXTERNAL_REFERENCE_TYPE_OTHER;
         }
 
     }
@@ -252,21 +249,21 @@ public class InternalMavenToBomConverter {
 
     private static Bom16.LicenseChoice buildLicenseChoice(LicenseChoice licenseChoice) {
         var builder = Bom16.LicenseChoice.newBuilder();
-        Optional.ofNullable(licenseChoice.getLicense()).ifPresent(license -> builder.setLicense(buildLicense(license)));
-        Optional.ofNullable(licenseChoice.getExpression()).ifPresent(builder::setExpression);
-        Optional.ofNullable(licenseChoice.getAcknowledgement()).ifPresent(acknowledgement -> builder.setAcknowledgement(buildLicenseAcknowledgementEnumeration(acknowledgement)));
+        Optional.ofNullable(licenseChoice.license()).ifPresent(license -> builder.setLicense(buildLicense(license)));
+        Optional.ofNullable(licenseChoice.expression()).ifPresent(builder::setExpression);
+        Optional.ofNullable(licenseChoice.acknowledgement()).ifPresent(acknowledgement -> builder.setAcknowledgement(buildLicenseAcknowledgementEnumeration(acknowledgement)));
         return builder.build();
     }
 
     private static Bom16.License buildLicense(License license) {
         var builder = Bom16.License.newBuilder();
-        Optional.ofNullable(license.getId()).ifPresent(builder::setId);
-        Optional.ofNullable(license.getName()).ifPresent(builder::setName);
-        Optional.ofNullable(license.getText()).ifPresent(text -> builder.setText(buildAttachedText(text)));
-        Optional.ofNullable(license.getUrl()).ifPresent(builder::setUrl);
-        Optional.ofNullable(license.getLicensing()).ifPresent(licensing -> builder.setLicensing(buildLicensing(licensing)));
-        Optional.ofNullable(license.getProperties()).ifPresent(properties -> builder.addAllProperties(buildAllProperties(properties)));
-        Optional.ofNullable(license.getAcknowledgement()).ifPresent(acknowledgement -> builder.setAcknowledgement(buildLicenseAcknowledgementEnumeration(acknowledgement)));
+        Optional.ofNullable(license.id()).ifPresent(builder::setId);
+        Optional.ofNullable(license.name()).ifPresent(builder::setName);
+        Optional.ofNullable(license.text()).ifPresent(text -> builder.setText(buildAttachedText(text)));
+        Optional.ofNullable(license.url()).ifPresent(builder::setUrl);
+        Optional.ofNullable(license.licensing()).ifPresent(licensing -> builder.setLicensing(buildLicensing(licensing)));
+        Optional.ofNullable(license.properties()).ifPresent(properties -> builder.addAllProperties(buildAllProperties(properties)));
+        Optional.ofNullable(license.acknowledgement()).ifPresent(acknowledgement -> builder.setAcknowledgement(buildLicenseAcknowledgementEnumeration(acknowledgement)));
         return builder.build();
     }
 
@@ -280,28 +277,28 @@ public class InternalMavenToBomConverter {
 
     private static Bom16.Property buildProperty(Property property) {
         var builder = Bom16.Property.newBuilder();
-        builder.setName(property.getName());
-        builder.setValue(property.getValue());
+        builder.setName(property.name());
+        builder.setValue(property.value());
         return builder.build();
     }
 
     private static Bom16.Licensing buildLicensing(Licensing licensing) {
         var builder = Bom16.Licensing.newBuilder();
-        Optional.ofNullable(licensing.getAltIds()).ifPresent(builder::addAllAltIds);
-        Optional.ofNullable(licensing.getLicensor()).ifPresent(licensor -> builder.setLicensor(buildOrganizationEntityOrContact(licensor)));
-        Optional.ofNullable(licensing.getLicensee()).ifPresent(licensee -> builder.setLicensee(buildOrganizationEntityOrContact(licensee)));
-        Optional.ofNullable(licensing.getPurchaser()).ifPresent(purchaser -> builder.setPurchaser(buildOrganizationEntityOrContact(purchaser)));
-        Optional.ofNullable(licensing.getPurchaseOrder()).ifPresent(builder::setPurchaseOrder);
-        Optional.ofNullable(licensing.getAllLicenseTypes()).ifPresent(types -> builder.addAllLicenseTypes(buildAllLicenseTypes(types)));
-        Optional.ofNullable(licensing.getLastRenewal()).ifPresent(lastRenewal -> builder.setLastRenewal(buildTimestamp(lastRenewal)));
-        Optional.ofNullable(licensing.getExpiration()).ifPresent(expiration -> builder.setExpiration(buildTimestamp(expiration)));
+        Optional.ofNullable(licensing.altIds()).ifPresent(builder::addAllAltIds);
+        Optional.ofNullable(licensing.licensor()).ifPresent(licensor -> builder.setLicensor(buildOrganizationEntityOrContact(licensor)));
+        Optional.ofNullable(licensing.licensee()).ifPresent(licensee -> builder.setLicensee(buildOrganizationEntityOrContact(licensee)));
+        Optional.ofNullable(licensing.purchaser()).ifPresent(purchaser -> builder.setPurchaser(buildOrganizationEntityOrContact(purchaser)));
+        Optional.ofNullable(licensing.purchaseOrder()).ifPresent(builder::setPurchaseOrder);
+        Optional.ofNullable(licensing.allLicenseTypes()).ifPresent(types -> builder.addAllLicenseTypes(buildAllLicenseTypes(types)));
+        Optional.ofNullable(licensing.lastRenewal()).ifPresent(lastRenewal -> builder.setLastRenewal(buildTimestamp(lastRenewal)));
+        Optional.ofNullable(licensing.expiration()).ifPresent(expiration -> builder.setExpiration(buildTimestamp(expiration)));
         return builder.build();
     }
 
     public static com.google.protobuf.Timestamp buildTimestamp(Timestamp timestamp) {
         var builder = com.google.protobuf.Timestamp.newBuilder();
-        builder.setNanos(timestamp.getNanos());
-        builder.setSeconds(timestamp.getSeconds());
+        builder.setNanos(timestamp.nanos());
+        builder.setSeconds(timestamp.seconds());
         return builder.build();
     }
 
@@ -315,8 +312,8 @@ public class InternalMavenToBomConverter {
 
     private static Bom16.OrganizationalEntityOrContact buildOrganizationEntityOrContact(OrganizationOrPerson licensor) {
         var builder = Bom16.OrganizationalEntityOrContact.newBuilder();
-        Optional.ofNullable(licensor.getOrganization()).ifPresent(organization -> builder.setOrganization(buildOrganizationalEntity(organization)));
-        Optional.ofNullable(licensor.getPerson()).ifPresent(person -> builder.setIndividual(buildOrganizationContact(person)));
+        Optional.ofNullable(licensor.organization()).ifPresent(organization -> builder.setOrganization(buildOrganizationalEntity(organization)));
+        Optional.ofNullable(licensor.person()).ifPresent(person -> builder.setIndividual(buildOrganizationContact(person)));
         return builder.build();
     }
 
@@ -333,9 +330,9 @@ public class InternalMavenToBomConverter {
     private static Bom16.Hash buildHash(Hash hash) {
         var builder = Bom16.Hash.newBuilder();
         try {
-            builder.setAlg(Bom16.HashAlg.valueOf(hash.getAlgorithm()));
+            builder.setAlg(Bom16.HashAlg.valueOf(hash.algorithm()));
         } catch (IllegalArgumentException e) {
-            builder.setAlg(switch (hash.getAlgorithm()) {
+            builder.setAlg(switch (hash.algorithm()) {
                 case "md5" -> Bom16.HashAlg.HASH_ALG_MD_5;
                 case "sha1" -> Bom16.HashAlg.HASH_ALG_SHA_1;
                 case "sha256" -> Bom16.HashAlg.HASH_ALG_SHA_256;
@@ -344,28 +341,28 @@ public class InternalMavenToBomConverter {
                 default -> Bom16.HashAlg.HASH_ALG_NULL;
             });
         }
-        builder.setValue(hash.getValue());
+        builder.setValue(hash.value());
         return builder.build();
     }
 
     public static Bom16.OrganizationalEntity buildOrganizationalEntity(Organization organization) {
         var builder = Bom16.OrganizationalEntity.newBuilder();
-        Optional.ofNullable(organization.getName()).ifPresent(builder::setName);
-        Optional.ofNullable(organization.getUrls()).ifPresent(builder::addAllUrl);
-        Optional.ofNullable(organization.getContacts()).ifPresent(contacts -> builder.addAllContact(buildAllOrganizationContacts(contacts)));
-        Optional.ofNullable(organization.getAddress()).ifPresent(address -> builder.setAddress(buildPostalAddressType(address)));
+        Optional.ofNullable(organization.name()).ifPresent(builder::setName);
+        Optional.ofNullable(organization.urls()).ifPresent(builder::addAllUrl);
+        Optional.ofNullable(organization.contacts()).ifPresent(contacts -> builder.addAllContact(buildAllOrganizationContacts(contacts)));
+        Optional.ofNullable(organization.address()).ifPresent(address -> builder.setAddress(buildPostalAddressType(address)));
         return builder.build();
 
     }
 
     public static Bom16.PostalAddressType buildPostalAddressType(Address address) {
         var builder = Bom16.PostalAddressType.newBuilder();
-        Optional.ofNullable(address.getCountry()).ifPresent(builder::setCountry);
-        Optional.ofNullable(address.getRegion()).ifPresent(builder::setRegion);
-        Optional.ofNullable(address.getCity()).ifPresent(builder::setLocality);
-        Optional.ofNullable(address.getPostOfficeBoxNumber()).ifPresent(builder::setPostOfficeBoxNumber);
-        Optional.ofNullable(address.getPostalCode()).ifPresent(builder::setPostalCodeue);
-        Optional.ofNullable(address.getStreetAddress()).ifPresent(builder::setStreetAddress);
+        Optional.ofNullable(address.country()).ifPresent(builder::setCountry);
+        Optional.ofNullable(address.region()).ifPresent(builder::setRegion);
+        Optional.ofNullable(address.city()).ifPresent(builder::setLocality);
+        Optional.ofNullable(address.postOfficeBoxNumber()).ifPresent(builder::setPostOfficeBoxNumber);
+        Optional.ofNullable(address.postalCode()).ifPresent(builder::setPostalCodeue);
+        Optional.ofNullable(address.streetAddress()).ifPresent(builder::setStreetAddress);
         return builder.build();
     }
 
@@ -375,9 +372,9 @@ public class InternalMavenToBomConverter {
 
     private static Bom16.OrganizationalContact buildOrganizationContact(Person person) {
         var builder = Bom16.OrganizationalContact.newBuilder();
-        Optional.ofNullable(person.getName()).ifPresent(builder::setName);
-        Optional.ofNullable(person.getEmail()).ifPresent(builder::setEmail);
-        Optional.ofNullable(person.getPhone()).ifPresent(builder::setPhone);
+        Optional.ofNullable(person.name()).ifPresent(builder::setName);
+        Optional.ofNullable(person.email()).ifPresent(builder::setEmail);
+        Optional.ofNullable(person.phone()).ifPresent(builder::setPhone);
         return builder.build();
     }
 }

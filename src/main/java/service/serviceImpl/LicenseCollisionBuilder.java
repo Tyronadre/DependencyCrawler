@@ -28,11 +28,11 @@ public class LicenseCollisionBuilder implements DocumentBuilder<List<LicenseColl
         builder.setCreationDate(InternalMavenToBomConverter.buildTimestamp(Timestamp.of(System.currentTimeMillis() / 1000, 0)));
         for (LicenseCollision collision : collisions) {
             var collisionBuilder = LicenseCollisionOutputOuterClass.LicenseCollision.newBuilder();
-            collisionBuilder.setParentPurl(collision.getParent().getPurl());
-            collisionBuilder.setChildPurl(collision.getChild().getPurl());
-            collisionBuilder.setParentLicense(collision.getParentLicense().getNameOrId());
-            collisionBuilder.setChildLicense(collision.getChildLicense().getNameOrId());
-            collisionBuilder.setCause(collision.getCause());
+            collisionBuilder.setParentPurl(collision.parent().getPurl());
+            collisionBuilder.setChildPurl(collision.child().getPurl());
+            collisionBuilder.setParentLicense(collision.parentLicense().nameOrId());
+            collisionBuilder.setChildLicense(collision.childLicense().nameOrId());
+            collisionBuilder.setCause(collision.cause());
             builder.addLicenseCollisions(collisionBuilder.build());
         }
         var collisionsProto = builder.build();

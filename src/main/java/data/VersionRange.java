@@ -14,25 +14,26 @@ public interface VersionRange extends Version {
     /**
      * @return all versions that are in this range
      */
-    List<Version> getVersions();
+    List<Version> versions();
 
     /**
      * @return the lowest version in this range
      */
-    Version getLowestVersion();
+    Version lowestVersion();
 
     /**
      * @return the highest version in this range
      */
-    Version getHighestVersion();
+    Version highestVersion();
 
     /**
      * @return the recommended version depending on the constraints
      */
-    Version getRecommendedVersion();
+    Version recommendedVersion();
 
     /**
      * @return the dependency to which this range belongs
      */
-    Dependency getDependency();
+    Dependency dependency();
+
 }

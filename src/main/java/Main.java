@@ -17,9 +17,10 @@ import service.serviceImpl.SPDXReader;
 import service.serviceImpl.TreeBuilder;
 import service.serviceImpl.VexBuilder;
 import service.serviceImpl.VexReader;
-import util.Constants;
+import settings.Settings;
 import util.Pair;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,7 +36,7 @@ public class Main {
 //        args = new String[]{"--input", "generated/output_0.sbom.json", "--input-type", "sbom", "--output", "generated/output_0_renewFromSBOM", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
 //        args = new String[]{"--input", "generated/output_0.spdx.json", "--input-type", "spdx", "--output", "generated/output_0_renewFromSPDX", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
 //        args = new String[]{"--input", "src/main/resources/input_2.json", "--output", "generated/output_2", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
-//        args = new String[]{"--input", "src/main/resources/input_1.json", "--output", "generated/output_1", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
+        args = new String[]{"--input", "src/main/resources/input_1.json", "--output", "generated/output_1"};
 //        args = new String[]{"--input", "src/main/resources/photoprism.json", "--output", "testoutput/output_0"};
 
 
@@ -56,7 +57,7 @@ public class Main {
                     argMap.put(lastKey, argMap.get(lastKey) + ";" + arg);
             }
         }
-        var legalArgs = List.of("input", "output", "input-type", "output-type", "help", "log-level", "no-log", "crawl-optional","crawl-all","crawl-threads");
+        var legalArgs = List.of("input", "output", "input-type", "output-type", "help", "log-level", "no-log", "crawl-optional","crawl-all","crawl-threads", "data-folder");
         var illegalArgs = argMap.keySet().stream().filter(s -> !legalArgs.contains(s)).toList();
         if (!illegalArgs.isEmpty()) {
             logger.error("Illegal Arguments: " + illegalArgs);
@@ -82,16 +83,23 @@ public class Main {
 
         if (argMap.containsKey("crawl-optional")) {
             logger.info("Will crawl optional dependencies");
-            Constants.crawlOptional = true;
+            Settings.crawlOptional = true;
         }
 
         if (argMap.containsKey("crawl-all")) {
             logger.info("Will crawl all dependencies");
-            Constants.crawlEverything = true;
+            Settings.crawlEverything = true;
         }
 
         if (argMap.containsKey("crawl-threads")) {
-            Constants.crawlThreads = Integer.parseInt(argMap.get("crawl-threads"));
+            Settings.crawlThreads = Integer.parseInt(argMap.get("crawl-threads"));
+        }
+
+        if (argMap.containsKey("data-folder")) {
+            if (!Settings.setDataFolder(new File(argMap.get("data-folder")))) {
+                logger.error("Could not create data folder.");
+                return;
+            }
         }
 
         if (!argMap.containsKey("input")) {
@@ -127,9 +135,9 @@ public class Main {
             LicenseRepository.getInstance(); //preload license repository
         }
 
+        if (inputType == null) inputType = "default";
         switch (inputType) {
             case "default" -> readFromDefault(inputFile, outputFile, outputTypes);
-            case null -> readFromDefault(inputFile, outputFile, outputTypes);
             case "sbom" -> readFromSBOM(inputFile, outputFile, outputTypes);
             case "spdx" -> readFromSPDX(inputFile, outputFile, outputTypes);
             case "vex" -> {

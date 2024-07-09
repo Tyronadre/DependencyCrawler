@@ -149,7 +149,7 @@ public class MavenComponent implements Component {
 
         // PARENT
         if (this.model.getParent() != null) {
-            this.parent = this.repository.getComponent(this.model.getParent().getGroupId(), this.model.getParent().getArtifactId(), new VersionImpl(this.model.getParent().getVersion()), null);
+            this.parent = this.repository.getComponent(this.model.getParent().getGroupId(), this.model.getParent().getArtifactId(), Version.of(this.model.getParent().getVersion()), null);
         } else {
             this.parent = null;
         }
@@ -315,7 +315,7 @@ public class MavenComponent implements Component {
             case "license" -> licenseChoices.add(LicenseChoice.of((License) value, null, null));
             case "addProperty" -> {
                 var property = (Property) value;
-                this.properties.add(Property.of(property.getName(), property.getValue()));
+                this.properties.add(Property.of(property.name(), property.value()));
             }
             default -> logger.error("Unknown key: " + key);
         }

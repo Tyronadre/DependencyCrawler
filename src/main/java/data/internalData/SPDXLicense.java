@@ -21,7 +21,7 @@ public class SPDXLicense implements License {
     }
 
     @Override
-    public String getId() {
+    public String id() {
         return data.get("licenseId").getAsString();
     }
 
@@ -31,37 +31,37 @@ public class SPDXLicense implements License {
      * @return null
      */
     @Override
-    public String getName() {
+    public String name() {
         return null;
     }
 
     @Override
-    public String getNameOrId() {
-        if (getId().isEmpty() || getId().isBlank()) return getName();
-        return getId();
+    public String nameOrId() {
+        if (id().isEmpty() || id().isBlank()) return name();
+        return id();
     }
 
     @Override
-    public String getText() {
+    public String text() {
         if (details == null) return null;
         return details.get("licenseText").getAsString();
     }
 
     @Override
-    public String getUrl() {
+    public String url() {
         return data.get("detailsUrl").getAsString();
     }
 
     @Override
-    public Licensing getLicensing() {
+    public Licensing licensing() {
         return null;
     }
 
     @Override
-    public List<Property> getProperties() {
+    public List<Property> properties() {
         var l = new ArrayList<Property>();
 
-        l.add(Property.of("licenseId", getId()));
+        l.add(Property.of("licenseId", id()));
         Optional.ofNullable(data.get("seeAlso")).ifPresent(s -> l.add(Property.of("seeAlso", s.getAsJsonArray().toString())));
         Optional.ofNullable(data.get("isOsiApproved")).ifPresent(s -> l.add(Property.of("isOsiApproved", s.getAsString())));
         Optional.ofNullable(data.get("isFsfLibre")).ifPresent(s -> l.add(Property.of("isFsfLibre", s.getAsString())));
@@ -76,7 +76,7 @@ public class SPDXLicense implements License {
     }
 
     @Override
-    public String getAcknowledgement() {
+    public String acknowledgement() {
         return null;
     }
 
@@ -84,7 +84,7 @@ public class SPDXLicense implements License {
     @Override
     public String toString() {
         return new StringJoiner(", ", SPDXLicense.class.getSimpleName() + "[", "]")
-                .add("id=" + getId())
+                .add("id=" + id())
                 .toString();
     }
 
@@ -93,11 +93,11 @@ public class SPDXLicense implements License {
         if (this == o) return true;
         if (!(o instanceof SPDXLicense that)) return false;
 
-        return Objects.equals(this.getId(), that.getId());
+        return Objects.equals(this.id(), that.id());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(this.getId());
+        return Objects.hashCode(this.id());
     }
 }

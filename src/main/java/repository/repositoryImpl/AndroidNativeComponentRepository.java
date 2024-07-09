@@ -34,7 +34,7 @@ public class AndroidNativeComponentRepository implements ComponentRepository {
     }
 
     @Override
-    public List<? extends Version> getVersions(Dependency dependency) {
+    public List<Version> getVersions(Dependency dependency) {
         throw new UnsupportedOperationException();
     }
 

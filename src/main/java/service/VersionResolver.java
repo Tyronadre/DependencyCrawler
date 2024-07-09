@@ -9,4 +9,5 @@ public interface VersionResolver {
     void resolveVersion(Dependency dependency) throws VersionResolveException;
 
     Version getVersion(String versionString);
+
 }

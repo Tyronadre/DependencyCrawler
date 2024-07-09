@@ -35,12 +35,12 @@ public class MavenVersionRange implements VersionRange {
     }
 
     @Override
-    public List<Version> getVersions() {
+    public List<Version> versions() {
         return versions;
     }
 
     @Override
-    public Version getLowestVersion() {
+    public Version lowestVersion() {
         if (versions.isEmpty()) {
             return null;
         }
@@ -48,7 +48,7 @@ public class MavenVersionRange implements VersionRange {
     }
 
     @Override
-    public Version getHighestVersion() {
+    public Version highestVersion() {
         if (versions.isEmpty()) {
             return null;
         }
@@ -56,22 +56,22 @@ public class MavenVersionRange implements VersionRange {
     }
 
     @Override
-    public Version getRecommendedVersion() {
-        return getHighestVersion();
+    public Version recommendedVersion() {
+        return highestVersion();
     }
 
     @Override
-    public Dependency getDependency() {
+    public Dependency dependency() {
         return dependency;
     }
 
     @Override
     public String version() {
-        return this.getRecommendedVersion().version();
+        return this.recommendedVersion().version();
     }
 
     @Override
     public int compareTo(Version otherVersion) {
-        return this.getRecommendedVersion().compareTo(otherVersion);
+        return this.recommendedVersion().compareTo(otherVersion);
     }
 }

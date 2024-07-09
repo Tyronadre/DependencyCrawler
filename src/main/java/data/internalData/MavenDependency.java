@@ -90,8 +90,8 @@ public class MavenDependency implements Dependency {
 //            logger.error("Can not get Component of Dependency " + this + ". Parent is: " + this.treeParent + ". [Version is not resolved].");
             var possibleComponents = MavenComponentRepository.getInstance().getLoadedComponents(getGroupId(), getArtifactId());
             if (!possibleComponents.isEmpty()) {
-                logger.info("Can not get Component of Dependency " + this + ". Parent is: " + this.treeParent + ". [Version is not resolved]." + "Using " + possibleComponents.getLast() + " as fallback.");
-                this.component = possibleComponents.getLast();
+                logger.info("Can not get Component of Dependency " + this + ". Parent is: " + this.treeParent + ". [Version is not resolved]." + "Using " + possibleComponents.get(possibleComponents.size() - 1) + " as fallback.");
+                this.component = possibleComponents.get(possibleComponents.size() - 1);
             }
         }
         return this.component;
@@ -137,11 +137,6 @@ public class MavenDependency implements Dependency {
     @Override
     public boolean isNotOptional() {
         return true;
-    }
-
-    @Override
-    public void setScope(String scope) {
-
     }
 
     @Override

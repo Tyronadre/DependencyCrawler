@@ -10,4 +10,5 @@ public interface LicenseRepository {
     }
 
     License getLicense(String name, String url);
+
 }

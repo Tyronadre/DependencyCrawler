@@ -138,8 +138,8 @@ public class SPDXBuilder implements DocumentBuilder<Component, Pair<SpdxDocument
             spdxPackage.setName(component.getQualifiedName().replace(':', ' '));
             var supplier = component.getSupplier();
             if (supplier != null) {
-                spdxPackage.setSupplier("Organization: " + supplier.getName());
-                spdxPackage.setOriginator("Organization: " + supplier.getName());
+                spdxPackage.setSupplier("Organization: " + supplier.name());
+                spdxPackage.setOriginator("Organization: " + supplier.name());
             }
 
             spdxPackage.setPackageFileName(component.getPurl());
@@ -174,16 +174,16 @@ public class SPDXBuilder implements DocumentBuilder<Component, Pair<SpdxDocument
         if (component.getAllHashes() != null) {
             for (Hash hash : component.getAllHashes()) {
                 try {
-                    var checksum = spdxPackage.createChecksum(switch (hash.getAlgorithm().toUpperCase()) {
+                    var checksum = spdxPackage.createChecksum(switch (hash.algorithm().toUpperCase()) {
                         case "SHA1", "HASH_ALG_SHA_1" -> ChecksumAlgorithm.SHA1;
                         case "SHA256", "HASH_ALG_SHA_256" -> ChecksumAlgorithm.SHA256;
                         case "SHA512", "HASH_ALG_SHA_512" -> ChecksumAlgorithm.SHA512;
                         case "MD5", "HASH_ALG_MD_5" -> ChecksumAlgorithm.MD5;
-                        default -> throw new SPDXBuilderException("Unexpected value: " + hash.getAlgorithm());
-                    }, hash.getValue());
+                        default -> throw new SPDXBuilderException("Unexpected value: " + hash.algorithm());
+                    }, hash.value());
                     spdxPackage.addChecksum(checksum);
                 } catch (Exception e) {
-                    logger.error(hash.getValue() + " " + component + " " + e.getMessage());
+                    logger.error(hash.value() + " " + component + " " + e.getMessage());
                 }
             }
         }
@@ -193,7 +193,7 @@ public class SPDXBuilder implements DocumentBuilder<Component, Pair<SpdxDocument
         if (component.getAllExternalReferences() != null) {
             for (ExternalReference externalReference : component.getAllExternalReferences()) {
                 try {
-                    var ref = spdxPackage.createExternalRef(ReferenceCategory.OTHER, new ReferenceType(externalReference.getType()), externalReference.getUrl(), null);
+                    var ref = spdxPackage.createExternalRef(ReferenceCategory.OTHER, new ReferenceType(externalReference.type()), externalReference.url(), null);
                     spdxPackage.addExternalRef(ref);
                 } catch (InvalidSPDXAnalysisException e) {
                     logger.error("Could not build external reference for " + component.getQualifiedName() + ". " + e.getMessage());
@@ -223,12 +223,12 @@ public class SPDXBuilder implements DocumentBuilder<Component, Pair<SpdxDocument
         if (component.getAllLicenses() == null || component.getAllLicenses().isEmpty()) {
             return;
         }
-        var licenseChoice = component.getAllLicenses().getFirst();
+        var licenseChoice = component.getAllLicenses().get(0);
         try {
-            var license = LicenseInfoFactory.parseSPDXLicenseString(licenseChoice.getLicense().getId(), store, uri, copyManager);
+            var license = LicenseInfoFactory.parseSPDXLicenseString(licenseChoice.license().id(), store, uri, copyManager);
             spdxPackage.setLicenseDeclared(license);
         } catch (InvalidSPDXAnalysisException e) {
-            logger.info("Could not build license  " + licenseChoice.getLicense() + ". " + e.getMessage());
+            logger.info("Could not build license  " + licenseChoice.license() + ". " + e.getMessage());
         }
 
     }
@@ -287,7 +287,7 @@ public class SPDXBuilder implements DocumentBuilder<Component, Pair<SpdxDocument
             buildLicense(finalComponent, spdxPackage);
             Optional.ofNullable(finalComponent.getSupplier()).ifPresent(manufacturer -> {
                 try {
-                    spdxPackage.setSupplier("Organization: " + manufacturer.getName());
+                    spdxPackage.setSupplier("Organization: " + manufacturer.name());
                 } catch (InvalidSPDXAnalysisException e) {
                     logger.error("Could not set supplier for " + finalComponent.getQualifiedName() + ". " + e.getMessage());
                 }

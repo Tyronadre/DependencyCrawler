@@ -22,36 +22,36 @@ public class LicenseCollisionImpl implements LicenseCollision {
     }
 
     @Override
-    public License getParentLicense() {
+    public License parentLicense() {
         return parentLicense;
     }
 
     @Override
-    public Component getParent() {
+    public Component parent() {
         return parentComponent;
     }
 
     @Override
-    public License getChildLicense() {
+    public License childLicense() {
         return childLicense;
     }
 
     @Override
-    public Component getChild() {
+    public Component child() {
         return childComponent;
     }
 
     @Override
-    public String getCause() {
+    public String cause() {
         return cause;
     }
 
     @Override
     public String toString() {
         return new StringJoiner(", ", LicenseCollisionImpl.class.getSimpleName() + "[", "]")
-                .add("parentLicense=" + parentLicense.getNameOrId())
+                .add("parentLicense=" + parentLicense.nameOrId())
                 .add("parentComponent=" + parentComponent.getQualifiedName())
-                .add("childLicense=" + childLicense.getNameOrId())
+                .add("childLicense=" + childLicense.nameOrId())
                 .add("childComponent=" + childComponent.getQualifiedName())
                 .add("cause='" + cause + "'")
                 .toString();

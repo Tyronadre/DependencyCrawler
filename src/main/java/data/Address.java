@@ -1,50 +1,24 @@
 package data;
 
 public interface Address {
-    String getCountry();
 
-    String getRegion();
+    String country();
 
-    String getCity();
+    String region();
 
-    String getPostalCode();
+    String city();
 
-    String getStreetAddress();
+    String postalCode();
 
-    String getPostOfficeBoxNumber();
+    String streetAddress();
+
+    String postOfficeBoxNumber();
 
     static Address of(String country, String region, String city, String postalCode, String streetAddress, String postOfficeBoxNumber) {
-        return new Address() {
-            @Override
-            public String getCountry() {
-                return country;
-            }
-
-            @Override
-            public String getRegion() {
-                return region;
-            }
-
-            @Override
-            public String getCity() {
-                return city;
-            }
-
-            @Override
-            public String getPostalCode() {
-                return postalCode;
-            }
-
-            @Override
-            public String getStreetAddress() {
-                return streetAddress;
-            }
-
-            @Override
-            public String getPostOfficeBoxNumber() {
-                return postOfficeBoxNumber;
-            }
-        };
-
+        return new AddressRecord(country, region, city, postalCode, streetAddress, postOfficeBoxNumber);
     }
+
+    record AddressRecord(String country, String region, String city, String postalCode, String streetAddress,String postOfficeBoxNumber) implements Address {
+    }
+
 }

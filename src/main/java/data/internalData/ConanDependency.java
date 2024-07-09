@@ -79,11 +79,6 @@ public class ConanDependency implements Dependency {
     }
 
     @Override
-    public void setScope(String scope) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public String toString() {
         return new StringJoiner(", ", ConanDependency.class.getSimpleName() + "[", "]")
                 .add("version=" + version)

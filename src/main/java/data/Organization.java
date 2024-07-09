@@ -3,36 +3,20 @@ package data;
 import java.util.List;
 
 public interface Organization {
-    String getName();
 
-    List<String> getUrls();
+    String name();
 
-    Address getAddress();
+    List<String> urls();
 
-    List<Person> getContacts();
+    Address address();
+
+    List<Person> contacts();
 
     static Organization of(String name, List<String> urls, Address address, List<Person> contacts) {
-        return new Organization() {
-            @Override
-            public String getName() {
-                return name;
-            }
+        return new OrganizationRecord(name, urls, address, contacts);
+    }
 
-            @Override
-            public List<String> getUrls() {
-                return urls;
-            }
-
-            @Override
-            public Address getAddress() {
-                return address;
-            }
-
-            @Override
-            public List<Person> getContacts() {
-                return contacts;
-            }
-        };
+    record OrganizationRecord(String name, List<String> urls, Address address, List<Person> contacts) implements Organization {
     }
 
 }

@@ -1,7 +1,7 @@
 package data;
 
 import repository.ComponentRepository;
-import util.Constants;
+import settings.Settings;
 
 import java.util.Comparator;
 import java.util.List;
@@ -40,14 +40,14 @@ public interface Component {
      * @return the filtered dependencies of the artifact.
      */
     default List<Dependency> getDependenciesFiltered() {
-        if (Constants.crawlEverything) {
+        if (Settings.crawlEverything) {
             return getDependencies().stream()
                     .filter(Objects::nonNull)
                     .sorted(Comparator.comparing(Dependency::getQualifiedName))
                     .collect(Collectors.toList());
 
         }
-        if (Constants.crawlOptional) {
+        if (Settings.crawlOptional) {
             return getDependencies().stream()
                     .filter(Objects::nonNull)
                     .filter(Dependency::shouldResolveByScope)

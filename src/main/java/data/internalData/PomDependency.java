@@ -71,8 +71,4 @@ public class PomDependency implements Dependency {
         return false;
     }
 
-    @Override
-    public void setScope(String scope) {
-
-    }
 }

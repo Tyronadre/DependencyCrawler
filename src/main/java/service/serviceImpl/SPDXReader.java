@@ -2,7 +2,6 @@ package service.serviceImpl;
 
 import data.Component;
 import data.ExternalReference;
-import data.Hash;
 import data.readData.ReadDependency;
 import dependencyCrawler.DependencyCrawlerInput;
 import logger.Logger;
@@ -97,7 +96,7 @@ public class SPDXReader implements DocumentReader<Pair<SpdxDocument, Component>>
         List<ExternalReference> externalReferences = new ArrayList<>();
         if (!spdxPackage.getExternalRefs().isEmpty())
             externalReferences = buildAllExternalReferences(spdxPackage.getExternalRefs().stream().toList());
-        var purlList = externalReferences.stream().filter(externalReference -> externalReference.getType().endsWith("purl")).toList();
+        var purlList = externalReferences.stream().filter(externalReference -> externalReference.type().endsWith("purl")).toList();
         String purl = null;
         if (purlList.isEmpty()) {
             String artifactId;
@@ -145,7 +144,7 @@ public class SPDXReader implements DocumentReader<Pair<SpdxDocument, Component>>
                 logger.error("Could not transform id " + spdxPackage.getId() + " to purl.", e);
             }
         } else {
-            purl = purlList.getFirst().getUrl();
+            purl = purlList.get(0).url();
         }
         DependencyCrawlerInput.Type type;
         if (purl == null) {
@@ -179,17 +178,9 @@ public class SPDXReader implements DocumentReader<Pair<SpdxDocument, Component>>
 
     private ExternalReference buildExternalReference(ExternalRef externalReference) {
         return new ExternalReference() {
-            @Override
-            public String getCategory() {
-                try {
-                    return externalReference.getReferenceCategory().toString();
-                } catch (InvalidSPDXAnalysisException e) {
-                    throw new RuntimeException(e);
-                }
-            }
 
             @Override
-            public String getType() {
+            public String type() {
                 try {
                     return externalReference.getReferenceType().getIndividualURI();
                 } catch (InvalidSPDXAnalysisException e) {
@@ -198,7 +189,7 @@ public class SPDXReader implements DocumentReader<Pair<SpdxDocument, Component>>
             }
 
             @Override
-            public String getUrl() {
+            public String url() {
                 try {
                     return externalReference.getReferenceLocator();
                 } catch (InvalidSPDXAnalysisException e) {
@@ -207,14 +198,10 @@ public class SPDXReader implements DocumentReader<Pair<SpdxDocument, Component>>
             }
 
             @Override
-            public String getComment() {
+            public String comment() {
                 return null;
             }
 
-            @Override
-            public List<Hash> getHashes() {
-                return null;
-            }
         };
     }
 

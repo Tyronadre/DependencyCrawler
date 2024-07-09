@@ -136,7 +136,7 @@ public class ConanComponent implements Component {
 
     @Override
     public List<ExternalReference> getAllExternalReferences() {
-        return List.of(ExternalReference.of("EXTERNAL_REFERENCE_TYPE_WEBSITE", jsonData.get("homepage").getAsString(), null, null));
+        return List.of(ExternalReference.of( "EXTERNAL_REFERENCE_TYPE_WEBSITE", jsonData.get("homepage").getAsString(), null));
     }
 
     @Override

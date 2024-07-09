@@ -26,7 +26,7 @@ public interface ComponentRepository {
      *
      * @param dependency the dependency
      */
-    List<? extends Version> getVersions(Dependency dependency);
+    List<Version> getVersions(Dependency dependency);
 
     /**
      *

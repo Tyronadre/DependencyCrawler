@@ -10,7 +10,7 @@ import data.Property;
 import data.internalData.SPDXLicense;
 import logger.Logger;
 import repository.LicenseRepository;
-import util.Constants;
+import settings.Settings;
 
 import java.io.File;
 import java.io.FileReader;
@@ -31,8 +31,6 @@ public class LicenseRepositoryImpl implements LicenseRepository {
     HashMap<String, License> idToLicense;
     HashMap<String, List<String>> idToSpecialName;
     HashMap<String, License> nameToLicense;
-    List<JsonObject> exceptions;
-
 
     private static LicenseRepositoryImpl instance;
 
@@ -49,7 +47,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
         this.idToSpecialName = new HashMap<>();
 
         // LOAD SPDX LICENSES
-        var licenseListFile = new File(Constants.getDataFolder(), "licenses.json");
+        var licenseListFile = new File(Settings.getDataFolder(), "licenses.json");
         try {
             Files.createDirectories(licenseListFile.getParentFile().toPath());
         } catch (IOException e) {
@@ -72,7 +70,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
         }
 
         // LOAD CUSTOM LICENSE NAMES
-        var customLicenseNameFile = new File(Constants.getDataFolder(), "license-custom-names.json");
+        var customLicenseNameFile = new File(Settings.getDataFolder(), "license-custom-names.json");
         if (customLicenseNameFile.exists()) {
             loadCustomLicenseNames();
         } else {
@@ -82,7 +80,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
 
     private void loadCustomLicenseNames() {
         logger.info("Loading custom license names... ");
-        try (var reader = new FileReader(new File(Constants.getDataFolder(), "license-custom-names.json"))) {
+        try (var reader = new FileReader(new File(Settings.getDataFolder(), "license-custom-names.json"))) {
             var parsed = JsonParser.parseReader(reader);
             if (parsed.isJsonNull()) {
                 createCustomLicenseNames(true);
@@ -121,7 +119,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
         idToSpecialName.put("MIT", List.of("The MIT License", "The MIT License (MIT)"));
         idToSpecialName.put("LGPL-2.1-only", List.of("GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1", "LGPL, version 2.1", "LGPL 2.1"));
         idToSpecialName.put("BSD-3-Clause", List.of("BSD Licence 3", "BSD License 3", "Eclipse Distribution License - v 1.0", "The BSD 3-Clause License", "BSD", "EDL 1.0", "3-Clause BSD License", "Eclipse Public License - Version 1.0"));
-        idToSpecialName.put("BSD-2-Clause", List.of("New BSD License", "The BSD License", "BSD License"));
+        idToSpecialName.put("BSD-2-Clause", List.of("New BSD License", "The BSD License", "BSD License","The BSD 2-Clause License", "BSD 2-Clause License"));
         idToSpecialName.put("JSON", List.of("The JSON License"));
         idToSpecialName.put("EPL-1.0", List.of("Eclipse Public License", "Eclipse Public License - v 1.0", "Eclipse Public License v1.0"));
         idToSpecialName.put("EPL-2.0", List.of("Eclipse Public License v2.0", "Eclipse Public License - Version 2.0", "EPL 2.0"));
@@ -131,12 +129,12 @@ public class LicenseRepositoryImpl implements LicenseRepository {
         idToSpecialName.put("CPL-1.0", List.of("Common Public License Version 1.0"));
         idToSpecialName.put("LGPL-2.1-or-later", List.of("GNU Lesser General Public License", "GNU Library General Public License v2.1 or later"));
         idToSpecialName.put("MPL-1.1", List.of("MPL 1.1"));
-        idToSpecialName.put("MPL-2.0", List.of("Mozilla Public License, Version 2.0"));
+        idToSpecialName.put("MPL-2.0", List.of("Mozilla Public License, Version 2.0", "Mozilla Public License version 2.0", "MPL 2.0"));
         idToSpecialName.put("GPL-3.0-only", List.of("GPL 3"));
 
 
         if (writeToFile) {
-            try (var writer = new FileWriter(new File(Constants.getDataFolder(), "license-custom-names.json"))) {
+            try (var writer = new FileWriter(new File(Settings.getDataFolder(), "license-custom-names.json"))) {
                 new GsonBuilder().setPrettyPrinting().create().toJson(idToSpecialName, writer);
             } catch (IOException e) {
                 logger.error("Could not write custom license names to file. " + e.getMessage());
@@ -273,49 +271,49 @@ public class LicenseRepositoryImpl implements LicenseRepository {
         logger.info("Could not find spdx license " + name + ". Using default license.");
         return new License() {
             @Override
-            public String getId() {
+            public String id() {
                 return null;
             }
 
             @Override
-            public String getName() {
+            public String name() {
                 return name;
             }
 
             @Override
-            public String getNameOrId() {
-                return getName();
+            public String nameOrId() {
+                return name();
             }
 
             @Override
-            public String getText() {
+            public String text() {
                 return null;
             }
 
             @Override
-            public String getUrl() {
+            public String url() {
                 return url;
             }
 
             @Override
-            public Licensing getLicensing() {
+            public Licensing licensing() {
                 return null;
             }
 
             @Override
-            public List<Property> getProperties() {
+            public List<Property> properties() {
                 return null;
             }
 
             @Override
-            public String getAcknowledgement() {
+            public String acknowledgement() {
                 return null;
             }
 
             @Override
             public String toString() {
                 return "License{" +
-                        "name='" + getNameOrId() + '\'' +
+                        "name='" + nameOrId() + '\'' +
                         ", url='" + url + '\'' +
                         '}';
             }
@@ -350,49 +348,49 @@ public class LicenseRepositoryImpl implements LicenseRepository {
 
         return new License() {
             @Override
-            public String getId() {
+            public String id() {
                 return null;
             }
 
             @Override
-            public String getName() {
+            public String name() {
                 return "unknown";
             }
 
             @Override
-            public String getNameOrId() {
-                return getName();
+            public String nameOrId() {
+                return name();
             }
 
             @Override
-            public String getText() {
+            public String text() {
                 return licenseData;
             }
 
             @Override
-            public String getUrl() {
+            public String url() {
                 return url;
             }
 
             @Override
-            public Licensing getLicensing() {
+            public Licensing licensing() {
                 return null;
             }
 
             @Override
-            public List<Property> getProperties() {
+            public List<Property> properties() {
                 return null;
             }
 
             @Override
-            public String getAcknowledgement() {
+            public String acknowledgement() {
                 return null;
             }
 
             @Override
             public String toString() {
                 return "License{" +
-                        "name='" + getNameOrId() + '\'' +
+                        "name='" + nameOrId() + '\'' +
                         ", url='" + url + '\'' +
                         '}';
             }

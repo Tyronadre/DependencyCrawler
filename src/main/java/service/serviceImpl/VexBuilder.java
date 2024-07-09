@@ -84,18 +84,18 @@ public class VexBuilder implements DocumentBuilder<Component, Iterable<Vulnerabi
         var builder = VexOuterClass.Vulnerability.newBuilder();
         builder.setId(vulnerability.getId());
         builder.setRef(vulnerability.getComponent().getQualifiedName());
-        Optional.ofNullable(vulnerability.getAllReferences()).flatMap(refs -> refs.stream().filter(ref -> ref.getType().equals("WEB")).findFirst()).ifPresent(ref -> builder.setSource(buildSource(ref)));
+        Optional.ofNullable(vulnerability.getAllReferences()).flatMap(refs -> refs.stream().filter(ref -> ref.type().equals("WEB")).findFirst()).ifPresent(ref -> builder.setSource(buildSource(ref)));
         Optional.ofNullable(vulnerability.getAllRatings()).ifPresent(severities -> builder.addAllRatings(buildAllRatings(severities)));
         Optional.ofNullable(vulnerability.getAllCwes()).ifPresent(cwes -> builder.addAllCwes(buildAllCwes(cwes)));
         Optional.ofNullable(vulnerability.getDescription()).ifPresent(builder::setDescription);
         Optional.ofNullable(vulnerability.getAllRecommendations()).ifPresent(builder::addAllRecommendations);
-        Optional.ofNullable(vulnerability.getAllReferences().stream().filter(ref -> ref.getType().equals("ADVISORY"))).ifPresent(refs -> builder.addAllAdvisories(buildAllAdvisories(refs)));
+        Optional.ofNullable(vulnerability.getAllReferences().stream().filter(ref -> ref.type().equals("ADVISORY"))).ifPresent(refs -> builder.addAllAdvisories(buildAllAdvisories(refs)));
         return builder.build();
     }
 
     private Iterable<String> buildAllAdvisories(Stream<VulnerabilityReference> refs) {
         var list = new ArrayList<String>();
-        refs.forEach(ref -> list.add(ref.getSource().getValue()));
+        refs.forEach(ref -> list.add(ref.source().value()));
         return list;
     }
 
@@ -116,17 +116,17 @@ public class VexBuilder implements DocumentBuilder<Component, Iterable<Vulnerabi
             builder.setScore(buildScore(severity));
             Optional.ofNullable(buildSeverity(severity)).ifPresent(builder::setSeverity);
             Optional.ofNullable(buildMethod(severity)).ifPresent(builder::setMethod);
-            builder.setVector(severity.getVector());
+            builder.setVector(severity.vector());
             list.add(builder.build());
         }
         return list;
     }
 
     private VexOuterClass.ScoreSource buildMethod(VulnerabilityRating severity) {
-        if (severity.getMethod() == null) {
+        if (severity.method() == null) {
             return null;
         }
-        return switch (severity.getMethod()) {
+        return switch (severity.method()) {
             case "3.1", "3.0", "CVSSv3" -> VexOuterClass.ScoreSource.CVSSv3;
             case "2.0", "CVSSv2" -> VexOuterClass.ScoreSource.CVSSv2;
             default -> VexOuterClass.ScoreSource.OTHER;
@@ -134,10 +134,10 @@ public class VexBuilder implements DocumentBuilder<Component, Iterable<Vulnerabi
     }
 
     private VexOuterClass.Severity buildSeverity(VulnerabilityRating severity) {
-        if (severity.getSeverity() == null) {
+        if (severity.severity() == null) {
             return null;
         }
-        return switch (severity.getSeverity().toUpperCase()) {
+        return switch (severity.severity().toUpperCase()) {
             case "CRITICAL" -> VexOuterClass.Severity.CRITICAL;
             case "HIGH" -> VexOuterClass.Severity.HIGH;
             case "MEDIUM" -> VexOuterClass.Severity.MEDIUM;
@@ -148,16 +148,16 @@ public class VexBuilder implements DocumentBuilder<Component, Iterable<Vulnerabi
 
     private VexOuterClass.Score buildScore(VulnerabilityRating severity) {
         var builder = VexOuterClass.Score.newBuilder();
-        builder.setBase(severity.getBaseScore());
-        builder.setExploitability(severity.getExploitabilityScore());
-        builder.setImpact(severity.getImpactScore());
+        builder.setBase(severity.baseScore());
+        builder.setExploitability(severity.exploitabilityScore());
+        builder.setImpact(severity.impactScore());
         return builder.build();
     }
 
     private VexOuterClass.Source buildSource(VulnerabilityReference vulnerabilityReference) {
         var builder = VexOuterClass.Source.newBuilder();
-        builder.setUrl(vulnerabilityReference.getSource().getValue());
-        builder.setName(vulnerabilityReference.getType());
+        builder.setUrl(vulnerabilityReference.source().value());
+        builder.setName(vulnerabilityReference.type());
         return builder.build();
     }
 

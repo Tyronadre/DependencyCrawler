@@ -82,11 +82,6 @@ public class ReadSBomDependency implements Dependency {
     }
 
     @Override
-    public void setScope(String scope) {
-        throw new UnsupportedOperationException("Not supported.");
-    }
-
-    @Override
     public String toString() {
         return "Dependency: " + getQualifiedName();
     }

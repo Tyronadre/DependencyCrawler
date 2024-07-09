@@ -78,5 +78,4 @@ public interface Dependency {
      */
     boolean isNotOptional();
 
-    void setScope(String scope);
 }

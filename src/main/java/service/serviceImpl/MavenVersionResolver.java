@@ -1,9 +1,9 @@
 package service.serviceImpl;
 
 import data.Dependency;
+import data.Version;
 import data.internalData.MavenComponent;
 import data.internalData.MavenDependency;
-import data.internalData.VersionImpl;
 import exceptions.VersionRangeResolutionException;
 import exceptions.VersionResolveException;
 import logger.Logger;
@@ -33,7 +33,7 @@ public class MavenVersionResolver implements VersionResolver {
         }
     }
 
-    private VersionImpl resolveVersion(String versionString, Dependency dependency, MavenComponent parent) {
+    private Version resolveVersion(String versionString, Dependency dependency, MavenComponent parent) {
         var mavenDependency = (MavenDependency) dependency;
 
         if (versionString == null || versionString.isBlank()) {
@@ -78,18 +78,18 @@ public class MavenVersionResolver implements VersionResolver {
         return null;
     }
 
-    private VersionImpl getVersionFromVersionRange(Dependency dependency) {
+    private Version getVersionFromVersionRange(Dependency dependency) {
         try {
-            return (VersionImpl) MavenVersionRangeResolver.getInstance().resolveVersionRange(dependency).getRecommendedVersion();
+            return MavenVersionRangeResolver.getInstance().resolveVersionRange(dependency).recommendedVersion();
         } catch (VersionRangeResolutionException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private VersionImpl getVersionFromProperty(String substring, Dependency dependency, MavenComponent parent) {
+    private Version getVersionFromProperty(String substring, Dependency dependency, MavenComponent parent) {
         //project.version
         if (substring.equals("project.version") || substring.equals("pom.version") || substring.equals("parent.version")) {
-            return new VersionImpl(parent.getVersion().version());
+            return Version.of(parent.getVersion().version());
         }
 
         var property = parent.getProperty(substring);
@@ -105,7 +105,7 @@ public class MavenVersionResolver implements VersionResolver {
 
 
     @Override
-    public VersionImpl getVersion(String versionString) {
-        return new VersionImpl(versionString);
+    public Version getVersion(String versionString) {
+        return Version.of(versionString);
     }
 }

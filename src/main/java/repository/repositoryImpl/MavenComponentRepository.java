@@ -6,7 +6,6 @@ import data.Hash;
 import data.Version;
 import data.internalData.MavenComponent;
 import data.internalData.MavenDependency;
-import data.internalData.VersionImpl;
 import enums.MavenComponentRepositoryType;
 import logger.Logger;
 import org.apache.maven.api.model.Model;
@@ -57,7 +56,7 @@ public class MavenComponentRepository implements ComponentRepository {
     }
 
     @Override
-    public List<VersionImpl> getVersions(Dependency dependency) {
+    public List<Version> getVersions(Dependency dependency) {
         logger.info("Getting all possible versions for " + dependency.getQualifiedName());
 
         var mavenDependency = (MavenDependency) dependency;
@@ -85,7 +84,7 @@ public class MavenComponentRepository implements ComponentRepository {
      * @param url The URL to get the versions from
      * @return The versions as Strings
      */
-    private List<VersionImpl> getVersions(URL url) {
+    private List<Version> getVersions(URL url) {
         List<String> versions = null;
 
         var factory = XMLInputFactory.newInstance();
@@ -115,7 +114,7 @@ public class MavenComponentRepository implements ComponentRepository {
         if (versions == null) {
             return List.of();
         }
-        return versions.stream().map(VersionImpl::new).collect(Collectors.toList());
+        return versions.stream().map(Version::of).collect(Collectors.toList());
     }
 
     @Override

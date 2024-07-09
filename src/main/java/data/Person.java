@@ -3,45 +3,24 @@ package data;
 import java.util.List;
 
 public interface Person {
-    String getName();
-    String getEmail();
-    String getUrl();
-    String getPhone();
-    Organization getOrganization();
-    List<String> getRoles();
 
-    static Person of(String name, String email, String url, String phone, Organization organization,  List<String> roles) {
-        return new Person() {
-            @Override
-            public String getName() {
-                return name;
-            }
+    String name();
 
-            @Override
-            public String getEmail() {
-                return email;
-            }
+    String email();
 
-            @Override
-            public String getUrl() {
-                return url;
-            }
+    String url();
 
-            @Override
-            public String getPhone() {
-                return phone;
-            }
+    String phone();
 
-            @Override
-            public Organization getOrganization() {
-                return organization;
-            }
+    Organization organization();
 
-            @Override
-            public List<String> getRoles() {
-                return roles;
-            }
-        };
+    List<String> roles();
+
+    static Person of(String name, String email, String url, String phone, Organization organization, List<String> roles) {
+        return new PersonRecord(name, email, url, phone, organization, roles);
+    }
+
+    record PersonRecord(String name, String email, String url, String phone, Organization organization, List<String> roles) implements Person {
     }
 
 }

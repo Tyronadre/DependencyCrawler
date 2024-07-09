@@ -70,7 +70,7 @@ public class ReadSPDXComponent implements ReadComponent {
         try {
             for (var spdxRef : spdxPackage.getExternalRefs()) {
                 var refTypeS = spdxRef.getReferenceType().getIndividualURI().split("/");
-                externalReferences.add(ExternalReference.of(spdxRef.getReferenceCategory().toString(), spdxRef.getReferenceLocator(), refTypeS[refTypeS.length - 1], null));
+                externalReferences.add(ExternalReference.of( spdxRef.getReferenceCategory().toString(), spdxRef.getReferenceLocator(), refTypeS[refTypeS.length - 1]));
             }
         } catch (Exception ignored) {
         }
@@ -105,15 +105,15 @@ public class ReadSPDXComponent implements ReadComponent {
         }
 
         // LICENSES
-        Map<String, LicenseChoice> licensesGiven = licenseChoices.stream().collect(Collectors.toMap(l -> l.getLicense().getNameOrId(), Function.identity()));
-        this.licenseChoices = this.actualComponent.getAllLicenses().stream().map(licenseLoaded -> licensesGiven.getOrDefault(licenseLoaded.getLicense().getNameOrId(), licenseLoaded)).collect(Collectors.toList());
+        Map<String, LicenseChoice> licensesGiven = licenseChoices.stream().collect(Collectors.toMap(l -> l.license().nameOrId(), Function.identity()));
+        this.licenseChoices = this.actualComponent.getAllLicenses().stream().map(licenseLoaded -> licensesGiven.getOrDefault(licenseLoaded.license().nameOrId(), licenseLoaded)).collect(Collectors.toList());
 
         // EXTERNAL REFERENCES
-        this.externalReferences.addAll(actualComponent.getAllExternalReferences().stream().filter(externalReference -> externalReferences.stream().noneMatch(er -> er.getUrl().equals(externalReference.getUrl()))).toList());
+        this.externalReferences.addAll(actualComponent.getAllExternalReferences().stream().filter(externalReference -> externalReferences.stream().noneMatch(er -> er.url().equals(externalReference.url()))).toList());
 
         // HASHES
-        var hashesGiven = this.hashes.stream().collect(Collectors.toMap(Hash::getAlgorithm, Function.identity()));
-        this.hashes = this.actualComponent.getAllHashes().stream().map(hashLoaded -> hashesGiven.getOrDefault(hashLoaded.getAlgorithm(), hashLoaded)).collect(Collectors.toList());
+        var hashesGiven = this.hashes.stream().collect(Collectors.toMap(Hash::algorithm, Function.identity()));
+        this.hashes = this.actualComponent.getAllHashes().stream().map(hashLoaded -> hashesGiven.getOrDefault(hashLoaded.algorithm(), hashLoaded)).collect(Collectors.toList());
 
         //Vulnerabilities
         this.vulnerabilities = VulnerabilityRepository.getInstance().getVulnerabilities(this);

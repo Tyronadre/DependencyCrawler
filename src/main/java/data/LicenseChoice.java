@@ -1,26 +1,17 @@
 package data;
 
 public interface LicenseChoice {
-    License getLicense();
-    String getExpression();
-    String getAcknowledgement();
+
+    License license();
+
+    String expression();
+
+    String acknowledgement();
 
     static LicenseChoice of(License license, String expression, String acknowledgement) {
-        return new LicenseChoice() {
-            @Override
-            public License getLicense() {
-                return license;
-            }
+        return new LicenseChoiceRecord(license, expression, acknowledgement);
+    }
 
-            @Override
-            public String getExpression() {
-                return expression;
-            }
-
-            @Override
-            public String getAcknowledgement() {
-                return acknowledgement;
-            }
-        };
+    record LicenseChoiceRecord(License license, String expression, String acknowledgement) implements LicenseChoice {
     }
 }

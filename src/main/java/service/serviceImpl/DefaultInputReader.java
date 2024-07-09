@@ -8,7 +8,6 @@ import data.internalData.ConanDependency;
 import data.internalData.JitPackDependency;
 import data.internalData.MavenComponent;
 import data.internalData.MavenDependency;
-import data.internalData.VersionImpl;
 import dependencyCrawler.DependencyCrawlerInput;
 import logger.Logger;
 import repository.repositoryImpl.LicenseRepositoryImpl;
@@ -51,7 +50,7 @@ public class DefaultInputReader implements DocumentReader<Component> {
         var application = dependencyCrawlerInput.getApplication();
 
         //get the parent artifact
-        MavenComponent parentArtifact = (MavenComponent) MavenComponentRepository.getInstance().getComponent(application.getGroupId(), application.getName(), new VersionImpl(application.getVersion()), null);
+        MavenComponent parentArtifact = (MavenComponent) MavenComponentRepository.getInstance().getComponent(application.getGroupId(), application.getName(), Version.of(application.getVersion()), null);
         if (application.hasLicenseId()){
             parentArtifact.setData("license", LicenseRepositoryImpl.getInstance().getLicense(application.getLicenseId(), null));
         }
