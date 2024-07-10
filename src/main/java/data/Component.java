@@ -149,6 +149,8 @@ public interface Component {
      * @return a filtered list of dependencies, that only contains the dependencies that are resolved in alphabetical order
      */
     default List<Dependency> getDependenciesFlatFiltered() {
+
+        //wie kann das hier nen stackoverflow geben weil es sich im kreis dreht?
         Set<Dependency> visited = new HashSet<>();
         List<Dependency> result = new ArrayList<>();
 
@@ -161,7 +163,8 @@ public interface Component {
                 result.add(dependency);
 
                 if (dependency.getComponent() != null && dependency.getComponent().isLoaded()) {
-                    stack.addAll(dependency.getComponent().getDependenciesFlatFiltered());
+                    // dependency auf sich selber?
+                    stack.addAll(dependency.getComponent().getDependenciesFiltered());
                 }
             }
         }

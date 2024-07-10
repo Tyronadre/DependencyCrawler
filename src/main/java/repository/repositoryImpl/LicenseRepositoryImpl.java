@@ -114,23 +114,37 @@ public class LicenseRepositoryImpl implements LicenseRepository {
                 "Apache 2",
                 "Apache Public License 2.0",
                 "APACHE LICENSE 2.0",
-                "Apache License, version 2.0"
+                "Apache License, version 2.0",
+                "Apache License Version 2.0"
         ));
         idToSpecialName.put("MIT", List.of("The MIT License", "The MIT License (MIT)"));
         idToSpecialName.put("LGPL-2.1-only", List.of("GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1", "LGPL, version 2.1", "LGPL 2.1"));
         idToSpecialName.put("BSD-3-Clause", List.of("BSD Licence 3", "BSD License 3", "Eclipse Distribution License - v 1.0", "The BSD 3-Clause License", "BSD", "EDL 1.0", "3-Clause BSD License", "Eclipse Public License - Version 1.0"));
-        idToSpecialName.put("BSD-2-Clause", List.of("New BSD License", "The BSD License", "BSD License","The BSD 2-Clause License", "BSD 2-Clause License"));
+        idToSpecialName.put("BSD-2-Clause", List.of("BSD style", "New BSD License", "The BSD License", "BSD License", "The BSD 2-Clause License", "BSD 2-Clause License"));
         idToSpecialName.put("JSON", List.of("The JSON License"));
         idToSpecialName.put("EPL-1.0", List.of("Eclipse Public License", "Eclipse Public License - v 1.0", "Eclipse Public License v1.0"));
         idToSpecialName.put("EPL-2.0", List.of("Eclipse Public License v2.0", "Eclipse Public License - Version 2.0", "EPL 2.0"));
-        idToSpecialName.put("GPL-2.0-only", List.of("GNU General Public License, version 2 (GPL2), with the classpath exception"));
-        idToSpecialName.put("CDDL-1.0", List.of("Common Development and Distribution License (CDDL) v1.0", "COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0", "CDDL 1.1"));
-        idToSpecialName.put("CC0-1.0", List.of("Public Domain, per Creative Commons CC0"));
-        idToSpecialName.put("CPL-1.0", List.of("Common Public License Version 1.0"));
-        idToSpecialName.put("LGPL-2.1-or-later", List.of("GNU Lesser General Public License", "GNU Library General Public License v2.1 or later"));
-        idToSpecialName.put("MPL-1.1", List.of("MPL 1.1"));
+        idToSpecialName.put("GPL-2.0-only", List.of("GNU General Public License Version 2"));
+        idToSpecialName.put("CDDL-1.0", List.of("CDDL", "Common Development and Distribution License (CDDL) v1.0", "COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0", "CDDL 1.1"));
+        idToSpecialName.put("CC0-1.0", List.of("Public Domain, per Creative Commons CC0", "CC0 1.0 Universal License"));
+        idToSpecialName.put("CPL-1.0", List.of("Common Public License Version 1.0", "Common Public License - v 1.0"));
+        idToSpecialName.put("LGPL-2.1-or-later", List.of("GNU Library General Public License v2.1 or later"));
+        idToSpecialName.put("LGPL-2.0-only", List.of("GNU Lesser General Public License Version 2.1"));
+        idToSpecialName.put("MPL-1.1", List.of("MPL 1.1", "Mozilla Public License version 1.1"));
         idToSpecialName.put("MPL-2.0", List.of("Mozilla Public License, Version 2.0", "Mozilla Public License version 2.0", "MPL 2.0"));
         idToSpecialName.put("GPL-3.0-only", List.of("GPL 3"));
+        idToSpecialName.put("LGPL-1.0-only", List.of("GNU Lesser General Public License", "GNU Lesser Public License", "GNU LESSER GENERAL PUBLIC LICENSE", "GNU Lesser General Public Licence"));
+        idToSpecialName.put("Apache-1.1", List.of("The Apache Software License, Version 1.1"));
+        idToSpecialName.put("MPL-1.0", List.of("Mozilla Public License"));
+        idToSpecialName.put("Apache-1.0", List.of("Apache License"));
+
+        //GPLv2+CE -> Release 2.0 of the SPDX Specification introduced License Expressions that supports the ability
+        // to identify common variations of SPDX-identified licenses without the need to define each potential variation
+        // as a distinct license on the SPDX License List. This new syntax supports the ability to declare an
+        // SPDX-identified license exception using the "WITH" operator (e.g. GPL-2.0-or-later WITH Autoconf-exception-2.0),
+        // as well as the ability to use a simple "+" operator after a license short identifier to indicate "or later version".
+        // SPDX has defined a list of license exceptions to use after the "WITH" operator. As a result, a number of licenses formerly
+        // included on the SPDX License List have been deprecated, and correct usage employs the License Expression syntax as of v2.0.
 
 
         if (writeToFile) {
