@@ -13,6 +13,7 @@ import org.apache.maven.model.v4.MavenStaxReader;
 import repository.ComponentRepository;
 import service.VersionResolver;
 import service.serviceImpl.MavenVersionResolver;
+import settings.Settings;
 
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
@@ -24,6 +25,10 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -196,12 +201,26 @@ public class MavenComponentRepository implements ComponentRepository {
         if (type == MavenComponentRepositoryType.ROOT) {
             return 1;
         }
+
+        var cacheDir = getCacheDirectory(component);
+        try {
+            if (cacheDir != null && isComponentCached(cacheDir)) {
+                logger.info("Loading " + component.getQualifiedName() + " from cache");
+                loadFromCache(component, cacheDir);
+                loadStatus.put(component.getQualifiedName(), 0);
+                return 0;
+            }
+        } catch (XMLStreamException | IOException e) {
+            logger.error("Could not load component from cache: " + component.getQualifiedName(), e);
+        }
+
         try {
             logger.info("Loading for " + component.getQualifiedName() + " from repository type " + type);
             var downloadLocation = getDownloadLocation(component, type);
             component.setData("model", loadModel(downloadLocation + ".pom"));
             component.setData("hashes", loadHashes(downloadLocation + ".jar"));
             loadStatus.put(component.getQualifiedName(), 0);
+            saveToCache(cacheDir, downloadLocation);
             return 0;
         } catch (IOException e) {
             return 1;
@@ -210,6 +229,32 @@ public class MavenComponentRepository implements ComponentRepository {
             loadStatus.put(component.getQualifiedName(), 2);
             return 2;
         }
+    }
+
+    private Path getCacheDirectory(Component component) {
+        if (Settings.getDataFolder() == null) return null;
+        return Paths.get(Settings.getDataFolder().getAbsolutePath() + "/maven/", component.getGroup().replace(".", "/"), component.getArtifactId(), component.getVersion().version());
+    }
+
+    private boolean isComponentCached(Path cacheDir) {
+        return Files.exists(cacheDir.resolve("model.pom"));
+    }
+
+    private void loadFromCache(Component component, Path cacheDir) throws IOException, XMLStreamException {
+        component.setData("model", loadModelFromPom(cacheDir.resolve("model.pom").toString()));
+        component.setData("hashes", loadHashesFromCache(cacheDir));
+    }
+
+    private List<Hash> loadHashesFromCache(Path cacheDir) throws IOException {
+        List<Hash> hashes = new ArrayList<>();
+        for (String algorithm : new String[]{"md5", "sha1", "sha256", "sha512"}) {
+            Path hashFile = cacheDir.resolve("hash." + algorithm);
+            if (Files.exists(hashFile)) {
+                String value = Files.readString(hashFile).trim();
+                hashes.add(Hash.of(algorithm, value));
+            }
+        }
+        return hashes;
     }
 
     private Model loadModelFromPom(String filePath) throws IOException, XMLStreamException {
@@ -242,6 +287,27 @@ public class MavenComponentRepository implements ComponentRepository {
             }
         }
         return hashes;
+    }
+
+    private void saveToCache(Path cacheDir, String downloadLocation) throws IOException {
+        Files.createDirectories(cacheDir);
+        saveModelToCache(cacheDir, downloadLocation + ".pom");
+        saveHashesToCache(cacheDir, downloadLocation + ".jar");
+    }
+
+    private void saveModelToCache(Path cacheDir, String url) throws IOException {
+        try (InputStream inputStream = URI.create(url).toURL().openStream()) {
+            Files.copy(inputStream, cacheDir.resolve("model.pom"), StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    private void saveHashesToCache(Path cacheDir, String baseUrl) throws IOException {
+        for (String algorithm : new String[]{"md5", "sha1", "sha256", "sha512"}) {
+            try (InputStream inputStream = URI.create(baseUrl + "." + algorithm).toURL().openStream()) {
+                Files.copy(inputStream, cacheDir.resolve("hash." + algorithm));
+            } catch (FileNotFoundException ignored) {
+            }
+        }
     }
 
     private Hash loadHash(String baseUrl, String algorithm) throws IOException {

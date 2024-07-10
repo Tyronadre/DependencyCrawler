@@ -11,19 +11,27 @@ import service.BFDependencyCrawler;
 import settings.Settings;
 
 import java.text.DecimalFormat;
-import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
     private static final Logger logger = Logger.of("DependencyCrawler");
+    private final ForkJoinPool forkJoinPool = new ForkJoinPool();
+
 
     @Override
     public void crawl(Component parentComponent, boolean updateDependenciesToNewestVersion) {
@@ -150,36 +158,64 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
         return null;
     }
 
-    private void updateDependenciesToNewestVersion(Component rootComponent) {
-        var queue = new ArrayDeque<>(rootComponent.getDependenciesFiltered());
+    public void updateDependenciesToNewestVersion(Component rootComponent) {
+        ConcurrentLinkedQueue<Dependency> queue = new ConcurrentLinkedQueue<>(rootComponent.getDependenciesFiltered());
+        var dependenciesDone = Collections.synchronizedSet(new HashSet<>());
+        Set<Future<?>> futures = new HashSet<>();
+        var executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
         while (!queue.isEmpty()) {
             var dependency = queue.poll();
-            var dependencyComponent = dependency.getComponent();
-            if (dependencyComponent == null) continue;
-            if (!(dependencyComponent instanceof MavenComponent) && dependency.getTreeParent() != rootComponent && !(dependencyComponent instanceof ReadComponent readComponent && readComponent.getActualComponent() instanceof MavenComponent)) {
-                logger.info("skipping component " + dependencyComponent + " and all its dependants " + dependencyComponent.getDependencyComponentsFlatFiltered() + " since its not a maven component and not on top level.");
-                continue;
-            }
-            if (dependencyComponent.getRepository().getLoadedComponents(dependencyComponent.getGroup(), dependencyComponent.getArtifactId()).isEmpty())
-                continue;
-            var possibleComponents = dependencyComponent.getRepository().getLoadedComponents(dependencyComponent.getGroup(), dependencyComponent.getArtifactId());
-            var newestComponent = possibleComponents.get(possibleComponents.size() - 1);
-            if (newestComponent.getVersion().compareTo(dependencyComponent.getVersion()) > 0) {
-                //check if we have a version in the tree parent
-                var treeParent = dependency.getTreeParent();
-                if (treeParent != null) {
-                    if (treeParent.getDependenciesFiltered().stream().anyMatch(d -> d.getComponent() != null && Objects.equals(d.getComponent().getGroup(), dependencyComponent.getGroup()) && Objects.equals(d.getComponent().getArtifactId(), dependencyComponent.getArtifactId()))) {
-                        treeParent.removeDependency(dependency);
-                    }
+            if (dependency == null) continue;
+
+            Future<?> future = executorService.submit(() -> {
+                var dependencyComponent = dependency.getComponent();
+                if (dependencyComponent == null) return;
+
+                if (!(dependencyComponent instanceof MavenComponent) && dependency.getTreeParent() != rootComponent && !(dependencyComponent instanceof ReadComponent readComponent && readComponent.getActualComponent() instanceof MavenComponent)) {
+                    logger.info("skipping component " + dependencyComponent + " and all its dependants " + dependencyComponent.getDependencyComponentsFlatFiltered() + " since its not a maven component and not on top level.");
+                    return;
                 }
 
-                dependency.setComponent(newestComponent);
-                dependency.setVersion(newestComponent.getVersion());
+                List<Component> loadedComponents = dependencyComponent.getRepository().getLoadedComponents(dependencyComponent.getGroup(), dependencyComponent.getArtifactId());
+                if (loadedComponents.isEmpty()) return;
 
-                newestComponent.setData("addProperty", Property.of("overwritesDependencyVersion", dependencyComponent.getQualifiedName()));
-            }
+                var newestComponent = loadedComponents.get(loadedComponents.size() - 1);
+                if (newestComponent.getVersion().compareTo(dependencyComponent.getVersion()) > 0) {
+                    var treeParent = dependency.getTreeParent();
+                    if (treeParent != null) {
+                        synchronized (treeParent) {
+                            if (treeParent.getDependenciesFiltered().stream().anyMatch(d -> d.getComponent() != null && Objects.equals(d.getComponent().getGroup(), dependencyComponent.getGroup()) && Objects.equals(d.getComponent().getArtifactId(), dependencyComponent.getArtifactId()))) {
+                                treeParent.removeDependency(dependency);
+                            }
+                        }
+                    }
 
-            queue.addAll(dependencyComponent.getDependenciesFiltered());
+                    dependency.setComponent(newestComponent);
+                    dependency.setVersion(newestComponent.getVersion());
+
+                    newestComponent.setData("addProperty", Property.of("overwritesDependencyVersion", dependencyComponent.getQualifiedName()));
+                }
+
+                synchronized (dependenciesDone) {
+                    dependenciesDone.addAll(dependencyComponent.getDependenciesFiltered().stream().map(Object::hashCode).toList());
+                    queue.addAll(dependencyComponent.getDependenciesFiltered().stream().filter(d -> !dependenciesDone.contains(d.hashCode())).toList());
+                }
+            });
+
+            futures.add(future);
         }
+
+        // Wait for all tasks to complete
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (InterruptedException | ExecutionException e) {
+                logger.error("Error updating dependencies: " + e.getMessage());
+            }
+        }
+
+        // Shut down the executor service
+        executorService.shutdown();
     }
 }

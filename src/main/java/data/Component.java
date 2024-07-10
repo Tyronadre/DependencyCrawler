@@ -3,11 +3,15 @@ package data;
 import repository.ComponentRepository;
 import settings.Settings;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * A component in a repository.
@@ -145,17 +149,27 @@ public interface Component {
      * @return a filtered list of dependencies, that only contains the dependencies that are resolved in alphabetical order
      */
     default List<Dependency> getDependenciesFlatFiltered() {
-        return getDependencies().stream()
-                .flatMap(dependency -> Stream.concat(
-                        Stream.of(dependency),
-                        dependency.getComponent() != null && dependency.getComponent().isLoaded()
-                                ? dependency.getComponent().getDependenciesFlatFiltered().stream()
-                                : Stream.empty()
-                ))
-                .distinct()
-                .sorted(Comparator.comparing(Dependency::getQualifiedName))
-                .collect(Collectors.toList());
+        Set<Dependency> visited = new HashSet<>();
+        List<Dependency> result = new ArrayList<>();
+
+        Deque<Dependency> stack = new ArrayDeque<>(getDependencies());
+
+        while (!stack.isEmpty()) {
+            Dependency dependency = stack.pop();
+
+            if (visited.add(dependency)) {
+                result.add(dependency);
+
+                if (dependency.getComponent() != null && dependency.getComponent().isLoaded()) {
+                    stack.addAll(dependency.getComponent().getDependenciesFlatFiltered());
+                }
+            }
+        }
+
+        result.sort(Comparator.comparing(Dependency::getQualifiedName));
+        return result;
     }
+
 
     /**
      * @return a filtered list of components, that only contains the components that are resolved in alphabetical order
