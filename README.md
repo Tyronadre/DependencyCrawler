@@ -12,7 +12,8 @@ Note that this tool has some constraints when resolving versions, and should be 
 By default we use a custom input format for maximum flexibility. The input format of the tool can be found in ProtoParser/src/in/dependency-crawler-input.proto.
 It contains the information that the tool will analyze.
 Here is an example input:
-```json
+
+```json lines
 {
   "application": {
     "name": "app_0",        //name of the application (can be filled at will but not null)
@@ -98,7 +99,7 @@ Usage:
 --log-level :                           [INFO]      what level of logs should be shown. Supported types: ERROR, SUCCESS, INFO.
 --crawl-optional :                      [false]     crawl dependencies flagged as optional (maven).
 --crawl-all :                           [false]     crawl all dependencies, regardless of scope and optional (maven).
---crawl-threads :                       [20]        number of threads for crawling.
+--crawl-threads :                       [20]        number of threads for crawling. 
 --data-folder :                         [crntDir]   changed the location of the data folder.
 
 --help :                                print this help message

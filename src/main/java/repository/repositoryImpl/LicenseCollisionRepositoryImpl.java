@@ -14,7 +14,12 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 public class LicenseCollisionRepositoryImpl implements LicenseCollisionRepository {
     private static final Logger logger = Logger.of("License_Coll_Service");
@@ -174,7 +179,7 @@ public class LicenseCollisionRepositoryImpl implements LicenseCollisionRepositor
         if (component == null || !component.isLoaded()) return;
 
         for (var dependency : component.getDependenciesFiltered().stream().filter(d -> !handled.contains(d.hashCode())).toList()) {
-            handled.add(dependency.hashCode());<
+            handled.add(dependency.hashCode());
             var childComponent = dependency.getComponent();
             if (childComponent == null) continue;
 

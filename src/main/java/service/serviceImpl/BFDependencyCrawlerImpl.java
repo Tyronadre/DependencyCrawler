@@ -162,7 +162,7 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
         ConcurrentLinkedQueue<Dependency> queue = new ConcurrentLinkedQueue<>(rootComponent.getDependenciesFiltered());
         var dependenciesDone = Collections.synchronizedSet(new HashSet<>());
         Set<Future<?>> futures = new HashSet<>();
-        var executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        ExecutorService executorService = Executors.newFixedThreadPool(Settings.crawlThreads);
 
         while (!queue.isEmpty()) {
             var dependency = queue.poll();

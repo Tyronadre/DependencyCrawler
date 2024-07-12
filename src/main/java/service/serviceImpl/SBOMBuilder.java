@@ -35,7 +35,6 @@ public class SBOMBuilder implements DocumentBuilder<Component, Bom16.Bom> {
         logger.info("SBOM created. Writing to file...");
 
         var file = new File(outputFileName + ".sbom.json");
-        System.out.println(file.getAbsolutePath());
 
         if (!file.getAbsoluteFile().getParentFile().exists()) {
             //create out dir if not exists

@@ -27,10 +27,13 @@ import java.util.regex.Pattern;
 
 public class LicenseRepositoryImpl implements LicenseRepository {
     private static final Logger logger = Logger.of("LicenseRepository");
+    private static final String licenseListURL = "https://spdx.org/licenses/licenses.json";
+    private static final String licenseExceptionsURL = "https://spdx.org/licenses/exceptions.json";
 
     HashMap<String, License> idToLicense;
     HashMap<String, List<String>> idToSpecialName;
     HashMap<String, License> nameToLicense;
+    HashMap<String, List<String>> exceptions;
 
     private static LicenseRepositoryImpl instance;
 
@@ -55,18 +58,25 @@ public class LicenseRepositoryImpl implements LicenseRepository {
             return;
         }
         JsonObject licenseListNet = null;
+        JsonObject licenseExceptionsNet = null;
         try {
-            licenseListNet = JsonParser.parseReader(new InputStreamReader(URI.create("https://raw.githubusercontent.com/spdx/license-list-data/main/json/licenses.json").toURL().openStream())).getAsJsonObject();
+            licenseListNet = JsonParser.parseReader(new InputStreamReader(URI.create(licenseListURL).toURL().openStream())).getAsJsonObject();
         } catch (IOException e) {
             logger.error("Could not load license list from net. " + e.getMessage());
         }
+        try {
+            licenseExceptionsNet = JsonParser.parseReader(new InputStreamReader(URI.create(licenseExceptionsURL).toURL().openStream())).getAsJsonObject();
+        } catch (IOException e) {
+            logger.error("Could not load license exception list from net. " + e.getMessage());
+        }
+
         if (licenseListFile.exists()) {
-            readLicensesFromFile(licenseListFile, licenseListNet);
+            readLicensesFromFile(licenseListFile, licenseListNet, licenseExceptionsNet);
         } else {
             if (licenseListNet == null) {
                 return;
             }
-            readLicensesFromNet(licenseListFile, licenseListNet);
+            readLicensesFromNet(licenseListFile, licenseListNet, licenseExceptionsNet);
         }
 
         // LOAD CUSTOM LICENSE NAMES
@@ -161,21 +171,27 @@ public class LicenseRepositoryImpl implements LicenseRepository {
      * Reads all licenses from the file. If the file is outdated, it will be updated from the net.
      * If the file does not have a version, it will be updated from the net.
      *
-     * @param file The file to read from
-     * @param json The json object from the net
+     * @param file                 The file to read from
+     * @param licenseListNet       The json object from the net
+     * @param licenseExceptionsNet The json object from the net
      */
-    private void readLicensesFromFile(File file, JsonObject json) {
+    private void readLicensesFromFile(File file, JsonObject licenseListNet, JsonObject licenseExceptionsNet) {
         logger.info("Loading license list from file... ");
 
         String netVersion = null;
-        if (json.has("licenseListVersion")) {
-            netVersion = json.get("licenseListVersion").getAsString();
+        if (licenseListNet.has("licenseListVersion") && licenseExceptionsNet.has("licenseListVersion")) {
+            var licenseListVersion = licenseListNet.get("licenseListVersion").getAsString();
+            var licenseExceptionsVersion = licenseExceptionsNet.get("licenseListVersion").getAsString();
+            if (licenseListVersion.equals(licenseExceptionsVersion)) {
+                netVersion = licenseListVersion;
+            }
         }
+
         try (var reader = new FileReader(file)) {
             var parsed = JsonParser.parseReader(reader);
 
             if (parsed.isJsonNull()) {
-                readLicensesFromNet(file, json);
+                readLicensesFromNet(file, licenseListNet, licenseExceptionsNet);
                 return;
             }
 
@@ -185,45 +201,43 @@ public class LicenseRepositoryImpl implements LicenseRepository {
             if (netVersion != null) {
                 if (fileVersion == null) {
                     logger.info("Could not find version in file. Updating licenseFile...");
-                    readLicensesFromNet(file, json);
+                    readLicensesFromNet(file, licenseListNet, licenseExceptionsNet);
                     return;
                 }
                 if (!netVersion.equals(fileVersion.getAsString())) {
                     logger.info("File version is outdated. Updating from " + fileVersion.getAsString() + " to " + netVersion + "...");
-                    readLicensesFromNet(file, json);
+                    readLicensesFromNet(file, licenseListNet, licenseExceptionsNet);
                     return;
                 }
             }
 
             if (fileVersion == null) {
-                logger.error("Could not find version in file. Licenses will not be loaded.");
+                logger.error("Could not load local license or internet license list. No licenses will be loaded.");
                 return;
             }
 
-            if (netVersion != null && jsonFile.has("licenseListVersion") && jsonFile.get("licenseListVersion").getAsString().equals(netVersion)) {
-                for (var license : jsonFile.get("licenses").getAsJsonArray()) {
-                    var data = license.getAsJsonObject().get("data").getAsJsonObject();
-                    var details = license.getAsJsonObject().get("details").getAsJsonObject();
-                    SPDXLicense licenseActual = new SPDXLicense(data, details);
-                    nameToLicense.put(data.get("name").getAsString(), licenseActual);
-                    idToLicense.put(data.get("licenseId").getAsString(), licenseActual);
-                }
-                logger.success("Loaded " + nameToLicense.size() + " licenses");
-            } else {
-                readLicensesFromNet(file, json);
+            for (var license : jsonFile.get("licenses").getAsJsonArray()) {
+                var data = license.getAsJsonObject().get("data").getAsJsonObject();
+                var details = license.getAsJsonObject().get("details").getAsJsonObject();
+                SPDXLicense licenseActual = new SPDXLicense(data, details);
+                nameToLicense.put(data.get("name").getAsString(), licenseActual);
+                idToLicense.put(data.get("licenseId").getAsString(), licenseActual);
             }
+            logger.success("Loaded " + nameToLicense.size() + " licenses");
+
         } catch (IOException e) {
-            readLicensesFromNet(file, json);
+            logger.error("Could not read licenses from file. Loading from net...", e);
+            readLicensesFromNet(file, licenseListNet, licenseExceptionsNet);
         }
     }
 
-    private void readLicensesFromNet(File file, JsonObject json) {
+    private void readLicensesFromNet(File file, JsonObject licenseListNet, JsonObject licenseExceptionsNet) {
         logger.info("Loading license list from net... ");
         JsonArray fileLicenses = new JsonArray();
         try {
-            ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(10);
+            ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(Settings.crawlThreads);
 
-            for (var license : json.get("licenses").getAsJsonArray()) {
+            for (var license : licenseListNet.get("licenses").getAsJsonArray()) {
                 var licenseObject = license.getAsJsonObject();
                 logger.info("Loading " + licenseObject.get("name") + "...");
                 executor.execute(() -> {
@@ -258,7 +272,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
 
         try (var writer = new FileWriter(file)) {
             var jsonFile = new JsonObject();
-            jsonFile.addProperty("licenseListVersion", json.get("licenseListVersion").getAsString());
+            jsonFile.addProperty("licenseListVersion", licenseListNet.get("licenseListVersion").getAsString());
             jsonFile.add("licenses", fileLicenses);
             new GsonBuilder().setPrettyPrinting().create().toJson(jsonFile, writer);
         } catch (IOException e) {

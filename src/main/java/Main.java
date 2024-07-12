@@ -39,7 +39,6 @@ public class Main {
 //        args = new String[]{"--input", "src/main/resources/input_1.json", "--output", "generated/output_1", "--crawl-all"};
 //        args = new String[]{"--input", "src/main/resources/photoprism.json", "--output", "testoutput/output_0"};
 
-
         HashMap < String, String> argMap = new HashMap<>();
         String lastKey = null;
         for (String arg : args) {

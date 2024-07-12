@@ -225,7 +225,7 @@ public class MavenComponentRepository implements ComponentRepository {
         } catch (IOException e) {
             return 1;
         } catch (XMLStreamException e) {
-            logger.error("Could not parse POM file of component: " + component.getQualifiedName() + " in MavenRepository with type " + type + ". Trying other Repositories.", e);
+            logger.info("Could not parse POM file of component: " + component.getQualifiedName() + " in MavenRepository with type " + type + ". Trying other Repositories.");
             loadStatus.put(component.getQualifiedName(), 2);
             return 2;
         }
