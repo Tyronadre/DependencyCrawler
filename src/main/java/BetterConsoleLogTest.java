@@ -7,8 +7,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class BetterConsoleLogTest {
-    private static final int TOTAL_TASKS = 10;
-    private static final String[] progressLines = new String[TOTAL_TASKS];
+    private static final int TOTAL_TASKS = 100;
+    private static final int THREADS = 4;
+    private static final String[] progressLines = new String[THREADS];
 
     public static void main(String[] args) throws InterruptedException {
         AnsiConsole.systemInstall();
@@ -18,23 +19,24 @@ public class BetterConsoleLogTest {
         System.out.println("Starting tasks...");
 
         // Initialize progress lines
-        for (int i = 0; i < TOTAL_TASKS; i++) {
+        for (int i = 0; i < THREADS; i++) {
             progressLines[i] = Ansi.ansi().fg(Ansi.Color.YELLOW).a("L Task " + i + ": " + buildProgressBar(0) + String.format(" %.2f%%", 0.0)).toString();
             System.out.println(progressLines[i]);
         }
         System.out.flush();
 
 
-        ExecutorService executor = Executors.newFixedThreadPool(4);
+        ExecutorService executor = Executors.newFixedThreadPool(THREADS);
 
         for (int i = 0; i < TOTAL_TASKS; i++) {
-            final int taskId = i;
-            Thread.sleep(50);
+            int finalI = i;
             executor.submit(() -> {
+
                 try {
+                    Thread.sleep(50);
                     for (int j = 1; j <= 37; j++) {
                         Thread.sleep(130);
-                        displayProgress(taskId, j / 37.0 * 100);
+                        displayProgress((int) (Thread.currentThread().getId() % THREADS + 1), finalI, j / 37.0 * 100);
                     }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -42,18 +44,16 @@ public class BetterConsoleLogTest {
             });
         }
 
-        executor.shutdown();
         executor.awaitTermination(1, TimeUnit.HOURS);
 
         AnsiConsole.systemUninstall();
     }
 
-    public static synchronized void displayProgress(int taskId, double progress) throws InterruptedException {
+    public static synchronized void displayProgress(int threadId, int taskId, double progress) throws InterruptedException {
         String progressBar = buildProgressBar(progress);
-        String statusIcon = progress < 100 ? "L" : "D";
         Ansi.Color color = progress < 100 ? Ansi.Color.YELLOW : Ansi.Color.GREEN;
 
-        progressLines[taskId] = Ansi.ansi().fg(color).a(statusIcon + " Task " + taskId + ": " + progressBar + String.format(" %.2f%%", progress)).reset().toString();
+        progressLines[threadId - 1] = Ansi.ansi().fg(color).a(" THREAD " + threadId + ": " + progressBar + String.format(" %.2f%%", progress) + " TASK " + taskId).reset().toString();
         printProgress();
 
     }
@@ -61,7 +61,7 @@ public class BetterConsoleLogTest {
     public static void printProgress() {
 //        // Move the cursor to the starting point for the progress display
 //        System.out.print(Ansi.ansi().cursorDown(2).eraseLine());
-        System.out.print(Ansi.ansi().cursorUp(TOTAL_TASKS));
+        System.out.print(Ansi.ansi().cursorUp(THREADS));
 
         // Print all progress lines
         for (String line : progressLines) {

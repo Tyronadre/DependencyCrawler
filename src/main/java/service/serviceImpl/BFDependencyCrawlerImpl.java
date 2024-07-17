@@ -66,6 +66,8 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
         var queue = new ConcurrentLinkedDeque<>(parentComponent.getDependenciesFiltered());
         AtomicInteger activeTasks = new AtomicInteger(0);
 
+        Logger.startThreadLogging(Settings.crawlThreads);
+
         while (!queue.isEmpty() || activeTasks.get() > 0) {
             Dependency dependency = queue.poll();
             if (dependency != null) {
@@ -97,6 +99,16 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
             Thread.currentThread().interrupt();
             logger.error("Thread interrupted while waiting for executor service to terminate." + e);
             executorService.shutdownNow();
+        }
+
+        Logger.endThreadLogging();
+    }
+
+    private class Crawler implements Runnable {
+
+        @Override
+        public void run() {
+
         }
     }
 

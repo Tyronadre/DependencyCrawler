@@ -32,12 +32,13 @@ public class Main {
     private static final Logger logger = Logger.of("Main");
 
     public static void main(String[] args) {
-//        args = new String[]{"--input", "src/main/resources/input_0.json"};
+//        args = new String[]{"--input", "src/main/resources/broken.json"};
 //        args = new String[]{"--input", "generated/output_0.sbom.json", "--input-type", "sbom", "--output", "generated/output_0_renewFromSBOM", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
 //        args = new String[]{"--input", "generated/output_0.spdx.json", "--input-type", "spdx", "--output", "generated/output_0_renewFromSPDX", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
 //        args = new String[]{"--input", "src/main/resources/input_2.json", "--output", "generated/output_2", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
-//        args = new String[]{"--input", "src/main/resources/input_1.json", "--output", "generated/output_1", "--crawl-all"};
-//        args = new String[]{"--input", "src/main/resources/photoprism.json", "--output", "testoutput/output_0"};
+//        args = new String[]{"--input", "src/main/resources/input_0.json", "--output", "generated/output_1"};
+        args = new String[]{"--input", "src/main/resources/photoprism.json", "--output", "testoutput/output_0"};
+
 
         HashMap < String, String> argMap = new HashMap<>();
         String lastKey = null;

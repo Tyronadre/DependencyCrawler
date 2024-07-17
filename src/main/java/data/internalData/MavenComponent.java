@@ -4,7 +4,6 @@ import data.Component;
 import data.Dependency;
 import data.ExternalReference;
 import data.Hash;
-import data.License;
 import data.LicenseChoice;
 import data.Organization;
 import data.Person;
@@ -161,12 +160,12 @@ public class MavenComponent implements Component {
             this.licenseChoices = new ArrayList<>();
             for (var license : this.model.getLicenses()) {
                 if (license.getName() == null) continue;
-                var newLicense = licenseRepository.getLicense(license.getName(), license.getUrl());
+                var newLicense = licenseRepository.getLicenseChoice(license.getName(), license.getUrl(), this.getQualifiedName());
                 if (newLicense == null) {
                     logger.error("Could not resolve license for " + this.getQualifiedName() + ": " + license.getName());
                     continue;
                 }
-                this.licenseChoices.add(new MavenLicenseChoice(newLicense));
+                this.licenseChoices.add(newLicense);
             }
         } else {
             //load from maven parent
@@ -306,13 +305,13 @@ public class MavenComponent implements Component {
 
     @Override
     @SuppressWarnings("unchecked")
-    public void setData(String key, Object value) {
+    public <T> void setData(String key, T value) {
         switch (key) {
             case "model" -> setModel((Model) value);
             case "hashes" -> setHashes((List<Hash>) value);
             case "vulnerabilities" -> setVulnerabilities((List<Vulnerability>) value);
             case "repository" -> setRepository((ComponentRepository) value);
-            case "license" -> licenseChoices.add(LicenseChoice.of((License) value, null, null));
+            case "licenseChoice" -> licenseChoices.add((LicenseChoice) value);
             case "addProperty" -> {
                 var property = (Property) value;
                 this.properties.add(Property.of(property.name(), property.value()));

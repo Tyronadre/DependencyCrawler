@@ -61,9 +61,7 @@ public class ReadSPDXComponent implements ReadComponent {
             var declaredLicense = spdxPackage.getLicenseDeclared();
             if (declaredLicense == null || Objects.equals(declaredLicense.getId(), "NOASSERTION_LICENSE_ID"))
                 throw new RuntimeException("No assertion license id");
-            var license = LicenseRepository.getInstance().getLicense(declaredLicense.getId(), null);
-            var licenseChoice = LicenseChoice.of(license, null, null);
-            licenseChoices = List.of(licenseChoice);
+            licenseChoices = List.of(LicenseRepository.getInstance().getLicenseChoice(declaredLicense.getId(), null, this.getQualifiedName()));
         } catch (Exception ignored) {
         }
 

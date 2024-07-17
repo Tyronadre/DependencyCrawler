@@ -6,6 +6,7 @@ import data.Component;
 import data.Dependency;
 import data.ExternalReference;
 import data.Hash;
+import data.License;
 import data.LicenseChoice;
 import data.Organization;
 import data.Person;
@@ -24,6 +25,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -68,12 +70,28 @@ public class ReadSBomComponent implements ReadComponent {
 
         //LicenseChoices
         this.licenseChoices = bomComponent.getLicensesList().stream().map(
-                licenseChoice -> LicenseChoice.of(
-                        licenseChoice.getLicense().hasId() ?
-                                LicenseRepositoryImpl.getInstance().getLicense(licenseChoice.getLicense().getId(), licenseChoice.getLicense().getUrl()) :
-                                LicenseRepositoryImpl.getInstance().getLicense(licenseChoice.getLicense().getName(), licenseChoice.getLicense().getUrl()),
-                        licenseChoice.getLicense().getUrl(),
-                        licenseChoice.getAcknowledgement().toString())).collect(Collectors.toList());
+                licenseChoice -> {
+                    if (licenseChoice.hasLicense()) {
+                        License license;
+                        if (licenseChoice.getLicense().hasId()) {
+                            license = LicenseRepositoryImpl.getInstance().getLicense(licenseChoice.getLicense().getId(), licenseChoice.getLicense().getUrl(), this.getQualifiedName());
+                        } else {
+                            license = LicenseRepositoryImpl.getInstance().getLicense(licenseChoice.getLicense().getName(), licenseChoice.getLicense().getUrl(), this.getQualifiedName());
+                        }
+                        return LicenseChoice.of(license, licenseChoice.getLicense().getUrl(), licenseChoice.getAcknowledgement().toString());
+                    } else if (licenseChoice.hasExpression()) {
+                        return LicenseRepositoryImpl.getInstance().getLicenseChoice(licenseChoice.getExpression(), null, this.getQualifiedName());
+                    }
+
+                    logger.info("Could parse license choice in sbom for license " + licenseChoice);
+                    return null;
+                }).filter(Objects::nonNull).collect(Collectors.toList());
+//                licenseChoice -> LicenseChoice.of(
+//                        licenseChoice.getLicense().hasId() ?
+//                                LicenseRepositoryImpl.getInstance().getLicense(licenseChoice.getLicense().getId(), licenseChoice.getLicense().getUrl()) :
+//                                LicenseRepositoryImpl.getInstance().getLicense(licenseChoice.getLicense().getName(), licenseChoice.getLicense().getUrl()),
+//                        licenseChoice.getLicense().getUrl(),
+//                        licenseChoice.getAcknowledgement().toString())).collect(Collectors.toList());
 
         //ExternalReferences
         this.externalReferences = bomComponent.getExternalReferencesList().stream().map(externalReference -> ExternalReference.of( externalReference.getType().toString(), externalReference.getUrl(), externalReference.getComment())).collect(Collectors.toList());

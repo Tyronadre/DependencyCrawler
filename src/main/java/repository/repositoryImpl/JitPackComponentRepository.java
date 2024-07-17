@@ -2,7 +2,6 @@ package repository.repositoryImpl;
 
 import data.Component;
 import data.Dependency;
-import data.LicenseChoice;
 import data.Version;
 import data.internalData.JitPackComponent;
 import logger.Logger;
@@ -66,8 +65,8 @@ public class JitPackComponentRepository implements ComponentRepository {
                     var entry = entries.nextElement();
                     if (entry.getName().toLowerCase().contains("license")){
                         var licenseData = new String(zipFile.getInputStream(entry).readAllBytes());
-                        var license = LicenseRepository.getInstance().getLicense(licenseData, getDownloadLocation(component));
-                        component.setData("licenseChoice", LicenseChoice.of(license, null, null));
+                        var licenseChoice = LicenseRepository.getInstance().getLicenseChoice(licenseData, getDownloadLocation(component), component.getQualifiedName());
+                        component.setData("licenseChoice", licenseChoice);
                         break;
                     }
                 }

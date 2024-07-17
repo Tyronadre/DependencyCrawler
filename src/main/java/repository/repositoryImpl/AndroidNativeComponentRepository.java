@@ -48,7 +48,7 @@ public class AndroidNativeComponentRepository implements ComponentRepository {
         var start = System.currentTimeMillis();
         logger.info("Loading Android Native Component: " + component.getQualifiedName());
 
-        var license = loadLicense(getDownloadLocation(component) + "/LICENSE?format=TEXT");
+        var license = loadLicense(getDownloadLocation(component) + "/LICENSE?format=TEXT", component);
         var owners = loadOwners(getDownloadLocation(component) + "/OWNERS?format=TEXT");
         component.setData("license", license);
         component.setData("owners", owners);
@@ -74,14 +74,14 @@ public class AndroidNativeComponentRepository implements ComponentRepository {
         return null;
     }
 
-    private LicenseChoice loadLicense(String url) {
+    private LicenseChoice loadLicense(String url, Component component) {
         try (InputStream in = URI.create(url).toURL().openStream()) {
             byte[] base64Bytes = in.readAllBytes();
             byte[] decodedBytes = Base64.getDecoder().decode(base64Bytes);
             String decodedContent = new String(decodedBytes, StandardCharsets.UTF_8);
-            var res = LicenseRepository.getInstance().getLicense(decodedContent, url);
+            var res = LicenseRepository.getInstance().getLicenseChoice(decodedContent, url, component.getQualifiedName());
             logger.info("Loaded license for AndroidNative from " + url);
-            return LicenseChoice.of(res, null, null);
+            return res;
         } catch (Exception e) {
             logger.error("Could not load license for AndroidNative from " + url, e);
         }

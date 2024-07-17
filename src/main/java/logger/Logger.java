@@ -18,12 +18,14 @@ import java.util.stream.Collectors;
 
 public class Logger {
     // if true, the logger will print the full stack trace of an exception
-    private static final boolean devMode = true;
+    private static final boolean devMode = false;
     private static final int numberOfLogFiles = 10;
     private static final Map<String, Logger> loggers = new HashMap<>();
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss:SSS");
     private static LogLevel level = LogLevel.INFO;
     private static final OutputStream logFile ;
+
+    private static ExecutionServiceLogger executeServiceLogger;
 
     static {
         var logDir = new File(Settings.getDataFolder(), "logs");
@@ -123,6 +125,15 @@ public class Logger {
         System.out.println(LogLevel.colorReset + msg);
     }
 
+    public static void startThreadLogging(int threads) {
+        executeServiceLogger = new ExecutionServiceLogger(threads);
+    }
+
+    public static void endThreadLogging() {
+        executeServiceLogger.end();
+        executeServiceLogger = null;
+    }
+
     private void log(LogLevel level, String msg) {
         if (!Logger.devMode && Logger.level == null) {
             return;
@@ -131,7 +142,12 @@ public class Logger {
             return;
         }
 
-        System.out.println(getPrefix(level, true) + msg + LogLevel.colorReset);
+        if (executeServiceLogger != null) {
+            executeServiceLogger.displayProgress(Thread.currentThread().getId(), Thread.currentThread().getState().toString(), 0, "TASK", msg);
+        } else {
+            System.out.println(getPrefix(level, true) + msg + LogLevel.colorReset);
+        }
+
 
         if (logFile == null) return;
 

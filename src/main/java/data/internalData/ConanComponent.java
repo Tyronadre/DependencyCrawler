@@ -47,7 +47,7 @@ public class ConanComponent implements Component {
             //LICENSE
             if (this.jsonData.get("licenses") != null)
                 for (var licenseES : this.jsonData.get("licenses").getAsJsonObject().entrySet())
-                    this.licenseChoices.add(LicenseChoice.of(LicenseRepository.getInstance().getLicense(licenseES.getKey(), null), null, null));
+                    this.licenseChoices.add(LicenseRepository.getInstance().getLicenseChoice(licenseES.getKey(), null, this.getQualifiedName()));
 
             this.loaded = true;
 

@@ -52,7 +52,7 @@ public class DefaultInputReader implements DocumentReader<Component> {
         //get the parent artifact
         MavenComponent parentArtifact = (MavenComponent) MavenComponentRepository.getInstance().getComponent(application.getGroupId(), application.getName(), Version.of(application.getVersion()), null);
         if (application.hasLicenseId()){
-            parentArtifact.setData("license", LicenseRepositoryImpl.getInstance().getLicense(application.getLicenseId(), null));
+            parentArtifact.setData("licenseChoice", LicenseRepositoryImpl.getInstance().getLicenseChoice(application.getLicenseId(), null, application.getName()));
         }
         parentArtifact.setRoot();
 
