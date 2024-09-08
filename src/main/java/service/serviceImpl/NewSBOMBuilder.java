@@ -20,13 +20,15 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 public class NewSBOMBuilder implements DocumentBuilder<Component, Bom> {
 
     List<Integer> buildComponents = new ArrayList<>();
+
+    HashMap<String, Dependency> buildDependencies = new HashMap<>();
 
     @Override
     public void buildDocument(Component data, String outputFileName) {
@@ -36,6 +38,8 @@ public class NewSBOMBuilder implements DocumentBuilder<Component, Bom> {
         bom.setSerialNumber(UUID.randomUUID().toString());
         bom.setMetadata(buildMetadata(data));
 
+        //build the root component
+        bom.addComponent(new ComponentConverter().convert(data));
         data.getDependenciesFlatFiltered().forEach(
                 dependency -> buildComponentAndDependency(dependency, bom)
         );
@@ -77,9 +81,12 @@ public class NewSBOMBuilder implements DocumentBuilder<Component, Bom> {
         }
         bom.addComponent(sbomComponent);
 
-        var sbomDependency = new Dependency(component.getPurl());
-        sbomDependency.setDependencies(component.getDependenciesFiltered().stream().map(data.Dependency::getComponent).filter(Objects::nonNull).filter(Component::isLoaded).map(Component::getPurl).map(Dependency::new).toList());
-        bom.addDependency(sbomDependency);
+
+        buildDependencies.putIfAbsent(dependency.getTreeParent().getPurl(), new Dependency(dependency.getTreeParent().getPurl()));
+        var parentSbomDependency = buildDependencies.get(dependency.getTreeParent().getPurl());
+        buildDependencies.putIfAbsent(component.getPurl(), new Dependency(component.getPurl()));
+        parentSbomDependency.addDependency(buildDependencies.get(component.getPurl()));
+        bom.addDependency(parentSbomDependency);
 
     }
 

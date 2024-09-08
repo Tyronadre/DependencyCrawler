@@ -14,7 +14,7 @@ public class SBomComparer {
 
     public static void main(String[] args) throws Exception {
         File sbomFile1 = new File("C:\\Users\\Henrik\\Desktop\\Bachelorarbeit\\DependencyCrawler\\generated\\maven_tool_custom.sbom.json");
-        File sbomFile2 = new File("C:\\Users\\Henrik\\Desktop\\Bachelorarbeit\\Eval\\MavenEval\\results\\maven_fossa.bom.json");
+        File sbomFile2 = new File("C:\\Users\\Henrik\\Desktop\\Bachelorarbeit\\Eval\\MavenEval\\results\\maven_cycloneplugin.bom.json");
 
         Bom sbom1 = parseBom(sbomFile1);
         Bom sbom2 = parseBom(sbomFile2);
