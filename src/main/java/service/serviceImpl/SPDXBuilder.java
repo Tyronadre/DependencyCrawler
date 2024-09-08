@@ -225,10 +225,10 @@ public class SPDXBuilder implements DocumentBuilder<Component, Pair<SpdxDocument
         }
         var licenseChoice = component.getAllLicenses().get(0);
         try {
-            var license = LicenseInfoFactory.parseSPDXLicenseString(licenseChoice.license().id(), store, uri, copyManager);
+            var license = LicenseInfoFactory.parseSPDXLicenseString(licenseChoice.expression(), store, uri, copyManager);
             spdxPackage.setLicenseDeclared(license);
         } catch (Exception e) {
-            logger.info("Could not build license  " + licenseChoice.license() + ". " + e.getMessage());
+            logger.info("Could not build license  " + licenseChoice.licenses() + ". " + e.getMessage());
         }
 
     }

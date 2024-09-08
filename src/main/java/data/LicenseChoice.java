@@ -1,17 +1,20 @@
 package data;
 
+import java.util.List;
+
 public interface LicenseChoice {
 
-    License license();
+    static LicenseChoice of(List<License> licenses, String expression, String acknowledgement) {
+        return new LicenseChoiceRecord(licenses, expression, acknowledgement);
+    }
 
     String expression();
 
     String acknowledgement();
 
-    static LicenseChoice of(License license, String expression, String acknowledgement) {
-        return new LicenseChoiceRecord(license, expression, acknowledgement);
-    }
+    List<License> licenses();
 
-    record LicenseChoiceRecord(License license, String expression, String acknowledgement) implements LicenseChoice {
+    record LicenseChoiceRecord(List<License> licenses, String expression,
+                               String acknowledgement) implements LicenseChoice {
     }
 }

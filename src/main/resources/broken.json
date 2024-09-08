@@ -5,17 +5,10 @@
     "groupId": "de.henrik",
     "type": "JAVA",
     "dependencies": [
-
       {
-        "groupId": "dom4j",
-        "name": "dom4j",
-        "version": "1.6.1",
-        "type": "MAVEN"
-      },
-      {
-        "groupId": "dom4j",
-        "name": "dom4j",
-        "version": "1.6.1",
+        "groupId": "com.sun.mail",
+        "name": "javax.mail",
+        "version": "1.6.2",
         "type": "MAVEN"
       }
     ]

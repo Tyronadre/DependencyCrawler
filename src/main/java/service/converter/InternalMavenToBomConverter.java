@@ -249,7 +249,7 @@ public class InternalMavenToBomConverter {
 
     private static Bom16.LicenseChoice buildLicenseChoice(LicenseChoice licenseChoice) {
         var builder = Bom16.LicenseChoice.newBuilder();
-        Optional.ofNullable(licenseChoice.license()).ifPresent(license -> builder.setLicense(buildLicense(license)));
+//        Optional.ofNullable(licenseChoice.licenses()).ifPresent(license -> builder.setLicense(buildLicense(license)));
         Optional.ofNullable(licenseChoice.expression()).ifPresent(builder::setExpression);
         Optional.ofNullable(licenseChoice.acknowledgement()).ifPresent(acknowledgement -> builder.setAcknowledgement(buildLicenseAcknowledgementEnumeration(acknowledgement)));
         return builder.build();

@@ -250,9 +250,11 @@ public class LicenseRepositoryImpl implements LicenseRepository {
                 idToLicense.put(data.get("licenseId").getAsString(), licenseActual);
             }
 
-            for (var exception : licenseExceptionsNet.get("exceptions").getAsJsonArray()) {
-                var exceptionObject = exception.getAsJsonObject();
-                idToException.put(exceptionObject.get("licenseExceptionId").getAsString(), new SPDXLicenseException(exceptionObject));
+            for (var exception : jsonFile.get("exceptions").getAsJsonArray()) {
+                var data = exception.getAsJsonObject().get("data").getAsJsonObject();
+                var details = exception.getAsJsonObject().get("details").getAsJsonObject();
+
+                idToException.put(data.get("licenseExceptionId").getAsString(), new SPDXLicenseException(data, details));
             }
             logger.success("Loaded " + nameToLicense.size() + " licenses");
             logger.success("Loaded " + idToException.size() + " license exceptions");
@@ -308,9 +310,13 @@ public class LicenseRepositoryImpl implements LicenseRepository {
                         logger.info("Loading " + licenseException.get("reference") + "...");
                         var startTime = System.currentTimeMillis();
                         var data = JsonParser.parseReader(new InputStreamReader(URI.create(baseURI + licenseException.get("reference").getAsString().substring(2)).toURL().openStream())).getAsJsonObject();
+                        var details = JsonParser.parseReader(new InputStreamReader(URI.create(baseURI + licenseException.get("reference").getAsString().substring(2)).toURL().openStream())).getAsJsonObject();
+                        var licenseJson = new JsonObject();
+                        licenseJson.add("data", data);
+                        licenseJson.add("details", details);
 
-                        fileExceptions.add(data);
-                        SPDXLicenseException exceptionActual = new SPDXLicenseException(data);
+                        fileExceptions.add(licenseJson);
+                        SPDXLicenseException exceptionActual = new SPDXLicenseException(data, details);
                         idToException.put(licenseException.get("licenseExceptionId").getAsString(), exceptionActual);
                         logger.success("Loaded " + licenseException.get("reference") + " (" + (System.currentTimeMillis() - startTime) + "ms)");
                     } catch (IOException e) {
@@ -344,13 +350,13 @@ public class LicenseRepositoryImpl implements LicenseRepository {
 
     @Override
     public License getLicense(String name, String url, String componentName) {
-        return new LicenseParser(name, url, componentName).getLicenseChoice().license();
+        return new LicenseParser(name, url, componentName).getLicenseChoice().licenses().stream().findFirst().orElse(null);
 
     }
 
     @Override
     public LicenseChoice getLicenseChoice(String licenseString, String url, String componentName) {
-        return new LicenseExpressionParser(licenseString, url, componentName).getLicenseChoice();
+        return new LicenseParser(licenseString, url, componentName).getLicenseChoice();
     }
 
     /**
@@ -385,18 +391,27 @@ public class LicenseRepositoryImpl implements LicenseRepository {
             input = input.replaceAll("\\)", Matcher.quoteReplacement("\\)"));
             input = input.replaceAll("\\.", Matcher.quoteReplacement("\\."));
             var pattern = Pattern.compile(input, Pattern.CASE_INSENSITIVE);
+
             for (var idToLicenseEntry : idToLicense.entrySet()) {
                 var matcher = pattern.matcher(idToLicenseEntry.getKey());
                 if (matcher.find()) {
-                    this.licenseChoice = LicenseChoice.of(idToLicenseEntry.getValue(), idToLicenseEntry.getValue().id(), null);
+                    this.licenseChoice = LicenseChoice.of(List.of(idToLicenseEntry.getValue()), idToLicenseEntry.getValue().id(), null);
                     return;
                 }
             }
 
-            for (var nameToLicenseEntry : idToLicense.entrySet()) {
+            for (var exceptionEntry : idToException.entrySet()) {
+                var matcher = pattern.matcher(exceptionEntry.getKey());
+                if (matcher.find()) {
+                    this.licenseChoice = LicenseChoice.of(List.of(exceptionEntry.getValue()), exceptionEntry.getValue().id(), null);
+                    return;
+                }
+            }
+
+            for (var nameToLicenseEntry : nameToLicense.entrySet()) {
                 var matcher = pattern.matcher(nameToLicenseEntry.getKey());
                 if (matcher.find()) {
-                    this.licenseChoice = LicenseChoice.of(nameToLicenseEntry.getValue(), nameToLicenseEntry.getValue().name(), null);
+                    this.licenseChoice = LicenseChoice.of(List.of(nameToLicenseEntry.getValue()), nameToLicenseEntry.getValue().id(), null);
                     return;
                 }
             }
@@ -405,14 +420,14 @@ public class LicenseRepositoryImpl implements LicenseRepository {
                 for (var name : customNameEntry.getValue()) {
                     var matcher = pattern.matcher(name);
                     if (matcher.find() || name.equalsIgnoreCase(input)) {
-                        this.licenseChoice = LicenseChoice.of(idToLicense.get(customNameEntry.getKey()), name, null);
+                        this.licenseChoice = new LicenseExpressionParser(customNameEntry.getKey(), url, componentName).getLicenseChoice();
                         return;
                     }
                 }
             }
 
             this.isSPDXLicense = false;
-            this.licenseChoice = LicenseChoice.of(License.of(null, input, null, url, null, null, null), null, null);
+            this.licenseChoice = LicenseChoice.of(List.of(License.of(null, input, null, url, null, null, null)), null, null);
         }
 
         private void parseLicenseFile() {
@@ -421,14 +436,21 @@ public class LicenseRepositoryImpl implements LicenseRepository {
 
             for (var licenseToIdEntry : idToLicense.entrySet()) {
                 if (Pattern.compile(".*" + licenseToIdEntry.getKey() + ".*", Pattern.DOTALL | Pattern.CASE_INSENSITIVE).matcher(licenseData).find()) {
-                    this.licenseChoice = LicenseChoice.of(licenseToIdEntry.getValue(), licenseToIdEntry.getValue().id(), null);
+                    this.licenseChoice = LicenseChoice.of(List.of(licenseToIdEntry.getValue()), licenseToIdEntry.getValue().id(), null);
+                    return;
+                }
+            }
+
+            for (var exceptionEntry : idToException.entrySet()) {
+                if (Pattern.compile(".*" + exceptionEntry.getKey() + ".*", Pattern.DOTALL | Pattern.CASE_INSENSITIVE).matcher(licenseData).find()) {
+                    this.licenseChoice = LicenseChoice.of(List.of(exceptionEntry.getValue()), exceptionEntry.getValue().id(), null);
                     return;
                 }
             }
 
             for (var licenseToNameEntry : nameToLicense.entrySet()) {
                 if (Pattern.compile(".*" + licenseToNameEntry.getKey() + ".*", Pattern.DOTALL | Pattern.CASE_INSENSITIVE).matcher(licenseData).find()) {
-                    this.licenseChoice = LicenseChoice.of(licenseToNameEntry.getValue(), licenseToNameEntry.getValue().name(), null);
+                    this.licenseChoice = LicenseChoice.of(List.of(licenseToNameEntry.getValue()), licenseToNameEntry.getValue().name(), null);
                     return;
                 }
             }
@@ -442,12 +464,16 @@ public class LicenseRepositoryImpl implements LicenseRepository {
                 }
             }
 
-            this.licenseChoice = LicenseChoice.of(License.of(null, "unknown license", input, url, null, null, null), null, null);
+            this.licenseChoice = LicenseChoice.of(List.of(License.of(null, "unknown license", input, url, null, null, null)), null, null);
             this.isSPDXLicense = false;
         }
 
         public LicenseChoice getLicenseChoice() {
             return licenseChoice;
+        }
+
+        public License getLicense() {
+            return licenseChoice.licenses().stream().findFirst().orElse(null);
         }
 
         public boolean isSPDXLicense() {
@@ -493,40 +519,44 @@ public class LicenseRepositoryImpl implements LicenseRepository {
                     resultLicenseList.add(license);
                     resultOperatorList.add(Operator.AND);
                     parsedExpression.append(license.nameOrId()).append(" AND ");
+                    start = index;
                 } else if (expression.startsWith(" OR ", index)) {
                     index += 4;
                     var license = parseLicense(expression.substring(start, index - 4));
                     resultLicenseList.add(license);
                     resultOperatorList.add(Operator.OR);
                     parsedExpression.append(license.nameOrId()).append(" OR ");
+                    start = index;
                 } else if (expression.startsWith(" WITH ", index)) {
                     index += 6;
                     var license = parseLicense(expression.substring(start, index - 6));
                     resultLicenseList.add(license);
                     resultOperatorList.add(Operator.WITH);
                     parsedExpression.append(license.nameOrId()).append(" WITH ");
+                    start = index;
                 } else if (expression.startsWith("+ ", index)) {
                     index += 2;
                     var license = parseLicense(expression.substring(start, index - 3));
                     resultLicenseList.add(license);
                     resultOperatorList.add(Operator.PLUS);
                     parsedExpression.append(license.nameOrId()).append(" + ");
+                    start = index;
                 } else if (expression.startsWith("+", index) && expression.length() == index + 1) {
                     index += 1;
                     var license = parseLicense(expression.substring(start, index - 1));
                     resultLicenseList.add(license);
                     resultOperatorList.add(Operator.PLUS);
                     parsedExpression.append(license.nameOrId()).append("+");
+                    start = index;
                 } else {
                     index++;
                 }
             }
-            if (resultLicenseList.isEmpty()) {
-                var license = parseLicense(expression);
-                if (license == null) return;
-                resultLicenseList.add(license);
-                parsedExpression.append(license.nameOrId());
-            }
+            var license = parseLicense(expression.substring(start));
+            if (license == null) return;
+            resultLicenseList.add(license);
+            parsedExpression.append(license.nameOrId());
+
         }
 
         private License parseLicense(String license) {
@@ -534,7 +564,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
             if (!licenseParser.isSPDXLicense()) {
                 logger.error("Parsed license in expression string : " + license + " in component " + componentName + " was not recognized as an SPDX license. This could lead to issues later.");
             }
-            return licenseParser.getLicenseChoice().license();
+            return licenseParser.getLicense();
         }
 
         public List<License> getResultLicenseList() {
@@ -550,11 +580,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
         }
 
         public LicenseChoice getLicenseChoice() {
-            if (resultLicenseList.size() == 1) {
-                return LicenseChoice.of(getResultLicenseList().get(0), getResultExpression(), null);
-            } else {
-                return LicenseChoice.of(null, getResultExpression(), null);
-            }
+            return LicenseChoice.of(getResultLicenseList(), getResultExpression(), null);
         }
 
         enum Operator {

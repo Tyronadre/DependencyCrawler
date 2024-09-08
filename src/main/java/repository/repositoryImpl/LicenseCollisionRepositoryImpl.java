@@ -174,6 +174,7 @@ public class LicenseCollisionRepositoryImpl implements LicenseCollisionRepositor
     }
 
     Set<Integer> handled = new HashSet<Integer>();
+
     private void checkLicenseCollisionsHelper
             (Component component, ArrayList<LicenseCollision> licenseCollisions, boolean isParentApplication) {
         if (component == null || !component.isLoaded()) return;
@@ -195,16 +196,18 @@ public class LicenseCollisionRepositoryImpl implements LicenseCollisionRepositor
 
         var licenseCollisions = new ArrayList<LicenseCollision>();
         for (var licenseChoice1 : parentComponent.getAllLicenses()) {
-            var parentLicense = licenseChoice1.license();
-            if (parentLicense == null) continue;
+            for (var parentLicense : licenseChoice1.licenses()) {
+                if (parentLicense == null) continue;
 
-            for (var licenseChoice2 : childComponent.getAllLicenses()) {
-                var childLicense = licenseChoice2.license();
-                if (childLicense == null) continue;
+                for (var licenseChoice2 : childComponent.getAllLicenses()) {
+                    for (var childLicense : licenseChoice2.licenses()) {
+                        if (childLicense == null) continue;
 
-                var incompatibleCause = areLicensesCompatible(parentLicense, childLicense, isParentApplication);
-                if (incompatibleCause != null) {
-                    licenseCollisions.add(new LicenseCollisionImpl(parentLicense, parentComponent, childLicense, childComponent, incompatibleCause));
+                        var incompatibleCause = areLicensesCompatible(parentLicense, childLicense, isParentApplication);
+                        if (incompatibleCause != null) {
+                            licenseCollisions.add(new LicenseCollisionImpl(parentLicense, parentComponent, childLicense, childComponent, incompatibleCause));
+                        }
+                    }
                 }
             }
         }

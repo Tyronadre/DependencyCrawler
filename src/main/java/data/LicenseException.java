@@ -1,4 +1,4 @@
 package data;
 
-public interface LicenseException {
+public interface LicenseException extends License {
 }

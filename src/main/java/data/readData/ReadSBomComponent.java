@@ -78,7 +78,7 @@ public class ReadSBomComponent implements ReadComponent {
                         } else {
                             license = LicenseRepositoryImpl.getInstance().getLicense(licenseChoice.getLicense().getName(), licenseChoice.getLicense().getUrl(), this.getQualifiedName());
                         }
-                        return LicenseChoice.of(license, licenseChoice.getLicense().getUrl(), licenseChoice.getAcknowledgement().toString());
+                        return LicenseChoice.of(List.of(license), licenseChoice.getLicense().getUrl(), licenseChoice.getAcknowledgement().toString());
                     } else if (licenseChoice.hasExpression()) {
                         return LicenseRepositoryImpl.getInstance().getLicenseChoice(licenseChoice.getExpression(), null, this.getQualifiedName());
                     }
@@ -123,8 +123,8 @@ public class ReadSBomComponent implements ReadComponent {
         }
 
         // LICENSES
-        Map<String, LicenseChoice> licensesGiven = licenseChoices.stream().collect(Collectors.toMap(l -> l.license().nameOrId(), Function.identity()));
-        this.licenseChoices = this.actualComponent.getAllLicenses().stream().map(licenseLoaded -> licensesGiven.getOrDefault(licenseLoaded.license().nameOrId(), licenseLoaded)).collect(Collectors.toList());
+        Map<String, LicenseChoice> licensesGiven = licenseChoices.stream().collect(Collectors.toMap(l -> l.licenses().get(0).nameOrId(), Function.identity()));
+        this.licenseChoices = this.actualComponent.getAllLicenses().stream().map(licenseLoaded -> licensesGiven.getOrDefault(licenseLoaded.licenses().get(0).nameOrId(), licenseLoaded)).collect(Collectors.toList());
 
         // EXTERNAL REFERENCES
         this.externalReferences.addAll(actualComponent.getAllExternalReferences().stream().filter(externalReference -> externalReferences.stream().noneMatch(er -> er.url().equals(externalReference.url()))).toList());

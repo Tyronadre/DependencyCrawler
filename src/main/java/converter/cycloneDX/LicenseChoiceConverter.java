@@ -3,8 +3,6 @@ package converter.cycloneDX;
 import converter.Converter;
 import data.LicenseChoice;
 
-import java.util.List;
-
 public class LicenseChoiceConverter implements Converter<LicenseChoice, org.cyclonedx.model.LicenseChoice> {
 
     @Override
@@ -15,7 +13,7 @@ public class LicenseChoiceConverter implements Converter<LicenseChoice, org.cycl
         if (licenseChoice.expression() != null)
             licenseChoice1.setExpression(new LicenseChoiceExpressionConverter().convert(licenseChoice.expression()));
         else
-            licenseChoice1.setLicenses(List.of(new LicenseConverter().convert(licenseChoice.license())));
+            licenseChoice1.setLicenses(new LicenseConverter().convertList(licenseChoice.licenses()));
 
         return licenseChoice1;
     }

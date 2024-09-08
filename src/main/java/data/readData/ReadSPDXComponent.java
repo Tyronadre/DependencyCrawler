@@ -4,6 +4,7 @@ import data.Component;
 import data.Dependency;
 import data.ExternalReference;
 import data.Hash;
+import data.License;
 import data.LicenseChoice;
 import data.Organization;
 import data.Person;
@@ -103,8 +104,14 @@ public class ReadSPDXComponent implements ReadComponent {
         }
 
         // LICENSES
-        Map<String, LicenseChoice> licensesGiven = licenseChoices.stream().collect(Collectors.toMap(l -> l.license().nameOrId(), Function.identity()));
-        this.licenseChoices = this.actualComponent.getAllLicenses().stream().map(licenseLoaded -> licensesGiven.getOrDefault(licenseLoaded.license().nameOrId(), licenseLoaded)).collect(Collectors.toList());
+        Map<String, LicenseChoice> licensesGiven = licenseChoices.stream().collect(Collectors.toMap(l -> {
+            if (l.expression() == null) {
+                return l.licenses().stream().map(License::nameOrId).collect(Collectors.joining(" AND "));
+            } else {
+                return l.expression();
+            }
+        }, Function.identity()));
+        this.licenseChoices = this.actualComponent.getAllLicenses().stream().map(licenseLoaded -> licensesGiven.getOrDefault(licenseLoaded.expression() == null ? licenseLoaded.licenses().stream().map(License::nameOrId).collect(Collectors.joining(" AND ")) : licenseLoaded.expression(), licenseLoaded)).collect(Collectors.toList());
 
         // EXTERNAL REFERENCES
         this.externalReferences.addAll(actualComponent.getAllExternalReferences().stream().filter(externalReference -> externalReferences.stream().noneMatch(er -> er.url().equals(externalReference.url()))).toList());
