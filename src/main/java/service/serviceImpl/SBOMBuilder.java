@@ -30,6 +30,7 @@ public class SBOMBuilder implements DocumentBuilder<Component, Bom16.Bom> {
 
         logger.info("Creating SBOM for " + root.getQualifiedName() + "...");
 
+
         var bom = buildBom(root);
 
         logger.info("SBOM created. Writing to file...");
@@ -59,6 +60,7 @@ public class SBOMBuilder implements DocumentBuilder<Component, Bom16.Bom> {
 
         logger.success(new File(outputFileName).getAbsolutePath() + ".sbom.json saved (" + (System.currentTimeMillis() - start) + "ms)");
     }
+
 
     @Override
     public void rebuildDocument(Bom16.Bom bom, String path) {

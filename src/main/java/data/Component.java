@@ -149,12 +149,10 @@ public interface Component {
      * @return a filtered list of dependencies, that only contains the dependencies that are resolved in alphabetical order
      */
     default List<Dependency> getDependenciesFlatFiltered() {
-
-        //wie kann das hier nen stackoverflow geben weil es sich im kreis dreht?
         Set<Dependency> visited = new HashSet<>();
         List<Dependency> result = new ArrayList<>();
 
-        Deque<Dependency> stack = new ArrayDeque<>(getDependencies());
+        Deque<Dependency> stack = new ArrayDeque<>(getDependenciesFiltered());
 
         while (!stack.isEmpty()) {
             Dependency dependency = stack.pop();
@@ -163,9 +161,10 @@ public interface Component {
                 result.add(dependency);
 
                 if (dependency.getComponent() != null && dependency.getComponent().isLoaded()) {
-                    // dependency auf sich selber?
                     stack.addAll(dependency.getComponent().getDependenciesFiltered());
                 }
+            } else {
+                // circular dependency
             }
         }
 

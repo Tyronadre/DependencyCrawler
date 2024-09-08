@@ -1,0 +1,129 @@
+{
+  "application": {
+    "name": "maven_eval",
+    "version": "1.0.0",
+    "groupId": "com.test",
+    "dependencies": [
+      {
+        "groupId": "org.apache.httpcomponents",
+        "name": "httpclient",
+        "version": "4.5.13",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "com.google.guava",
+        "name": "guava",
+        "version": "31.0.1-jre",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "com.fasterxml.jackson.core",
+        "name": "jackson-databind",
+        "version": "2.13.0",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "org.slf4j",
+        "name": "slf4j-api",
+        "version": "1.7.32",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "ch.qos.logback",
+        "name": "logback-classic",
+        "version": "1.2.6",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "org.springframework",
+        "name": "spring-core",
+        "version": "5.3.13",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "org.springframework",
+        "name": "spring-context",
+        "version": "5.3.13",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "org.springframework",
+        "name": "spring-web",
+        "version": "5.3.13",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "org.springframework",
+        "name": "spring-webmvc",
+        "version": "5.3.13",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "org.springframework.boot",
+        "name": "spring-boot-starter",
+        "version": "2.6.1",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "org.hibernate",
+        "name": "hibernate-core",
+        "version": "5.5.7.Final",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "mysql",
+        "name": "mysql-connector-java",
+        "version": "8.0.27",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "com.google.code.gson",
+        "name": "gson",
+        "version": "2.8.8",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "commons-logging",
+        "name": "commons-logging",
+        "version": "1.2",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "com.sun.mail",
+        "name": "javax.mail",
+        "version": "1.6.2",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "org.slf4j",
+        "name": "slf4j-nop",
+        "version": "2.0.7.redhat-00003",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "org.apache.commons",
+        "name": "commons-compress",
+        "version": "1.0",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "org.apache.commons",
+        "name": "commons-configuration2",
+        "version": "2.9.0",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "org.apache.commons",
+        "name": "commons-crypto",
+        "version": "1.2.0",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "org.mockito",
+        "name": "mockito-core",
+        "version": "3.12.4",
+        "type": "MAVEN"
+      }
+    ]
+  }
+}

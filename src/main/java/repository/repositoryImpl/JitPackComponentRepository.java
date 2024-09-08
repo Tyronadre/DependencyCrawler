@@ -10,6 +10,7 @@ import repository.LicenseRepository;
 import service.VersionResolver;
 import settings.Settings;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -103,7 +104,7 @@ public class JitPackComponentRepository implements ComponentRepository {
     }
 
     @Override
-    public synchronized Component getComponent(String groupId, String artifactId, Version version, Component parent) {
+    public synchronized Component getComponent(@Nullable String groupId, String artifactId, Version version, Component parent) {
         var key = groupId + ":" + artifactId;
 
         if (components.containsKey(key)) {

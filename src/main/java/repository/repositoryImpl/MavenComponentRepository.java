@@ -15,6 +15,7 @@ import service.VersionResolver;
 import service.serviceImpl.MavenVersionResolver;
 import settings.Settings;
 
+import javax.annotation.Nullable;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -250,8 +251,7 @@ public class MavenComponentRepository implements ComponentRepository {
         for (String algorithm : new String[]{"md5", "sha1", "sha256", "sha512"}) {
             Path hashFile = cacheDir.resolve("hash." + algorithm);
             if (Files.exists(hashFile)) {
-                String value = Files.readString(hashFile).trim();
-                hashes.add(Hash.of(algorithm, value));
+                hashes.add(Hash.of(algorithm, getHashValue(Files.readString(hashFile).trim())));
             }
         }
         return hashes;
@@ -312,15 +312,17 @@ public class MavenComponentRepository implements ComponentRepository {
 
     private Hash loadHash(String baseUrl, String algorithm) throws IOException {
         try (InputStream inputStream = URI.create(baseUrl + "." + algorithm).toURL().openStream()) {
-            var value = new String(inputStream.readAllBytes());
-            // some files have some spaces and a - at the end. we dont want that
-            if (value.contains(" ")) value = value.substring(0, value.indexOf(" "));
-            return Hash.of(algorithm, value);
+            return Hash.of(algorithm, getHashValue(new String(inputStream.readAllBytes())));
         }
     }
 
+    private String getHashValue(String value) {
+        if (value.contains(" ")) value = value.substring(0, value.indexOf(" "));
+        return value;
+    }
+
     @Override
-    public synchronized Component getComponent(String groupId, String artifactId, Version version, Component parent) {
+    public synchronized Component getComponent(@Nullable String groupId, String artifactId, Version version, Component parent) {
         var key = groupId + ":" + artifactId;
 
         if (components.containsKey(key)) {

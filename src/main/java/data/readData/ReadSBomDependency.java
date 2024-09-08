@@ -4,6 +4,7 @@ import cyclonedx.sbom.Bom16;
 import data.Component;
 import data.Dependency;
 import data.Version;
+import enums.ComponentType;
 
 import java.util.Objects;
 
@@ -99,4 +100,8 @@ public class ReadSBomDependency implements Dependency {
         return Objects.equals(this.getQualifiedName(), that.getQualifiedName());
     }
 
+    @Override
+    public ComponentType getType() {
+        return ComponentType.SBOM;
+    }
 }

@@ -10,6 +10,7 @@ import logger.Logger;
 import repository.ComponentRepository;
 import service.VersionResolver;
 
+import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URI;
@@ -94,7 +95,7 @@ public class ConanComponentRepository implements ComponentRepository {
     }
 
     @Override
-    public synchronized Component getComponent(String ignored, String name, Version version, Component parent) {
+    public synchronized Component getComponent(@Nullable String ignored, String name, Version version, Component parent) {
         if (components.containsKey(name)) {
             var available = components.get(name).stream().filter(it -> it.getVersion().equals(version)).findFirst();
             if (available.isPresent()) return available.get();

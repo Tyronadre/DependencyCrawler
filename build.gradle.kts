@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "de.henrik"
-version = "0.9.1"
+version = "0.9.3"
 
 repositories {
     mavenCentral()
@@ -42,9 +42,15 @@ dependencies {
     implementation("org.spdx:spdx-jackson-store:1.1.9.1")
     implementation("org.slf4j:slf4j-nop:2.0.0")
     implementation("org.metaeffekt.core:ae-security:0.115.0")
+    implementation("org.cyclonedx:cyclonedx-core-java:9.0.5")
 
     implementation("org.fusesource.jansi:jansi:2.4.0")
-    implementation("org.jline:jline:3.21.0")
+//    implementation("org.jline:jline:3.21.0")
+
+    implementation("org.hibernate.orm:hibernate-core:6.6.0.Final")
+    implementation("jakarta.persistence:jakarta.persistence-api:3.2.0")
+    implementation("org.xerial:sqlite-jdbc:3.36.0.1")
+    implementation("org.hibernate.orm:hibernate-community-dialects:6.6.0.Final")
 
 
 

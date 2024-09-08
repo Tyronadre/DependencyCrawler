@@ -3,6 +3,7 @@ package data.internalData;
 import data.Component;
 import data.Dependency;
 import data.Version;
+import enums.ComponentType;
 
 public class PomDependency implements Dependency {
     String groupId;
@@ -71,4 +72,8 @@ public class PomDependency implements Dependency {
         return false;
     }
 
+    @Override
+    public ComponentType getType() {
+        return ComponentType.MAVEN;
+    }
 }

@@ -88,7 +88,7 @@ public class MavenVersionResolver implements VersionResolver {
 
     private Version getVersionFromProperty(String substring, Dependency dependency, MavenComponent parent) {
         //project.version
-        if (substring.equals("project.version") || substring.equals("pom.version") || substring.equals("parent.version")) {
+        if (substring.equals("project.version") || substring.equals("pom.version") || substring.equals("parent.version") || substring.equals("project.parent.version")) {
             return Version.of(parent.getVersion().version());
         }
 

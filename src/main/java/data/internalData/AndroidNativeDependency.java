@@ -3,6 +3,7 @@ package data.internalData;
 import data.Component;
 import data.Dependency;
 import data.Version;
+import enums.ComponentType;
 import repository.repositoryImpl.AndroidNativeComponentRepository;
 
 public class AndroidNativeDependency implements Dependency {
@@ -70,4 +71,8 @@ public class AndroidNativeDependency implements Dependency {
         return true;
     }
 
+    @Override
+    public ComponentType getType() {
+        return ComponentType.ANDROID_NATIVE;
+    }
 }

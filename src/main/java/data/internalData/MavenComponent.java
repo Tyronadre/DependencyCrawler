@@ -119,6 +119,7 @@ public class MavenComponent implements Component {
     @Override
     public void setRoot() {
         this.isRoot = true;
+        this.loaded = true;
     }
 
 
@@ -139,11 +140,7 @@ public class MavenComponent implements Component {
 
         // DEPENDENCIES
         for (var modelDependency : model.getDependencies()) {
-            // special case
-            if (modelDependency.getGroupId().equals("${project.groupId}") || modelDependency.getGroupId().equals("${pom.groupId}"))
-                this.dependencies.add(new MavenDependency(this.getGroup(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
-            else
-                this.dependencies.add(new MavenDependency(modelDependency.getGroupId(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this));
+            this.dependencies.add(mavenDependency(modelDependency));
         }
 
         // PARENT
@@ -169,8 +166,9 @@ public class MavenComponent implements Component {
             }
         } else {
             //load from maven parent
-            if (this.parent == null) return;
-            if (!this.parent.isLoaded()) {
+            if (this.parent == null) {
+
+            } else if (!this.parent.isLoaded()) {
                 this.parent.loadComponent();
                 if (this.parent.isLoaded() && this.parent.getAllLicenses() != null)
                     this.licenseChoices = new ArrayList<>(this.parent.getAllLicenses());
@@ -189,6 +187,15 @@ public class MavenComponent implements Component {
         loaded = true;
         logger.success("Parsed component: " + this.getQualifiedName() + " (" + (System.currentTimeMillis() - start) + "ms)");
 
+    }
+
+    private MavenDependency mavenDependency(org.apache.maven.api.model.Dependency modelDependency) {
+        MavenDependency newDependency;
+        if (modelDependency.getGroupId().equals("${project.groupId}") || modelDependency.getGroupId().equals("${pom.groupId}"))
+            newDependency = new MavenDependency(this.getGroup(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this);
+        else
+            newDependency = new MavenDependency(modelDependency.getGroupId(), modelDependency.getArtifactId(), modelDependency.getVersion(), modelDependency.getScope(), modelDependency.getOptional(), this);
+        return newDependency;
     }
 
     @Override

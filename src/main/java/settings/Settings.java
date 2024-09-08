@@ -4,6 +4,7 @@ import java.io.File;
 
 public class Settings {
 
+
     public static File getDataFolder() {
         if (dataFolder == null) {
             dataFolder = new File(new File(Settings.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParentFile(), "data");
@@ -24,7 +25,8 @@ public class Settings {
 
     public static Boolean crawlOptional = false;
     public static Boolean crawlEverything = false;
-    public static Integer crawlThreads = 20;
+    public static Integer crawlThreads = 10;
+    public static boolean crawlSingle = false;
     private static File dataFolder;
 
 }

@@ -5,13 +5,19 @@
     "groupId": "de.henrik",
     "type": "JAVA",
     "dependencies": [
+
       {
-        "groupId": "org.apache.logging.log4j",
-        "name": "log4j-core",
-        "version": "2.16.0",
+        "groupId": "dom4j",
+        "name": "dom4j",
+        "version": "1.6.1",
+        "type": "MAVEN"
+      },
+      {
+        "groupId": "dom4j",
+        "name": "dom4j",
+        "version": "1.6.1",
         "type": "MAVEN"
       }
     ]
-  },
-  "output": "generated/output_0"
+  }
 }

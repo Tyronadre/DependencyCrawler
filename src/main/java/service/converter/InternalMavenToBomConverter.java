@@ -108,8 +108,8 @@ public class InternalMavenToBomConverter {
         return switch (m) {
             case "CVSS:4.0" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV4;
             case "CVSS:3.1" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV31;
-            case "CVSS:3" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV3;
-            case "CVSS:2" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV2;
+            case "CVSS:3", "CVSS:3.0" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV3;
+            case "CVSS:2", "CVSS:2.0" -> Bom16.ScoreMethod.SCORE_METHOD_CVSSV2;
             default -> Bom16.ScoreMethod.valueOf(m);
         };
     }

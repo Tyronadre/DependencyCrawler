@@ -10,6 +10,7 @@ import repository.ComponentRepository;
 import repository.LicenseRepository;
 import service.VersionResolver;
 
+import javax.annotation.Nullable;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.URI;
@@ -89,7 +90,7 @@ public class AndroidNativeComponentRepository implements ComponentRepository {
     }
 
     @Override
-    public synchronized Component getComponent(String groupId, String artifactId, Version version, Component parent) {
+    public synchronized Component getComponent(@Nullable String groupId, String artifactId, Version version, Component parent) {
         var key = groupId + ":" + artifactId;
 
         if (components.containsKey(key)) {

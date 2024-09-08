@@ -3,29 +3,23 @@ package service.serviceImpl;
 import data.Component;
 import data.Dependency;
 import data.Property;
-import data.ReadComponent;
 import data.internalData.MavenComponent;
+import exceptions.VersionResolveException;
 import logger.Logger;
 import repository.ComponentRepository;
 import service.BFDependencyCrawler;
 import settings.Settings;
 
 import java.text.DecimalFormat;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
@@ -38,7 +32,8 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
 
         var time = System.currentTimeMillis();
         logger.info("Crawling dependencies of " + parentComponent.getQualifiedName() + "...");
-        crawlMulti(parentComponent);
+        if (Settings.crawlSingle) crawlSingle(parentComponent);
+        else crawlMulti2(parentComponent);
 
         if (updateDependenciesToNewestVersion) {
             logger.info("Applying overwritten versions...");
@@ -55,179 +50,203 @@ public class BFDependencyCrawlerImpl implements BFDependencyCrawler {
         logger.success("Crawling finished in " + timeTaken + "s. Loaded " + loadedComponents + " Components. (" + format.format(timeTaken / loadedComponents) + "s per component)");
     }
 
-    public void crawlMulti(Component parentComponent) {
-        parentComponent.loadComponent();
-        var repository = parentComponent.getRepository();
+    private void crawlSingle(Component component) {
+        component.loadComponent();
+        var queue = new ArrayDeque<>(component.getDependenciesFiltered());
 
-        AtomicInteger loadCount = new AtomicInteger();
-        AtomicInteger failCount = new AtomicInteger();
-        ExecutorService executorService = Executors.newFixedThreadPool(Settings.crawlThreads);
-        CompletionService<Void> completionService = new ExecutorCompletionService<>(executorService);
-        var queue = new ConcurrentLinkedDeque<>(parentComponent.getDependenciesFiltered());
-        AtomicInteger activeTasks = new AtomicInteger(0);
+        while (!queue.isEmpty()) {
+            Dependency dependency = queue.poll();
+
+            //resolve version if possible
+            if (!dependency.hasVersion()) {
+                var repositoryOfDependency = dependency.getType().getRepository();
+                if (repositoryOfDependency != null) {
+                    try {
+                        repositoryOfDependency.getVersionResolver().resolveVersion(dependency);
+                    } catch (VersionResolveException e) {
+                        logger.error("Could not resolve version of dependency " + dependency + ".", e);
+                        continue;
+                    }
+                } else {
+                    logger.error("Could not resolve version of dependency " + dependency + " since this is a component without a repository, but the version is not set.");
+                    continue;
+                }
+            }
+
+            var dependencyComponent = dependency.getComponent();
+            if (dependencyComponent == null) {
+                logger.error("Could not get component " + dependency + ".");
+                continue;
+            }
+
+            if (!dependencyComponent.isLoaded()) {
+                dependencyComponent.loadComponent();
+
+                if (!dependencyComponent.isLoaded()) {
+                    logger.error("Could not load component " + dependencyComponent + ".");
+                    continue;
+                }
+
+                queue.addAll(dependencyComponent.getDependenciesFiltered());
+            }
+        }
+    }
+
+    private void crawlMulti2(Component component) {
+        var loadCount = new AtomicInteger();
+        var failCount = new AtomicInteger();
+        var executorService = Executors.newFixedThreadPool(Settings.crawlThreads);
+        var queue = new ConcurrentLinkedQueue<>(component.getDependenciesFiltered());
+        var runningTasks = new ConcurrentHashMap<Dependency, Future<Void>>();
+        var resolvedDependencies = Collections.synchronizedSet(new HashSet<Dependency>());
 
         Logger.startThreadLogging(Settings.crawlThreads);
 
-        while (!queue.isEmpty() || activeTasks.get() > 0) {
-            Dependency dependency = queue.poll();
-            if (dependency != null) {
-                activeTasks.incrementAndGet();
-                completionService.submit(() -> crawler(dependency, repository, queue, loadCount, failCount, activeTasks));
-            } else {
-                try {
-                    Future<Void> future = completionService.poll(1, TimeUnit.MINUTES);
-                    if (future != null) {
-                        future.get();
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    logger.error("Thread interrupted while waiting for tasks to complete." + e);
-                    break;
-                } catch (Exception e) {
-                    logger.error("Error occurred during task execution." + e);
-                }
+        while (!queue.isEmpty()) {
+            var dependency = queue.poll();
+
+            if (resolvedDependencies.contains(dependency)) {
+                logger.info("Skipping dependency " + dependency + " since it was already resolved.");
+                waitUntilQueueIsNotEmpty(queue, runningTasks);
+                continue;
             }
-        }
 
-        executorService.shutdown();
-        try {
-            if (!executorService.awaitTermination(1, TimeUnit.MINUTES)) {
-                logger.error("Failed to resolve all components within the timeout period.");
-                executorService.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.error("Thread interrupted while waiting for executor service to terminate." + e);
-            executorService.shutdownNow();
-        }
+            resolvedDependencies.add(dependency);
 
-        Logger.endThreadLogging();
-    }
-
-    private class Crawler implements Runnable {
-
-        @Override
-        public void run() {
-
+            runningTasks.computeIfAbsent(dependency, dep -> executorService.submit(() -> crawlMulti2Helper(dep, queue, loadCount, failCount, runningTasks)));
+            waitUntilQueueIsNotEmpty(queue, runningTasks);
         }
     }
 
-    /**
-     * Crawls the dependencies of a component. Helper for the crawl method.
-     * @param dependency the dependency to resolve
-     * @param repository the repository to use
-     * @param queue the queue of dependencies to resolve
-     * @param loadCount the count of loaded components
-     * @param failCount the count of failed components
-     * @param activeTasks the count of active tasks
-     * @return null
-     */
-    private static Void crawler(Dependency dependency, ComponentRepository repository, ConcurrentLinkedDeque<Dependency> queue, AtomicInteger loadCount, AtomicInteger failCount, AtomicInteger activeTasks) {
-        try {
-            //get the version of the dependency
-            if (!dependency.hasVersion()) {
-                repository.getVersionResolver().resolveVersion(dependency);
+    private void waitUntilQueueIsNotEmpty(ConcurrentLinkedQueue<Dependency> queue, ConcurrentHashMap<Dependency, Future<Void>> runningTasks) {
+        if (queue.isEmpty())
+            logger.info("Waiting for tasks to complete. Running tasks: " + runningTasks.size());
+        while (true) {
+            var entriesToRemove = new ArrayList<Dependency>();
+            for (var entry : runningTasks.entrySet()) {
+                if (entry.getValue().isDone()) {
+                    entriesToRemove.add(entry.getKey());
+                }
             }
 
-            //get the component of the dependency
-            var component = dependency.getComponent();
+            entriesToRemove.forEach(runningTasks::remove);
 
-            // process the component
-            if (component != null)
-                if (!component.isLoaded()) {
+            if (!queue.isEmpty()) {
+                return;
+            }
 
-                    component.loadComponent();
+            if (runningTasks.isEmpty()) {
+                return;
+            }
 
-                    if (component.isLoaded()) {
-                        queue.addAll(component.getDependenciesFiltered());
-
-                        component.getDependencies().forEach(c -> {
-                            if (!c.isNotOptional()) {
-                                if (Settings.crawlOptional || Settings.crawlEverything)
-                                    logger.info("Dependency " + c + " is optional.");
-                                else
-                                    logger.info("Dependency " + c + " is not resolved because it is optional.");
-                            } else if (!c.shouldResolveByScope()) {
-                                if (Settings.crawlEverything)
-                                    logger.info("Dependency " + c + " is of scope \"" + c.getScope() + "\". Might cannot be resolved.");
-                                else
-                                    logger.info("Dependency " + c + " is not resolved because it is of scope \"" + c.getScope() + "\".");
-                            }
-                        });
-
-                        loadCount.incrementAndGet();
-                    } else {
-                        failCount.incrementAndGet();
-                    }
-                }
-
-        } catch (Exception e) {
-            logger.error("Failed to resolve dependency " + dependency, e);
-            failCount.incrementAndGet();
-        } finally {
-            activeTasks.decrementAndGet();
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.error("Thread interrupted while waiting for tasks to complete." + e);
+                return;
+            }
         }
+
+    }
+
+    private Void crawlMulti2Helper(Dependency dep, ConcurrentLinkedQueue<Dependency> queue, AtomicInteger loadCount, AtomicInteger failCount, ConcurrentHashMap<Dependency, Future<Void>> runningTasks) {
+        if (dep == null) return null;
+
+        if (!resolveVersion(dep, runningTasks)) return null;
+        if (!loadComponent(dep.getComponent()).addDependenciesToQueue) {
+            return null;
+        }
+
+        queue.addAll(dep.getComponent().getDependenciesFiltered());
         return null;
+
+    }
+
+    private boolean resolveVersion(Dependency dependency, ConcurrentHashMap<Dependency, Future<Void>> runningTasks) {
+        if (dependency.hasVersion()) {
+            return true;
+        }
+
+        var repository = dependency.getType().getRepository();
+        if (repository == null) {
+            logger.error("Could not resolve version of dependency " + dependency + " since this is a component without a repository.");
+            return false;
+        }
+
+        try {
+            var entry = runningTasks.remove(dependency);
+            repository.getVersionResolver().resolveVersion(dependency);
+            runningTasks.put(dependency, entry);
+            return true;
+        } catch (VersionResolveException e) {
+            logger.error("Could not resolve version of dependency " + dependency + ": " + e);
+            return false;
+        }
+    }
+
+    private LoadingStatus loadComponent(Component component) {
+        if (component.isLoaded()) {
+            return LoadingStatus.PREVIOUS;
+        }
+
+        try {
+            component.loadComponent();
+            if (!component.isLoaded()) {
+                logger.error("Failed to load component: " + component);
+                return LoadingStatus.ERROR;
+            }
+            return LoadingStatus.SUCCESS;
+        } catch (Exception e) {
+            logger.error("Failed to load component: " + component, e);
+            return LoadingStatus.ERROR;
+        }
     }
 
     public void updateDependenciesToNewestVersion(Component rootComponent) {
-        ConcurrentLinkedQueue<Dependency> queue = new ConcurrentLinkedQueue<>(rootComponent.getDependenciesFiltered());
-        var dependenciesDone = Collections.synchronizedSet(new HashSet<>());
-        Set<Future<?>> futures = new HashSet<>();
-        ExecutorService executorService = Executors.newFixedThreadPool(Settings.crawlThreads);
-
-        while (!queue.isEmpty()) {
-            var dependency = queue.poll();
+        for (var dependency : rootComponent.getDependenciesFlatFiltered()) {
             if (dependency == null) continue;
 
-            Future<?> future = executorService.submit(() -> {
-                var dependencyComponent = dependency.getComponent();
-                if (dependencyComponent == null) return;
+            var dependencyComponent = dependency.getComponent();
+            if (dependencyComponent == null) continue;
 
-                if (!(dependencyComponent instanceof MavenComponent) && dependency.getTreeParent() != rootComponent && !(dependencyComponent instanceof ReadComponent readComponent && readComponent.getActualComponent() instanceof MavenComponent)) {
-                    logger.info("skipping component " + dependencyComponent + " and all its dependants " + dependencyComponent.getDependencyComponentsFlatFiltered() + " since its not a maven component and not on top level.");
-                    return;
+            System.out.println("Check version overwrite of " + dependencyComponent.getQualifiedName() + ".");
+
+            if (dependencyComponent instanceof MavenComponent) {
+                if (!dependency.isNotOptional() || !dependency.shouldResolveByScope()) {
+                    logger.info("Skipping Maven Component " + dependencyComponent + " since it is optional or not resolved in the default scope.");
+                    continue;
                 }
 
-                List<Component> loadedComponents = dependencyComponent.getRepository().getLoadedComponents(dependencyComponent.getGroup(), dependencyComponent.getArtifactId());
-                if (loadedComponents.isEmpty()) return;
+                var components = dependencyComponent.getRepository().getLoadedComponents(dependencyComponent.getGroup(), dependencyComponent.getArtifactId());
+                if (components.isEmpty()) {
+                    logger.error("Could not find any loaded components for " + dependencyComponent.getQualifiedName() + ". This should never happen, as the component itself should be present with the repository");
+                    continue;
+                }
 
-                var newestComponent = loadedComponents.get(loadedComponents.size() - 1);
+                var newestComponent = components.get(components.size() - 1);
                 if (newestComponent.getVersion().compareTo(dependencyComponent.getVersion()) > 0) {
-                    var treeParent = dependency.getTreeParent();
-                    if (treeParent != null) {
-                        synchronized (treeParent) {
-                            if (treeParent.getDependenciesFiltered().stream().anyMatch(d -> d.getComponent() != null && Objects.equals(d.getComponent().getGroup(), dependencyComponent.getGroup()) && Objects.equals(d.getComponent().getArtifactId(), dependencyComponent.getArtifactId()))) {
-                                treeParent.removeDependency(dependency);
-                            }
-                        }
-                    }
+                    logger.info("Overwriting version of " + dependencyComponent.getQualifiedName() + " to " + newestComponent.getVersion() + " from " + dependencyComponent.getVersion() + ".");
 
                     dependency.setComponent(newestComponent);
                     dependency.setVersion(newestComponent.getVersion());
-
                     newestComponent.setData("addProperty", Property.of("overwritesDependencyVersion", dependencyComponent.getQualifiedName()));
                 }
 
-                synchronized (dependenciesDone) {
-                    dependenciesDone.addAll(dependencyComponent.getDependenciesFiltered().stream().map(Object::hashCode).toList());
-                    queue.addAll(dependencyComponent.getDependenciesFiltered().stream().filter(d -> !dependenciesDone.contains(d.hashCode())).toList());
-                }
-            });
-
-            futures.add(future);
-        }
-
-        // Wait for all tasks to complete
-        for (Future<?> future : futures) {
-            try {
-                future.get();
-            } catch (InterruptedException | ExecutionException e) {
-                logger.error("Error updating dependencies: " + e.getMessage());
+            } else {
+                logger.info("Skipping component (and all dependencies of it) " + dependencyComponent + " since its not a maven component.");
             }
         }
+    }
 
-        // Shut down the executor service
-        executorService.shutdown();
+    enum LoadingStatus {
+        SUCCESS(true), PREVIOUS(false), ERROR(false),
+        ;
+
+        private final Boolean addDependenciesToQueue;
+
+        LoadingStatus(Boolean addDependenciesToQueue) {
+            this.addDependenciesToQueue = addDependenciesToQueue;
+        }
     }
 }

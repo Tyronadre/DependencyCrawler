@@ -3,6 +3,7 @@ package data.internalData;
 import data.Component;
 import data.Dependency;
 import data.Version;
+import enums.ComponentType;
 import logger.Logger;
 import repository.repositoryImpl.MavenComponentRepository;
 
@@ -136,7 +137,7 @@ public class MavenDependency implements Dependency {
 
     @Override
     public boolean isNotOptional() {
-        return true;
+        return !optional;
     }
 
     @Override
@@ -144,14 +145,19 @@ public class MavenDependency implements Dependency {
         if (this == o) return true;
         if (!(o instanceof MavenDependency that)) return false;
 
-        return Objects.equals(groupId, that.groupId) && Objects.equals(artifactId, that.artifactId) && Objects.equals(version, that.version);
+        return Objects.equals(groupId, that.groupId) && Objects.equals(artifactId, that.artifactId) && Objects.equals(versionConstraints, that.versionConstraints);
     }
 
     @Override
     public int hashCode() {
         int result = Objects.hashCode(groupId);
         result = 31 * result + Objects.hashCode(artifactId);
-        result = 31 * result + Objects.hashCode(version);
+        result = 31 * result + Objects.hashCode(versionConstraints);
         return result;
+    }
+
+    @Override
+    public ComponentType getType() {
+        return ComponentType.MAVEN;
     }
 }

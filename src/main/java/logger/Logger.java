@@ -17,8 +17,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Logger {
-    // if true, the logger will print the full stack trace of an exception
-    private static final boolean devMode = false;
+    // if true, the logger will print the full stack trace of an exception and ignore log levels
+    private static final boolean devMode = true;
+
     private static final int numberOfLogFiles = 10;
     private static final Map<String, Logger> loggers = new HashMap<>();
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss:SSS");
@@ -126,11 +127,11 @@ public class Logger {
     }
 
     public static void startThreadLogging(int threads) {
-        executeServiceLogger = new ExecutionServiceLogger(threads);
+//        executeServiceLogger = new Logger(threads);
     }
 
     public static void endThreadLogging() {
-        executeServiceLogger.end();
+//        executeServiceLogger.end();
         executeServiceLogger = null;
     }
 

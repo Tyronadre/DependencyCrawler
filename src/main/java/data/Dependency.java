@@ -1,5 +1,7 @@
 package data;
 
+import enums.ComponentType;
+
 /**
  * Represents a dependency of an artifact.
  */
@@ -78,4 +80,8 @@ public interface Dependency {
      */
     boolean isNotOptional();
 
+    /**
+     * @return the type of the component
+     */
+    ComponentType getType();
 }

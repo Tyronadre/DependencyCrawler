@@ -3,6 +3,7 @@ package data.internalData;
 import data.Component;
 import data.Dependency;
 import data.Version;
+import enums.ComponentType;
 import repository.repositoryImpl.JitPackComponentRepository;
 
 public class JitPackDependency implements Dependency {
@@ -68,4 +69,8 @@ public class JitPackDependency implements Dependency {
         return true;
     }
 
+    @Override
+    public ComponentType getType() {
+        return ComponentType.JITPACK;
+    }
 }

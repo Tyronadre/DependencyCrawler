@@ -3,6 +3,7 @@ package data.internalData;
 import data.Component;
 import data.Dependency;
 import data.Version;
+import enums.ComponentType;
 import repository.repositoryImpl.ConanComponentRepository;
 
 import java.util.StringJoiner;
@@ -76,6 +77,11 @@ public class ConanDependency implements Dependency {
     @Override
     public boolean isNotOptional() {
         return true;
+    }
+
+    @Override
+    public ComponentType getType() {
+        return ComponentType.CONAN;
     }
 
     @Override

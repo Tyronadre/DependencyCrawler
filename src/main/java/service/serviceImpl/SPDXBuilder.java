@@ -195,7 +195,7 @@ public class SPDXBuilder implements DocumentBuilder<Component, Pair<SpdxDocument
                 try {
                     var ref = spdxPackage.createExternalRef(ReferenceCategory.OTHER, new ReferenceType(externalReference.type()), externalReference.url(), null);
                     spdxPackage.addExternalRef(ref);
-                } catch (InvalidSPDXAnalysisException e) {
+                } catch (Exception e) {
                     logger.error("Could not build external reference for " + component.getQualifiedName() + ". " + e.getMessage());
                 }
             }
@@ -227,7 +227,7 @@ public class SPDXBuilder implements DocumentBuilder<Component, Pair<SpdxDocument
         try {
             var license = LicenseInfoFactory.parseSPDXLicenseString(licenseChoice.license().id(), store, uri, copyManager);
             spdxPackage.setLicenseDeclared(license);
-        } catch (InvalidSPDXAnalysisException e) {
+        } catch (Exception e) {
             logger.info("Could not build license  " + licenseChoice.license() + ". " + e.getMessage());
         }
 

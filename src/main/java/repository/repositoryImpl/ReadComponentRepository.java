@@ -12,6 +12,7 @@ import org.spdx.library.model.SpdxPackage;
 import repository.ComponentRepository;
 import service.VersionResolver;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
 
@@ -64,7 +65,7 @@ public class ReadComponentRepository implements ComponentRepository {
     }
 
     @Override
-    public synchronized Component getComponent(String groupId, String artifactId, Version version, Component parent) {
+    public synchronized Component getComponent(@Nullable String groupId, String artifactId, Version version, Component parent) {
         throw new UnsupportedOperationException("use the specific getComponent method for the type of component you want to get (getSPDXComponent, getSBomComponent, ...)");
     }
 

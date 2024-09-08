@@ -3,6 +3,7 @@ package data.readData;
 import data.Component;
 import data.Dependency;
 import data.Version;
+import enums.ComponentType;
 
 public class ReadDependency implements Dependency {
     Component treeParent;
@@ -71,5 +72,10 @@ public class ReadDependency implements Dependency {
     @Override
     public String toString(){
         return getQualifiedName();
+    }
+
+    @Override
+    public ComponentType getType() {
+        return ComponentType.READ;
     }
 }

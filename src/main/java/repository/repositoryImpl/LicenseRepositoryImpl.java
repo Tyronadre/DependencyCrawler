@@ -139,7 +139,8 @@ public class LicenseRepositoryImpl implements LicenseRepository {
                 "APACHE LICENSE 2.0",
                 "Apache License, version 2.0",
                 "Apache License Version 2.0",
-                "ALv2"
+                "ALv2",
+                "Apache License 2.0"
         ));
         idToSpecialName.put("MIT", List.of("The MIT License", "The MIT License (MIT)"));
         idToSpecialName.put("LGPL-2.1-only", List.of("GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1", "LGPL, version 2.1", "LGPL 2.1"));
@@ -150,7 +151,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
         idToSpecialName.put("EPL-2.0", List.of("Eclipse Public License v2.0", "Eclipse Public License - Version 2.0", "EPL 2.0", "Eclipse Public License 2.0", "Eclipse Public License - v 2.0"));
         idToSpecialName.put("GPL-2.0-only", List.of("GNU General Public License Version 2"));
         idToSpecialName.put("CDDL-1.0", List.of("CDDL", "Common Development and Distribution License (CDDL) v1.0", "COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0"));
-        idToSpecialName.put("CCDL-1.1", List.of("CCDL 1.1"));
+        idToSpecialName.put("CDDL-1.1", List.of("CDDL 1.1"));
         idToSpecialName.put("CC0-1.0", List.of("Public Domain, per Creative Commons CC0", "CC0 1.0 Universal License"));
         idToSpecialName.put("CPL-1.0", List.of("Common Public License Version 1.0", "Common Public License - v 1.0"));
         idToSpecialName.put("LGPL-2.1-or-later", List.of("GNU Library General Public License v2.1 or later"));
@@ -163,8 +164,14 @@ public class LicenseRepositoryImpl implements LicenseRepository {
         idToSpecialName.put("MPL-1.0", List.of("Mozilla Public License"));
         idToSpecialName.put("Apache-1.0", List.of("Apache License"));
 
-        idToSpecialName.put("GPL-2.0 WITH Classpath-exception-2.0", List.of("GNU General Public License, Version 2 with the Classpath Exception", "GPL2 w/ CPE", "GNU General Public License, version 2 with the GNU Classpath Exception", "GNU General Public License (GPL), version 2, with the Classpath exception", "GNU General Public License, Version 2 with the Classpath Exception"));
-        idToSpecialName.put("CCDL OR GPL-2.0 WITH Classpath-exception-2.0", List.of("CDDL or GPLv2 with exceptions", "CDDL/GPLv2+CE"));
+        idToSpecialName.put("GPL-2.0-only WITH Classpath-exception-2.0", List.of("GNU General Public License, Version 2 with the Classpath Exception",
+                "GPL2 w/ CPE",
+                "GNU General Public License, version 2 with the GNU Classpath Exception",
+                "GNU General Public License (GPL), version 2, with the Classpath exception",
+                "GNU General Public License, Version 2 with the Classpath Exception",
+                "GPLv2+CE"));
+        idToSpecialName.put("CDDL OR GPL-2.0-only WITH Classpath-exception-2.0", List.of("CDDL or GPLv2 with exceptions", "CDDL/GPLv2+CE"));
+        idToSpecialName.put("CDDL AND GPL-2.0-only", List.of("Dual license consisting of the CDDL v1.1 and GPL v2"));
 
         //GPLv2+CE -> Release 2.0 of the SPDX Specification introduced License Expressions that supports the ability
         // to identify common variations of SPDX-identified licenses without the need to define each potential variation
@@ -397,7 +404,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
             for (var customNameEntry : idToSpecialName.entrySet()) {
                 for (var name : customNameEntry.getValue()) {
                     var matcher = pattern.matcher(name);
-                    if (matcher.find()) {
+                    if (matcher.find() || name.equalsIgnoreCase(input)) {
                         this.licenseChoice = LicenseChoice.of(idToLicense.get(customNameEntry.getKey()), name, null);
                         return;
                     }
@@ -516,6 +523,7 @@ public class LicenseRepositoryImpl implements LicenseRepository {
             }
             if (resultLicenseList.isEmpty()) {
                 var license = parseLicense(expression);
+                if (license == null) return;
                 resultLicenseList.add(license);
                 parsedExpression.append(license.nameOrId());
             }

@@ -9,6 +9,7 @@ import repository.repositoryImpl.JitPackComponentRepository;
 import repository.repositoryImpl.MavenComponentRepository;
 import service.VersionResolver;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 public interface ComponentRepository {
@@ -47,13 +48,13 @@ public interface ComponentRepository {
      * Returns the component with the highest version if multiple components with group and artifact id exist.
      * Needs to be synchronized!
      *
-     * @param groupId    the group id
+     * @param groupId    the group id. Can be null depending on the component type
      * @param artifactId the artifact id
      * @param version    the version
-     * @param parent     a parent in the tree. note that components are unique, and and a component can have different parents. this is used to find a repository for maven components
+     * @param parent     a parent in the tree. note that components have to be unique, and a component can have multiple parents. this is only used so a component can load data from a parent.
      * @return the component or null
      */
-    Component getComponent(String groupId, String artifactId, Version version, Component parent);
+    Component getComponent(@Nullable String groupId, String artifactId, Version version, Component parent);
 
     String getDownloadLocation(Component component);
 

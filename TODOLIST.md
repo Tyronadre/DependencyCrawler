@@ -58,11 +58,17 @@ cron job ob neue vulerabilitys auf vex / cyclondx
 - [x] use data from maven parent when empty
 - [x] dependency tree sbom nur tiefe 1
 - [x] user möglichkeit geben pom files zu spezifizieren, für repos die nicht geladen werden konnten im zweiten durchgang
-- [ ] Data ordner beliebige stelle
-- [ ] log mode disable success messages
+- [x] Data ordner beliebige stelle
+- [x] log mode disable success messages
 - [ ] support multiple licenses
-- [ ] CVSS 4.0
-- [ ] Flag für optional laden
+- [x] CVSS 4.0
+- [x] Flag für optional laden
+- [ ] sbom für eine komponent angeben (mit den dependencies)
+- [ ] js unterstützen (npm, webpack)
+- [ ] sbom lesen die von cdxgen gelesen wurde und nochmal ausführen. auf reactive native
+  app? (https://github.com/facebook/react-native)
+- [ ] better
+  license https://github.com/fasten-project/fasten/blob/develop/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java
 
 ## References
 
@@ -82,11 +88,25 @@ cron job ob neue vulerabilitys auf vex / cyclondx
 ~ 30 Seiten zusätzlich bilder u.ä
 ~ englisch!
 
+tool : LibDetect. (Paper: ~ Codematch )
+
+generell nur "fundierte" daten oder sagen das es noch offen ist.
+
+VGL paper softwareentwicklung (threats of validity) https://dl.acm.org/doi/proceedings/10.1145/3611643
+
+### ABSTRACT
+
+eval mit rein, und ein bischen mehr was mein tool macht
+
 ### INTRODUCTION
 
-einführung für person die sich nicht auskennt
+ersten satz weg.
+
+Bessere einführung für leser die nix kenne, weniger fachwörter
 
 ### BACKGROUND
+
+MAVEN erklären oder und NPM erklären oder dependency management in general
 
 ### RELATED WORK (oder nach evaluation)
 
@@ -94,9 +114,13 @@ textuell vergleich
 
 ### ANSATZ
 
+schaubild wie intern funktioniert
+
 ### EVALUATION
 
 empirischer vergleich
+forschungsfragen
+tools erklären in related work
 
 - https://github.com/anchore/syft
 - https://mergebase.com
@@ -104,6 +128,8 @@ empirischer vergleich
 - cyclone dx plugin
 
 ### LIMITATIONS
+
+- nicht "we"
 
 ### CONCLUSION
 

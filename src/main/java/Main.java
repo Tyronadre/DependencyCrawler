@@ -10,6 +10,7 @@ import service.DocumentBuilder;
 import service.serviceImpl.BFDependencyCrawlerImpl;
 import service.serviceImpl.DefaultInputReader;
 import service.serviceImpl.LicenseCollisionBuilder;
+import service.serviceImpl.NewSBOMBuilder;
 import service.serviceImpl.SBOMBuilder;
 import service.serviceImpl.SBOMReader;
 import service.serviceImpl.SPDXBuilder;
@@ -32,12 +33,13 @@ public class Main {
     private static final Logger logger = Logger.of("Main");
 
     public static void main(String[] args) {
-//        args = new String[]{"--input", "src/main/resources/broken.json"};
+        args = new String[]{"--input", "src/main/resources/json.json", "--output", "generated/maven_tool_custom", "--log-level", "ERROR", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions"};
 //        args = new String[]{"--input", "generated/output_0.sbom.json", "--input-type", "sbom", "--output", "generated/output_0_renewFromSBOM", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
 //        args = new String[]{"--input", "generated/output_0.spdx.json", "--input-type", "spdx", "--output", "generated/output_0_renewFromSPDX", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
 //        args = new String[]{"--input", "src/main/resources/input_2.json", "--output", "generated/output_2", "--output-type", "sbom", "spdx", "vex", "tree", "license-collisions", "--verbose"};
-//        args = new String[]{"--input", "src/main/resources/input_0.json", "--output", "generated/output_1"};
-        args = new String[]{"--input", "src/main/resources/photoprism.json", "--output", "testoutput/output_0"};
+//        args = new String[]{"--input", "src/main/resources/input_1.json", "--output", "generated/output_1", "--output-type", "sbom", "spdx", "vex", "tree"};
+//        args = new String[]{"--input", "src/main/resources/broken.json", "--output", "generated/broken", "--output-type", "sbom", "spdx", "vex", "tree", "--crawl-all"};
+//        args = new String[]{"--input", "src/main/resources/photoprism.json", "--output", "testoutput/output_0"};
 
 
         HashMap < String, String> argMap = new HashMap<>();
@@ -152,6 +154,7 @@ public class Main {
                 throw new IllegalArgumentException(inputType + " is not a valid inputFormat");
             }
         }
+        System.exit(0);
     }
 
     private static void readFromDefault(String inputFile, String outputFile, ArrayList<String> outputTypes) {
@@ -246,7 +249,7 @@ public class Main {
 
     private static DocumentBuilder<Component, ?> getDocumentBuilder(String outputType) {
         return switch (outputType) {
-            case "sbom" -> new SBOMBuilder();
+            case "sbom" -> new NewSBOMBuilder();
             case "spdx" -> new SPDXBuilder();
             case "vex" -> new VexBuilder();
             case "tree-all" -> new TreeBuilder(true);
