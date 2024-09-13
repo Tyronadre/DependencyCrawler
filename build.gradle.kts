@@ -43,6 +43,8 @@ dependencies {
     implementation("org.slf4j:slf4j-nop:2.0.0")
     implementation("org.metaeffekt.core:ae-security:0.115.0")
     implementation("org.cyclonedx:cyclonedx-core-java:9.0.5")
+    compileOnly("org.projectlombok:lombok:1.18.34")
+    annotationProcessor("org.projectlombok:lombok:1.18.34")
 
     implementation("org.fusesource.jansi:jansi:2.4.0")
 //    implementation("org.jline:jline:3.21.0")

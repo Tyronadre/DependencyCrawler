@@ -29,6 +29,7 @@ public class SBOMReader implements DocumentReader<Pair<Bom16.Bom, Component>> {
 
         var file = new File(inputFileName);
 
+
         //parse from file
         var builder = Bom16.Bom.newBuilder();
         try {

@@ -1,4 +1,4 @@
-package converter.cycloneDX;
+package converter.toCycloneDX;
 
 import converter.Converter;
 import data.Address;

@@ -1,5 +1,6 @@
 package entities;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -12,21 +13,19 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "address")
+@Table(name = "license_choice")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Address {
+public class LicenseChoice {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Long id;
 
-    private String country;
-    private String region;
-    private String city;
-    private String postalCode;
-    private String streetAddress;
-    private String postOfficeBoxNumber;
+    private String expression;
+
+
 }

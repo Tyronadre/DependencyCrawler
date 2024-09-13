@@ -194,6 +194,7 @@ public interface Component {
 
     List<Person> getAllAuthors();
 
+
     /**
      * Sets the data for the given key.
      * Exact implementation is up to the component.
@@ -202,7 +203,9 @@ public interface Component {
      * @param value the value
      * @param <T>   the type of the value
      */
-    <T> void setData(String key, T value);
+    <T>
+
+    void setData(String key, T value);
 
     void removeDependency(Dependency dependency);
 

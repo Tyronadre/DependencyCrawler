@@ -1,7 +1,7 @@
 package service.serviceImpl;
 
-import converter.cycloneDX.ComponentConverter;
-import converter.cycloneDX.ScopeConverter;
+import converter.toCycloneDX.ComponentConverter;
+import converter.toCycloneDX.ScopeConverter;
 import data.Component;
 import org.cyclonedx.Version;
 import org.cyclonedx.exception.GeneratorException;

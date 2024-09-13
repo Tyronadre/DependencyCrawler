@@ -1,4 +1,4 @@
-package converter.cycloneDX;
+package converter.toCycloneDX;
 
 import converter.Converter;
 import org.cyclonedx.model.license.Expression;

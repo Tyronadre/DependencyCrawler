@@ -18,12 +18,12 @@ import java.util.stream.Collectors;
 
 public class Logger {
     // if true, the logger will print the full stack trace of an exception and ignore log levels
-    private static final boolean devMode = true;
+    private static final boolean devMode = false;
 
     private static final int numberOfLogFiles = 10;
     private static final Map<String, Logger> loggers = new HashMap<>();
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss:SSS");
-    private static LogLevel level = LogLevel.INFO;
+    private static LogLevel level = LogLevel.ERROR;
     private static final OutputStream logFile ;
 
     private static ExecutionServiceLogger executeServiceLogger;

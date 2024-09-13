@@ -1,15 +1,32 @@
 package entities;
 
+import enums.ComponentType;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "component")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Component {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,48 +36,39 @@ public class Component {
     private String artifactId;
     private String version;
 
-    @OneToOne(orphanRemoval = true)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "organization_id")
-    private Organization organization;
+    private Organization supplier;
 
-    public Long id() {
-        return id;
-    }
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "manufacturer_id")
+    private Organization manufacturer;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    @OneToMany(mappedBy = "component", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Person> authors = new LinkedHashSet<>();
 
-    public String groupId() {
-        return groupId;
-    }
+    private String description;
 
-    public void setGroupId(String groupId) {
-        this.groupId = groupId;
-    }
+    @OneToMany(mappedBy = "component", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Hash> hashes = new LinkedHashSet<>();
 
-    public String artifactId() {
-        return artifactId;
-    }
+    private String publisher;
 
-    public void setArtifactId(String artifactId) {
-        this.artifactId = artifactId;
-    }
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "license_choice_id")
+    private LicenseChoice licenseChoice;
 
-    public String version() {
-        return version;
-    }
+    @OneToMany(mappedBy = "component", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Property> properties = new LinkedHashSet<>();
 
-    public void setVersion(String version) {
-        this.version = version;
-    }
+    @OneToMany(mappedBy = "component", orphanRemoval = true)
+    private Set<Dependency> dependencies = new LinkedHashSet<>();
 
-    public Organization organization() {
-        return organization;
-    }
+    @ManyToOne
+    @JoinColumn(name = "parent_id")
+    private Component parent;
 
-    public void setOrganization(Organization organization) {
-        this.organization = organization;
-    }
+    private ComponentType componentType;
+
 }
 

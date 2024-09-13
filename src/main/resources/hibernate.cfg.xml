@@ -11,9 +11,16 @@
         <property name="show_sql">true</property>
         <property name="format_sql">true</property>
 
+        <mapping class="entities.Address"/>
         <mapping class="entities.Component"/>
+        <mapping class="entities.Dependency"/>
+        <mapping class="entities.ExternalReference"/>
+        <mapping class="entities.Hash"/>
+        <mapping class="entities.License"/>
+        <mapping class="entities.LicenseChoice"/>
         <mapping class="entities.Organization"/>
         <mapping class="entities.Person"/>
-        <mapping class="entities.Address"/>
+        <mapping class="entities.Property"/>
+
     </session-factory>
 </hibernate-configuration>

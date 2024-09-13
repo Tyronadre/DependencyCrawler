@@ -10,7 +10,7 @@ public class TestHibernate {
         try (var s = HibernateUtil.getSessionFactory().openSession()) {
             s.beginTransaction();
 
-            var component = new Component();
+            var component = Component.builder().groupId("com.example").artifactId("example").version("1.0.0").build();
             s.persist(component);
 
             var comp2 = new Component();
