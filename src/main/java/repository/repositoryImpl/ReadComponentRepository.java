@@ -101,8 +101,8 @@ public class ReadComponentRepository implements ComponentRepository {
     }
 
     public synchronized Component getSBomComponent(Bom16.Component bomComponent, DependencyCrawlerInput.Type type, String purl) {
-        if (readComponents.containsKey(bomComponent.getBomRef()))
-            return readComponents.get(bomComponent.getBomRef());
+        if (readComponents.containsKey(bomComponent.getPurl()))
+            return readComponents.get(bomComponent.getPurl());
         var component = new ReadSBomComponent(bomComponent, type, purl);
         readComponents.put(bomComponent.getBomRef(), component);
         return component;

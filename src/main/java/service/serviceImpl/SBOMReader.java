@@ -34,7 +34,7 @@ public class SBOMReader implements DocumentReader<Pair<Bom16.Bom, Component>> {
         try {
             JsonFormat.parser().ignoringUnknownFields().merge(Files.readString(file.toPath(), StandardCharsets.UTF_8), builder);
         } catch (Exception e) {
-            logger.error("Could not read from file: " + file.getAbsolutePath() + ". Cause: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+            logger.error("Could not read from file: " + file.getAbsolutePath(), e);
             throw new RuntimeException(e);
         }
         var bom = builder.build();
@@ -93,6 +93,15 @@ public class SBOMReader implements DocumentReader<Pair<Bom16.Bom, Component>> {
 
                 dependenciesToProcess.addAll(child.getDependenciesList());
             }
+
+            for (var child : sbomDependency.getDependsOnList()) {
+                var childComponent = buildComponents.get(child);
+                if (childComponent == null) {
+                    logger.error("Child component not found for dependency: " + sbomDependency.getRef() + " -> " + child);
+                    continue;
+                }
+                parent.addDependency(new ReadDependency(childComponent, parent));
+            }
         }
     }
 
@@ -127,7 +136,7 @@ public class SBOMReader implements DocumentReader<Pair<Bom16.Bom, Component>> {
             logger.error("Unknown type in purl. Skipping: " + purl + ". Supported types are: pkg:maven, pkg:conan, pkg:android_native, pkg:jitpack.");
         }
         var newComp = ReadComponentRepository.getInstance().getSBomComponent(bomComponent, type, purl);
-        buildComponents.put(bomComponent.getBomRef(), newComp);
+        buildComponents.put(bomComponent.getPurl(), newComp);
         return newComp;
     }
 }

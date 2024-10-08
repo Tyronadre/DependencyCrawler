@@ -190,6 +190,7 @@ message Dependency {
   string ref = 1;
   // The bom-ref identifiers of the components or services that are dependencies of this dependency object.
   repeated Dependency dependencies = 2;
+  repeated string dependsOn = 4;
   // The bom-ref identifiers of the components or services that define a given specification or standard, which are provided or implemented by this dependency object.
   repeated string provides = 3;
 }

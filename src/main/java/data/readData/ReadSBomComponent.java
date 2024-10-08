@@ -54,7 +54,7 @@ public class ReadSBomComponent implements ReadComponent {
         this.type = type;
         this.purl = purl;
         if (purl != null && purl.contains("@")) {
-            this.version = Version.of(purl.substring(purl.lastIndexOf('@') + 1));
+            this.version = Version.of(purl.substring(purl.lastIndexOf('@') + 1, purl.lastIndexOf('?')));
             var split = purl.substring(0, purl.lastIndexOf('@')).split("/");
             this.groupId = split[split.length - 2];
             this.artifactId = split[split.length - 1];
@@ -130,8 +130,12 @@ public class ReadSBomComponent implements ReadComponent {
         this.externalReferences.addAll(actualComponent.getAllExternalReferences().stream().filter(externalReference -> externalReferences.stream().noneMatch(er -> er.url().equals(externalReference.url()))).toList());
 
         // HASHES
-        var hashesGiven = this.hashes.stream().collect(Collectors.toMap(Hash::algorithm, Function.identity()));
-        this.hashes = this.actualComponent.getAllHashes().stream().map(hashLoaded -> hashesGiven.getOrDefault(hashLoaded.algorithm(), hashLoaded)).collect(Collectors.toList());
+        for (var hash : this.actualComponent.getAllHashes()) {
+            var presentHash = this.hashes.stream().filter(h -> h.algorithm().equals(hash.algorithm())).findFirst();
+            if (presentHash.isEmpty()) {
+                this.hashes.add(hash);
+            }
+        }
 
         //Vulnerabilities
         this.vulnerabilities = VulnerabilityRepository.getInstance().getVulnerabilities(this);
@@ -240,14 +244,12 @@ public class ReadSBomComponent implements ReadComponent {
 
         while (!checkQ.isEmpty()) {
             var check = checkQ.poll();
-            if (this.getQualifiedName().equals(check.getQualifiedName())) {
+            if (this.getPurl().equals(check.getPurl())) {
                 logger.error("Cyclic dependency detected. Skipping dependency " + dependency.getQualifiedName() + " for component " + this.getQualifiedName());
                 return;
             }
             checkQ.addAll(check.getDependenciesFiltered().stream().map(Dependency::getComponent).toList());
         }
-
-        logger.info("Adding " + dependency.getQualifiedName() + " as dependency of " + this.getQualifiedName());
 
         this.dependencies.add(dependency);
     }
